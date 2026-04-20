@@ -43,6 +43,7 @@ Fluxo alvo:
 - `src/serialization`: contrato de layout fixed-width e futuro serializer.
 - `src/validation`: validacoes estruturais, layout e reconciliacao futura.
 - `src/config`: modelos Pydantic para configuracao por empresa e manifestos de execucao.
+- `data/templates`: templates XLSX versionados para preenchimento humano.
 - `data/golden`: fixtures douradas e artefatos de referencia.
 - `tests/golden`: testes de regressao baseados em golden files.
 
@@ -58,6 +59,12 @@ Rodar testes:
 
 ```bash
 pytest
+```
+
+Gerar o template Excel V1:
+
+```bash
+python scripts/generate_planilha_padrao_v1.py
 ```
 
 ## Fixtures e golden files
