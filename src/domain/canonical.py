@@ -13,6 +13,14 @@ class ValueType(StrEnum):
     DAYS = "dias"
 
 
+class RegistrationSource(StrEnum):
+    LINE = "linha_humana"
+    REGISTRY = "cadastro_auxiliar"
+    BOTH_MATCH = "linha_e_cadastro"
+    CONFLICT = "conflito"
+    UNRESOLVED = "nao_resolvida"
+
+
 class PendingSeverity(StrEnum):
     LOW = "baixa"
     MEDIUM = "media"
@@ -27,6 +35,9 @@ class PendingCode(StrEnum):
     EMPLOYEE_NOT_FOUND = "funcionario_nao_encontrado"
     DOMAIN_REGISTRATION_MISSING = "matricula_dominio_ausente"
     DOMAIN_REGISTRATION_DUPLICATED = "matricula_dominio_duplicada"
+    DOMAIN_REGISTRATION_LINE_ONLY = "matricula_dominio_informada_somente_na_linha"
+    DOMAIN_REGISTRATION_CONFLICT = "matricula_dominio_divergente"
+    EMPLOYEE_REGISTRY_INCONSISTENT = "cadastro_funcionario_inconsistente"
     INVALID_HOUR = "hora_invalida"
     INVALID_VALUE = "valor_invalido"
     INVALID_QUANTITY = "quantidade_invalida"
@@ -73,6 +84,14 @@ class ResolvedEmployee:
     allows_entries: bool | None
     source: SourceRef | None
     resolved_from_registry: bool
+    registration_source: RegistrationSource = RegistrationSource.UNRESOLVED
+    registry_consistent: bool = True
+
+    def __post_init__(self) -> None:
+        if self.registration_source == RegistrationSource.CONFLICT and self.domain_registration is not None:
+            raise ValueError("ResolvedEmployee conflict state cannot carry a resolved domain_registration.")
+        if self.registration_source == RegistrationSource.UNRESOLVED and self.domain_registration is not None:
+            raise ValueError("ResolvedEmployee unresolved state cannot carry a resolved domain_registration.")
 
 
 @dataclass(frozen=True, slots=True)
@@ -119,6 +138,20 @@ class CanonicalMovement:
     output_rubric: str | None = None
     event_nature: str | None = None
     serialization_unit: str | None = None
+
+    def __post_init__(self) -> None:
+        populated_fields = sum(
+            value is not None for value in (self.quantity, self.hours, self.amount)
+        )
+        if populated_fields != 1:
+            raise ValueError("CanonicalMovement must populate exactly one of quantity, hours or amount.")
+
+        if self.value_type == ValueType.MONETARY and self.amount is None:
+            raise ValueError("Monetary movement must populate amount.")
+        if self.value_type == ValueType.HOURS and self.hours is None:
+            raise ValueError("Hour movement must populate hours.")
+        if self.value_type == ValueType.DAYS and self.quantity is None:
+            raise ValueError("Day movement must populate quantity.")
 
     @property
     def has_pending(self) -> bool:

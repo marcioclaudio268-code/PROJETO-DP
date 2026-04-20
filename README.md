@@ -38,7 +38,7 @@ Fluxo alvo:
 ## Estrutura
 
 - `src/domain`: objetos puros e invariantes do dominio.
-- `src/ingestion`: futuro loader da planilha canonica XLSX.
+- `src/ingestion`: loader da planilha humana V1, normalizacao, snapshot canonico, manifesto e persistencia operacional.
 - `src/mapping`: resolucao por empresa, matricula e rubrica.
 - `src/serialization`: contrato de layout fixed-width e futuro serializer.
 - `src/validation`: validacoes estruturais, layout e reconciliacao futura.
@@ -73,6 +73,22 @@ Ingerir o template V1 e preencher as abas tecnicas:
 python scripts/ingest_planilha_padrao_v1.py --input data/templates/planilha_padrao_folha_v1.xlsx
 ```
 
+Ingerir e persistir workbook tecnico, snapshot e manifesto:
+
+```bash
+python scripts/ingest_planilha_padrao_v1.py --input data/templates/planilha_padrao_folha_v1.xlsx --snapshot-output data/templates/planilha_padrao_folha_v1.snapshot.json
+```
+
+## Estado atual da ingestao V1
+
+- O template humano V1 ja existe e e preenchido principalmente em `LANCAMENTOS_FACEIS`.
+- A ingestao ja le `PARAMETROS`, `FUNCIONARIOS` e `LANCAMENTOS_FACEIS`.
+- A ingestao ja normaliza moeda BR, horas `HH:MM` e quantidades simples.
+- Cada linha humana pode gerar multiplos movimentos canonicos em memoria.
+- Ambiguidades, conflitos de matricula e eventos nao automatizaveis viram pendencia explicita.
+- As abas tecnicas `MOVIMENTOS_CANONICOS` e `PENDENCIAS` ja podem ser atualizadas automaticamente.
+- O resultado da ingestao pode ser persistido em snapshot JSON e manifesto minimo.
+
 ## Fixtures e golden files
 
 O projeto usa fixtures imutaveis para garantir determinismo.
@@ -84,4 +100,4 @@ O projeto usa fixtures imutaveis para garantir determinismo.
 
 ## Proxima etapa esperada
 
-Implementar o loader da planilha canonica e o normalizador de numeros e horas, sem iniciar o serializer completo.
+Consumir o snapshot canonico junto com configuracao versionada por empresa para preparar o mapeamento deterministico de `evento_negocio`, sem avancar ainda para serializer TXT.

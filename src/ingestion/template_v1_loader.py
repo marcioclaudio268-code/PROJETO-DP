@@ -15,7 +15,7 @@ from domain import (
     PayrollFileParameters,
     PendingCode,
     PendingItem,
-    PendingSeverity,
+    RegistrationSource,
     ResolvedEmployee,
     SourceRef,
     ValueType,
@@ -30,6 +30,7 @@ from .normalization import (
     normalized_optional_text,
     validate_competence,
 )
+from .taxonomy import FatalIngestionCode, render_fatal_error_message, render_pending_definition
 from .template_v1 import (
     FUNCIONARIOS_HEADERS,
     LANCAMENTOS_FACEIS_HEADERS,
@@ -92,6 +93,11 @@ class _EmployeeRegistryRecord:
     allows_entries: bool | None
     source: SourceRef
     duplicate_registration: bool = False
+    duplicate_key: bool = False
+
+    @property
+    def is_consistent(self) -> bool:
+        return not self.duplicate_key and not self.duplicate_registration
 
 
 def load_planilha_padrao_folha_v1(path: str | Path) -> IngestionResult:
@@ -138,6 +144,7 @@ def ingest_template_v1_workbook(workbook: Workbook) -> IngestionResult:
             employee_registry=employee_registry,
         )
         row_pending_items: list[PendingItem] = []
+        movement_candidates: list[tuple[HumanEventSpec, object, SourceRef]] = []
 
         event_cells_filled = _row_has_any_event_cell(row_values)
         observacao_eventos = normalized_optional_text(row_values["observacao_eventos"])
@@ -149,11 +156,13 @@ def ingest_template_v1_workbook(workbook: Workbook) -> IngestionResult:
                     parameters,
                     employee=employee,
                     event_name=None,
-                    source=SourceRef(LANCAMENTOS_SHEET_NAME, row_number, "A" + str(row_number), "linha_status"),
+                    source=SourceRef(
+                        LANCAMENTOS_SHEET_NAME,
+                        row_number,
+                        f"A{row_number}",
+                        "linha_status",
+                    ),
                     code=PendingCode.LINE_BLOCKED_BY_STATUS,
-                    severity=PendingSeverity.HIGH,
-                    description="Linha bloqueada pelo cadastro de funcionarios. 'admite_lancamento' esta como 'nao' ou o status do colaborador impede processamento.",
-                    recommended_action="Revisar o cadastro em FUNCIONARIOS e liberar a linha somente se o lancamento for permitido.",
                 )
             )
             pending_counter += 1
@@ -167,27 +176,31 @@ def ingest_template_v1_workbook(workbook: Workbook) -> IngestionResult:
                     parameters,
                     employee=employee,
                     event_name=None,
-                    source=SourceRef(LANCAMENTOS_SHEET_NAME, row_number, f"B{row_number}", "chave_colaborador"),
+                    source=SourceRef(
+                        LANCAMENTOS_SHEET_NAME,
+                        row_number,
+                        f"B{row_number}",
+                        "chave_colaborador",
+                    ),
                     code=PendingCode.EMPLOYEE_NOT_FOUND,
-                    severity=PendingSeverity.BLOCKING,
-                    description="Nao foi possivel localizar o colaborador no cadastro auxiliar de FUNCIONARIOS.",
-                    recommended_action="Preencher ou corrigir 'chave_colaborador' e revisar o cadastro auxiliar.",
                 )
             )
             pending_counter += 1
 
-        if employee.domain_registration is None and event_cells_filled:
+        if event_cells_filled and employee.resolved_from_registry and not employee.registry_consistent:
             row_pending_items.append(
                 _make_pending(
                     pending_counter,
                     parameters,
                     employee=employee,
                     event_name=None,
-                    source=SourceRef(LANCAMENTOS_SHEET_NAME, row_number, f"D{row_number}", "matricula_dominio"),
-                    code=PendingCode.DOMAIN_REGISTRATION_MISSING,
-                    severity=PendingSeverity.BLOCKING,
-                    description="A matricula Dominio esta ausente para a linha preenchida.",
-                    recommended_action="Informar a matricula Dominio no cadastro ou na propria linha antes de seguir.",
+                    source=SourceRef(
+                        LANCAMENTOS_SHEET_NAME,
+                        row_number,
+                        f"B{row_number}",
+                        "chave_colaborador",
+                    ),
+                    code=PendingCode.EMPLOYEE_REGISTRY_INCONSISTENT,
                 )
             )
             pending_counter += 1
@@ -199,16 +212,74 @@ def ingest_template_v1_workbook(workbook: Workbook) -> IngestionResult:
                     parameters,
                     employee=employee,
                     event_name=None,
-                    source=SourceRef(LANCAMENTOS_SHEET_NAME, row_number, f"U{row_number}", "observacao_eventos"),
+                    source=SourceRef(
+                        LANCAMENTOS_SHEET_NAME,
+                        row_number,
+                        f"U{row_number}",
+                        "observacao_eventos",
+                    ),
                     code=PendingCode.AMBIGUOUS_EVENT_NOTE,
-                    severity=PendingSeverity.HIGH,
-                    description="A coluna 'observacao_eventos' foi preenchida e exige revisao humana.",
-                    recommended_action="Interpretar a observacao manualmente e ajustar os eventos explicitamente, sem inferencia automatica.",
                 )
             )
             pending_counter += 1
 
-        movement_candidates: list[tuple[HumanEventSpec, object, SourceRef]] = []
+        if event_cells_filled and employee.resolved_from_registry:
+            if employee.registration_source == RegistrationSource.LINE:
+                row_pending_items.append(
+                    _make_pending(
+                        pending_counter,
+                        parameters,
+                        employee=employee,
+                        event_name=None,
+                        source=SourceRef(
+                            LANCAMENTOS_SHEET_NAME,
+                            row_number,
+                            f"D{row_number}",
+                            "matricula_dominio",
+                        ),
+                        code=PendingCode.DOMAIN_REGISTRATION_LINE_ONLY,
+                    )
+                )
+                pending_counter += 1
+            elif employee.registration_source == RegistrationSource.CONFLICT:
+                row_pending_items.append(
+                    _make_pending(
+                        pending_counter,
+                        parameters,
+                        employee=employee,
+                        event_name=None,
+                        source=SourceRef(
+                            LANCAMENTOS_SHEET_NAME,
+                            row_number,
+                            f"D{row_number}",
+                            "matricula_dominio",
+                        ),
+                        code=PendingCode.DOMAIN_REGISTRATION_CONFLICT,
+                    )
+                )
+                pending_counter += 1
+
+        if (
+            event_cells_filled
+            and employee.domain_registration is None
+            and employee.registration_source != RegistrationSource.CONFLICT
+        ):
+            row_pending_items.append(
+                _make_pending(
+                    pending_counter,
+                    parameters,
+                    employee=employee,
+                    event_name=None,
+                    source=SourceRef(
+                        LANCAMENTOS_SHEET_NAME,
+                        row_number,
+                        f"D{row_number}",
+                        "matricula_dominio",
+                    ),
+                    code=PendingCode.DOMAIN_REGISTRATION_MISSING,
+                )
+            )
+            pending_counter += 1
 
         for spec in SPECIAL_EVENT_SPECS:
             raw_value = row_values[spec.column_name]
@@ -229,9 +300,6 @@ def ingest_template_v1_workbook(workbook: Workbook) -> IngestionResult:
                     event_name=spec.column_name,
                     source=source,
                     code=PendingCode.NON_AUTOMATABLE_EVENT,
-                    severity=PendingSeverity.MEDIUM,
-                    description=f"O evento '{spec.column_name}' nao e automatizado nesta etapa e nao gerou movimento canonico.",
-                    recommended_action="Avaliar manualmente este evento e decidir o tratamento antes de exportar.",
                 )
             )
             pending_counter += 1
@@ -259,9 +327,7 @@ def ingest_template_v1_workbook(workbook: Workbook) -> IngestionResult:
                         event_name=spec.column_name,
                         source=source,
                         code=exc.code,
-                        severity=PendingSeverity.BLOCKING,
-                        description=str(exc),
-                        recommended_action="Corrigir o valor na aba LANCAMENTOS_FACEIS e rodar a ingestao novamente.",
+                        description_override=str(exc),
                     )
                 )
                 pending_counter += 1
@@ -339,9 +405,13 @@ def _load_parameters(worksheet: Worksheet) -> PayrollFileParameters:
 
     missing_parameters = [name for name in REQUIRED_PARAMETERS if name not in field_rows]
     if missing_parameters:
-        missing = ", ".join(missing_parameters)
         raise TemplateV1IngestionError(
-            f"PARAMETROS nao contem todos os campos obrigatorios. Ausentes: {missing}."
+            FatalIngestionCode.PARAMETER_REQUIRED_MISSING,
+            render_fatal_error_message(
+                FatalIngestionCode.PARAMETER_REQUIRED_MISSING,
+                field_name=", ".join(missing_parameters),
+            ),
+            source="PARAMETROS",
         )
 
     values: dict[str, str] = {}
@@ -352,7 +422,12 @@ def _load_parameters(worksheet: Worksheet) -> PayrollFileParameters:
         text_value = normalized_optional_text(raw_value)
         if text_value is None:
             raise TemplateV1IngestionError(
-                f"Parametro obrigatorio ausente em PARAMETROS!B{row_number}: {parameter_name}."
+                FatalIngestionCode.PARAMETER_REQUIRED_MISSING,
+                render_fatal_error_message(
+                    FatalIngestionCode.PARAMETER_REQUIRED_MISSING,
+                    field_name=parameter_name,
+                ),
+                source=f"PARAMETROS!B{row_number}",
             )
         values[parameter_name] = text_value
         source_cells[parameter_name] = f"B{row_number}"
@@ -360,17 +435,33 @@ def _load_parameters(worksheet: Worksheet) -> PayrollFileParameters:
     try:
         competence = validate_competence(values["competencia"])
     except NormalizationError as exc:
-        raise TemplateV1IngestionError(str(exc)) from exc
+        raise TemplateV1IngestionError(
+            FatalIngestionCode.COMPETENCE_INVALID,
+            render_fatal_error_message(FatalIngestionCode.COMPETENCE_INVALID),
+            source=f"PARAMETROS!{source_cells['competencia']}",
+        ) from exc
+
     payroll_type = values["tipo_folha"].lower()
     if payroll_type != SUPPORTED_PAYROLL_TYPE:
         raise TemplateV1IngestionError(
-            f"tipo_folha '{values['tipo_folha']}' nao e suportado nesta fase. Use apenas 'mensal'."
+            FatalIngestionCode.PAYROLL_TYPE_NOT_SUPPORTED,
+            render_fatal_error_message(
+                FatalIngestionCode.PAYROLL_TYPE_NOT_SUPPORTED,
+                payroll_type=values["tipo_folha"],
+            ),
+            source=f"PARAMETROS!{source_cells['tipo_folha']}",
         )
 
     layout_version = values["versao_layout"].lower()
     if layout_version != SUPPORTED_LAYOUT_VERSION:
         raise TemplateV1IngestionError(
-            f"versao_layout '{values['versao_layout']}' nao e suportada. Esta ingestao aceita apenas '{SUPPORTED_LAYOUT_VERSION}'."
+            FatalIngestionCode.LAYOUT_VERSION_NOT_SUPPORTED,
+            render_fatal_error_message(
+                FatalIngestionCode.LAYOUT_VERSION_NOT_SUPPORTED,
+                layout_version=values["versao_layout"],
+                supported_layout_version=SUPPORTED_LAYOUT_VERSION,
+            ),
+            source=f"PARAMETROS!{source_cells['versao_layout']}",
         )
 
     return PayrollFileParameters(
@@ -388,6 +479,7 @@ def _load_employee_registry(worksheet: Worksheet) -> dict[str, _EmployeeRegistry
     headers = _read_header_map(worksheet, FUNCIONARIOS_HEADERS)
     registry: dict[str, _EmployeeRegistryRecord] = {}
     registrations: dict[str, list[str]] = {}
+    duplicate_keys: set[str] = set()
 
     for row_number in range(2, worksheet.max_row + 1):
         row = {
@@ -401,11 +493,15 @@ def _load_employee_registry(worksheet: Worksheet) -> dict[str, _EmployeeRegistry
         if employee_key is None:
             continue
 
+        if employee_key in registry:
+            duplicate_keys.add(employee_key)
+            continue
+
         registration = normalized_optional_text(row["matricula_dominio"])
         if registration is not None:
             registrations.setdefault(registration, []).append(employee_key)
 
-        record = _EmployeeRegistryRecord(
+        registry[employee_key] = _EmployeeRegistryRecord(
             employee_key=employee_key,
             employee_name=normalized_optional_text(row["nome_colaborador"]),
             domain_registration=registration,
@@ -413,11 +509,10 @@ def _load_employee_registry(worksheet: Worksheet) -> dict[str, _EmployeeRegistry
             allows_entries=_normalize_allows_entries(row["admite_lancamento"], row["status_colaborador"]),
             source=SourceRef(FUNCIONARIOS_SHEET_NAME, row_number, f"A{row_number}", "chave_colaborador"),
         )
-        registry[employee_key] = record
 
-    duplicates = {registration for registration, keys in registrations.items() if len(keys) > 1}
-    if not duplicates:
-        return registry
+    duplicate_registrations = {
+        registration for registration, keys in registrations.items() if len(keys) > 1
+    }
 
     updated_registry: dict[str, _EmployeeRegistryRecord] = {}
     for employee_key, record in registry.items():
@@ -428,7 +523,12 @@ def _load_employee_registry(worksheet: Worksheet) -> dict[str, _EmployeeRegistry
             status=record.status,
             allows_entries=record.allows_entries,
             source=record.source,
-            duplicate_registration=record.domain_registration in duplicates if record.domain_registration else False,
+            duplicate_registration=(
+                record.domain_registration in duplicate_registrations
+                if record.domain_registration is not None
+                else False
+            ),
+            duplicate_key=employee_key in duplicate_keys,
         )
     return updated_registry
 
@@ -444,14 +544,32 @@ def _resolve_employee_for_row(
 
     record = employee_registry.get(employee_key) if employee_key is not None else None
     if record is not None:
+        resolved_registration = None
+        registration_source = RegistrationSource.UNRESOLVED
+
+        if human_registration and record.domain_registration:
+            if human_registration == record.domain_registration:
+                resolved_registration = human_registration
+                registration_source = RegistrationSource.BOTH_MATCH
+            else:
+                registration_source = RegistrationSource.CONFLICT
+        elif human_registration and not record.domain_registration:
+            resolved_registration = human_registration
+            registration_source = RegistrationSource.LINE
+        elif not human_registration and record.domain_registration and record.is_consistent:
+            resolved_registration = record.domain_registration
+            registration_source = RegistrationSource.REGISTRY
+
         return ResolvedEmployee(
             employee_key=record.employee_key,
             employee_name=record.employee_name or human_name,
-            domain_registration=human_registration or record.domain_registration,
+            domain_registration=resolved_registration,
             status=record.status,
             allows_entries=record.allows_entries,
             source=record.source,
             resolved_from_registry=True,
+            registration_source=registration_source,
+            registry_consistent=record.is_consistent,
         )
 
     return ResolvedEmployee(
@@ -462,6 +580,10 @@ def _resolve_employee_for_row(
         allows_entries=None,
         source=SourceRef(LANCAMENTOS_SHEET_NAME, row_number, f"B{row_number}", "chave_colaborador"),
         resolved_from_registry=False,
+        registration_source=(
+            RegistrationSource.LINE if human_registration is not None else RegistrationSource.UNRESOLVED
+        ),
+        registry_consistent=True,
     )
 
 
@@ -472,22 +594,33 @@ def _append_registry_pendings(
     pending_counter: int,
 ) -> int:
     for record in employee_registry.values():
-        if not record.duplicate_registration:
-            continue
-        pending_items.append(
-            _make_pending(
-                pending_counter,
-                parameters,
-                employee=_registry_record_to_employee(record),
-                event_name=None,
-                source=record.source,
-                code=PendingCode.DOMAIN_REGISTRATION_DUPLICATED,
-                severity=PendingSeverity.HIGH,
-                description="A matricula Dominio aparece mais de uma vez na aba FUNCIONARIOS.",
-                recommended_action="Revisar o cadastro auxiliar e manter a matricula vinculada a apenas um colaborador.",
+        registry_employee = _registry_record_to_employee(record)
+        if record.duplicate_registration:
+            pending_items.append(
+                _make_pending(
+                    pending_counter,
+                    parameters,
+                    employee=registry_employee,
+                    event_name=None,
+                    source=record.source,
+                    code=PendingCode.DOMAIN_REGISTRATION_DUPLICATED,
+                )
             )
-        )
-        pending_counter += 1
+            pending_counter += 1
+
+        if record.duplicate_key:
+            pending_items.append(
+                _make_pending(
+                    pending_counter,
+                    parameters,
+                    employee=registry_employee,
+                    event_name=None,
+                    source=record.source,
+                    code=PendingCode.EMPLOYEE_REGISTRY_INCONSISTENT,
+                )
+            )
+            pending_counter += 1
+
     return pending_counter
 
 
@@ -545,10 +678,14 @@ def _make_pending(
     event_name: str | None,
     source: SourceRef,
     code: str,
-    severity: PendingSeverity,
-    description: str,
-    recommended_action: str,
+    description_override: str | None = None,
+    recommended_action_override: str | None = None,
 ) -> PendingItem:
+    severity, description, recommended_action = render_pending_definition(
+        code,
+        event_name=event_name or "",
+        field_name=event_name or "",
+    )
     return PendingItem(
         pending_id=f"pend-{pending_counter:05d}",
         severity=severity,
@@ -560,8 +697,8 @@ def _make_pending(
         event_name=event_name,
         source=source,
         pending_code=code,
-        description=description,
-        recommended_action=recommended_action,
+        description=description_override or description,
+        recommended_action=recommended_action_override or recommended_action,
     )
 
 
@@ -590,11 +727,17 @@ def _registry_record_to_employee(record: _EmployeeRegistryRecord) -> ResolvedEmp
     return ResolvedEmployee(
         employee_key=record.employee_key,
         employee_name=record.employee_name,
-        domain_registration=record.domain_registration,
+        domain_registration=record.domain_registration if record.is_consistent else None,
         status=record.status,
         allows_entries=record.allows_entries,
         source=record.source,
         resolved_from_registry=True,
+        registration_source=(
+            RegistrationSource.REGISTRY
+            if record.domain_registration is not None and record.is_consistent
+            else RegistrationSource.UNRESOLVED
+        ),
+        registry_consistent=record.is_consistent,
     )
 
 
@@ -626,7 +769,11 @@ def _require_sheets(workbook: Workbook, required_sheets: tuple[str, ...]) -> Non
     missing = [sheet_name for sheet_name in required_sheets if sheet_name not in workbook.sheetnames]
     if missing:
         raise TemplateV1IngestionError(
-            f"Workbook nao contem todas as abas obrigatorias. Ausentes: {', '.join(missing)}."
+            FatalIngestionCode.MISSING_REQUIRED_SHEET,
+            render_fatal_error_message(
+                FatalIngestionCode.MISSING_REQUIRED_SHEET,
+                missing=", ".join(missing),
+            ),
         )
 
 
@@ -638,7 +785,13 @@ def _read_header_map(worksheet: Worksheet, expected_headers: tuple[str, ...]) ->
     missing_headers = [header for header in expected_headers if header not in header_values]
     if missing_headers:
         raise TemplateV1IngestionError(
-            f"Aba '{worksheet.title}' nao contem todos os cabecalhos esperados. Ausentes: {', '.join(missing_headers)}."
+            FatalIngestionCode.MISSING_REQUIRED_HEADER,
+            render_fatal_error_message(
+                FatalIngestionCode.MISSING_REQUIRED_HEADER,
+                sheet_name=worksheet.title,
+                missing=", ".join(missing_headers),
+            ),
+            source=worksheet.title,
         )
 
     return {header: header_values[header] for header in expected_headers}

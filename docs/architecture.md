@@ -4,7 +4,7 @@
 
 This repository is the foundation of a deterministic payroll TXT engine for Dominio.
 
-The repository is intentionally small at this stage. It defines contracts, package boundaries, validation hooks and fixture conventions before the full generation pipeline exists.
+The repository is intentionally small at this stage. It already includes the V1 human spreadsheet template, the ingestion loader, the canonical in-memory model, explicit pendings, workbook technical-tab writing and the persisted ingestion snapshot. The full TXT generation pipeline still does not exist.
 
 ## Pipeline
 
@@ -26,7 +26,7 @@ Pure domain objects and invariants. No IO, no file system access, no business ha
 
 ### `src/ingestion`
 
-Future XLSX loader for the canonical spreadsheet. This is where number and hour normalization will enter in the next task.
+This package already hosts the V1 human template generator, the XLSX loader for `PARAMETROS`, `FUNCIONARIOS` and `LANCAMENTOS_FACEIS`, reusable normalization helpers, technical-tab writing, the canonical snapshot serializer and the minimum execution manifest.
 
 ### `src/mapping`
 
@@ -56,11 +56,21 @@ Pydantic models for company config, mapping records, pending policy and run mani
 - No web UI.
 - No silent AI decision making in production.
 
+## Current ingestion state
+
+The current ingestion flow is:
+
+```text
+planilha_padrao_folha_v1.xlsx
+  -> leitura validada de PARAMETROS / FUNCIONARIOS / LANCAMENTOS_FACEIS
+  -> normalizacao deterministica
+  -> movimentos canonicos em memoria
+  -> pendencias explicitas
+  -> escrita de MOVIMENTOS_CANONICOS / PENDENCIAS
+  -> snapshot JSON canonico
+  -> manifesto minimo de execucao
+```
+
 ## Next implementation slot
 
-The next task should add:
-
-1. Canonical XLSX loader.
-2. Normalization of Brazilian numbers.
-3. Normalization of hours.
-4. Canonical in-memory record snapshot.
+The next task should consume the persisted canonical snapshot together with company configuration so the project can move toward deterministic event mapping without jumping yet to TXT serialization.

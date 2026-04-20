@@ -122,11 +122,19 @@ class RunManifest(StrictModel):
     company_code: str = Field(..., min_length=1, description="Company or branch code")
     company_name: str | None = Field(default=None, description="Display name")
     competence: str = Field(..., min_length=1, description="Target competence")
-    config_version: str = Field(..., min_length=1, description="Configuration version")
+    config_version: str | None = Field(default=None, min_length=1, description="Configuration version")
+    layout_version: str | None = Field(default=None, min_length=1, description="Layout version")
     generated_at: datetime = Field(default_factory=_utc_now)
     artifact_hashes: dict[str, str] = Field(
         default_factory=dict,
         description="Hashes for input/output artifacts",
     )
+    movement_count: int = Field(default=0, ge=0, description="Generated movement count")
     pending_count: int = Field(default=0, ge=0, description="Pending item count")
     status: str = Field(default="draft", min_length=1, description="Execution status")
+
+    @model_validator(mode="after")
+    def _check_version_identifier(self) -> "RunManifest":
+        if not self.config_version and not self.layout_version:
+            raise ValueError("RunManifest requires config_version or layout_version.")
+        return self
