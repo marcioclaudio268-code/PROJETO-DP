@@ -67,6 +67,12 @@ Gerar o template Excel V1:
 python scripts/generate_planilha_padrao_v1.py
 ```
 
+Ingerir o template V1 e preencher as abas tecnicas:
+
+```bash
+python scripts/ingest_planilha_padrao_v1.py --input data/templates/planilha_padrao_folha_v1.xlsx
+```
+
 ## Fixtures e golden files
 
 O projeto usa fixtures imutaveis para garantir determinismo.

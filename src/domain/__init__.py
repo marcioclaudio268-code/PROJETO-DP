@@ -1,7 +1,33 @@
 """Domain package.
 
-Future pure domain objects and invariants for the payroll TXT engine live here.
+Pure domain models and invariants for the payroll TXT engine live here.
 No IO, no company hardcode, no serializer logic.
 """
 
-__all__: list[str] = []
+from .canonical import (
+    CanonicalMovement,
+    IngestionResult,
+    NormalizedHours,
+    PayrollFileParameters,
+    PendingCode,
+    PendingItem,
+    PendingSeverity,
+    ResolvedEmployee,
+    SourceRef,
+    ValueType,
+    decimal_to_plain_string,
+)
+
+__all__ = [
+    "CanonicalMovement",
+    "IngestionResult",
+    "NormalizedHours",
+    "PayrollFileParameters",
+    "PendingCode",
+    "PendingItem",
+    "PendingSeverity",
+    "ResolvedEmployee",
+    "SourceRef",
+    "ValueType",
+    "decimal_to_plain_string",
+]
