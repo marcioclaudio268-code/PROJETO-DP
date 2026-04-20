@@ -1,0 +1,52 @@
+id,epic,wave,priority,title,description,acceptance_criteria,dependencies
+SETUP-001,Fundação,V1,P0,Criar repositório e estrutura base,"Criar estrutura mono-repo/local com docs, src, configs, data/golden, tests e scripts.",Estrutura criada; README operacional; pastas versionadas e padrão de nomes definido.,
+SETUP-002,Fundação,V1,P0,Configurar ambiente de qualidade,"Adicionar formatter, linter, type-check, testes e pre-commit.",CI local/automatizada falha em código sem lint/tipo/teste.,SETUP-001
+SETUP-003,Fundação,V1,P0,Definir convenção de dados sensíveis,"Criar política de anonimização, fixtures reduzidos e armazenamento local seguro.",Fixtures de teste não expõem dados desnecessários; política documentada.,SETUP-001
+SETUP-004,Fundação,V1,P1,Criar banco local de auditoria,"Persistir runs, hashes de entrada, hashes de saída, divergências e usuário operador em SQLite.","Cada execução gera run_id, manifesto e trilha de auditoria consultável.",SETUP-001
+SPEC-001,Especificação,V1,P0,Documentar layout TXT Domínio 43 posições,Formalizar campos 1/11/6/4/2/9/10 e semântica de preenchimento.,Spec fixa publicada em docs; testes de parse/serialize passam com amostras.,
+SPEC-002,Especificação,V1,P0,Definir schema da planilha canônica,"Modelar cabeçalhos, tipos, obrigatoriedades e colunas aceitas da planilha corrigida.",Schema versionado; parser rejeita planilhas fora do contrato.,
+SPEC-003,Especificação,V1,P0,Catalogar eventos base e tipo de quantidade,"Classificar cada evento como valor, hora, flag, observação ou revisão manual.","Catálogo inclui 20,150,257,258,259,260,262,238,264,8111,48,265,faltas,atrasos.",SPEC-002
+SPEC-004,Especificação,V1,P0,Definir schema de configuração por empresa,"Criar YAML/JSON para empresa, filial, processo, mapeamento de evento e matrícula.",Exemplo validado com Dela More 72/78/885/923.,SPEC-001
+SPEC-005,Especificação,V1,P1,Definir taxonomia de erros e pendências,"Padronizar erros fatais, alertas, pendências de revisão e exceções permitidas.",Motor retorna códigos de erro estáveis e legíveis.,SPEC-002
+DATA-001,Dados,V1,P0,Montar pacote de golden files,"Organizar planilha corrigida, TXT de importação de exemplo, Folha e Resumo por competência.",Pasta /data/golden contém dataset mínimo reproduzível por empresa/competência.,SPEC-001
+DATA-002,Dados,V1,P0,Separar ativos do inventário por módulo,"Classificar e mover fontes do escritório para V1, V2 e V3 conforme matriz.",Existe inventário operacional consumível pelo time.,DATA-001
+DATA-003,Dados,V2,P1,Whitelistar arquivos úteis dentro de “outros”,"Identificar Demonstrativo INSS, Encargos IRRF/INSS, líquidos e recibos por regex segura.",Parser de filenames cria tags úteis sem poluir V1.,DATA-002
+ING-001,Ingestão,V1,P0,Ler XLSX preservando tipos,Implementar loader da planilha corrigida via openpyxl/pandas com suporte a horas e números BR.,Leitura consistente em máquinas diferentes; testes com amostras reais.,SPEC-002
+ING-002,Ingestão,V1,P0,Detectar e limpar linhas não lançáveis,"Remover cabeçalhos auxiliares, totais, linhas vazias e observações fora do schema.",Somente linhas elegíveis seguem adiante.,ING-001
+ING-003,Ingestão,V1,P0,Normalizar números e moeda brasileira,"Tratar vírgula, ponto, strings e células mistas.",Valores canonizados em Decimal sem perda.,ING-001
+ING-004,Ingestão,V1,P0,Normalizar horas,"Converter time, HH:MM, textos simples e variações controladas para um tipo interno de hora.",Horas serializam corretamente para o campo de 9 posições.,ING-001
+ING-005,Ingestão,V1,P1,Produzir snapshot canônico da entrada,Gerar JSON/CSV canônico após limpeza para facilitar diff e auditoria.,Cada run salva snapshot intermediário.,ING-001
+ING-006,Ingestão,V2,P1,Criar normalizador da planilha bagunçada,Transformar a planilha “bagunçada” em planilha canônica com fila de revisão.,Saída da etapa é a mesma estrutura aceita pelo motor V1.,ING-005
+MAP-001,Mapeamento,V1,P0,Mapear colunas para eventos de negócio,Separar coluna física de conceito de negócio e desacoplar da rubrica de saída.,Tabela coluna->evento cobre todos os campos da planilha canônica.,SPEC-003
+MAP-002,Mapeamento,V1,P0,Mapear evento de negócio para rubrica por empresa,"Permitir remapeamento por empresa/filial, inclusive diferenças como 259->201.",Config por empresa gera rubrica correta sem alterar código-fonte.,"MAP-001,SPEC-004"
+MAP-003,Mapeamento,V1,P0,Criar tabela de matrícula Domínio,Resolver colaborador da planilha para matrícula do Domínio por empresa/filial.,Nenhuma linha é serializada sem matrícula resolvida.,SPEC-004
+MAP-004,Mapeamento,V1,P1,Resolver tipo de processo/cálculo,Parametrizar 11/41/42/51/52/70 e impedir mistura de processos no mesmo arquivo.,Arquivo sai com código de processo válido e consistente.,SPEC-004
+MAP-005,Mapeamento,V1,P1,Implementar política de pendência obrigatória,"Campos ambíguos como 48, 265, faltas, atrasos e observações podem exigir revisão humana.",Motor não exporta automaticamente quando regra exige revisão.,SPEC-005
+MAP-006,Mapeamento,V1,P1,Definir ordenação determinística de registros,"Ordenar por empresa, matrícula, rubrica e processo.",Mesma entrada sempre gera mesma ordem e mesmo hash.,MAP-001
+SER-001,Serializer,V1,P0,Implementar serializer fixed-width,"Gerar linha 43-posições com padding, zeros e validação estrutural.",Todas as linhas têm 43 posições e passam em testes de formato.,"SPEC-001,ING-004,MAP-006"
+SER-002,Serializer,V1,P0,Implementar encoder de valor e encoder de horas,Separar quantias monetárias e horas HHMM em funções puras.,"Casos reais de 293,08 e 02:16 são serializados corretamente.",SER-001
+SER-003,Serializer,V1,P1,Gerar nomes de arquivo e pacote de saída,"Criar convenção previsível para arquivo TXT, manifesto e relatório.",Export bundle contém TXT + manifest + pendências + resumo.,SER-001
+SER-004,Serializer,V1,P1,Assinar hash da execução,"Calcular hash do input canônico, config e output para rastreabilidade.",Manifesto registra hashes e versão do motor.,"SER-003,SETUP-004"
+VAL-001,Validação,V1,P0,Validar linha a linha,"Checar comprimento, charset, campos numéricos, empresa, competência e rubrica.",Nenhum TXT inválido é exportado.,SER-001
+VAL-002,Validação,V1,P0,Criar golden tests com amostras de importação,Comparar saída gerada com TXTs de exemplo do caso Dela More.,Teste regressivo quebra ao menor desvio de layout.,"DATA-001,SER-001"
+VAL-003,Validação,V1,P0,Reconciliação agregada contra Resumo Folha,Somar eventos por empresa/rubrica e comparar com Resumo Folha Pagamento.,Divergências geram relatório e bloqueio configurável.,"DATA-001,MAP-002"
+VAL-004,Validação,V1,P1,Amostragem por colaborador contra Folha/Holerite,Conferir alguns colaboradores em profundidade para validar regra de negócio.,Existe rotina de auditoria amostral repetível.,VAL-003
+VAL-005,Validação,V1,P1,Criar relatório de divergências e pendências,"Gerar HTML/MD/CSV com divergências, origem da célula e decisão requerida.",Operador recebe relatório acionável junto do TXT.,VAL-003
+VAL-006,Validação,V2,P1,Validar tributos com DAE/GFD/RE GFD,Cruzar bases pós-importação para aumentar confiança fiscal.,Comparativo fiscal disponível por empresa/competência.,VAL-003
+UI-001,Interface,V1,P0,Criar CLI generate,"Comando para carregar planilha, config e gerar pacote de saída.",CLI gera bundle com run_id e códigos de retorno claros.,SER-003
+UI-002,Interface,V1,P1,Criar CLI validate,Comando para rodar reconciliação sem gerar TXT.,É possível validar um mês já importado.,VAL-003
+UI-003,Interface,V1,P1,Criar preview tabular,Exibir antes da exportação linhas que serão geradas e pendências abertas.,Operador consegue revisar antes do export.,"ING-005,MAP-005"
+UI-004,Interface,V2,P2,Criar interface web local,"Subir UI local para upload, preview e download do bundle.",Fluxo básico acessível sem terminal.,"UI-001,UI-003"
+OPS-001,Operação,V1,P0,Definir fluxo de trabalho VS Code/Codex/ChatGPT,"Documentar como usar IA para codar, revisar e escrever testes sem liberar regra sem prova.",Playbook aprovado e versionado.,SETUP-001
+OPS-002,Operação,V1,P0,Criar runbook de homologação,Passo a passo para homologar nova empresa ou nova regra.,"Nenhuma regra entra sem fixture, golden e validação agregada.","VAL-002,VAL-003"
+OPS-003,Operação,V1,P1,Criar checklist de release,Checklist para publicar nova versão do motor.,Release só ocorre se todos os gates estiverem verdes.,"SETUP-002,OPS-002"
+AI-001,IA e Segurança,V1,P0,Impor regra: IA fora do core determinístico,"LLM pode ajudar no desenvolvimento e no saneamento assistido, mas não decide silenciosamente a linha final do TXT em produção.",Política implementada em docs e arquitetura.,SPEC-001
+AI-002,IA e Segurança,V1,P1,Criar prompts padrão para Codex/ChatGPT,"Prompts para gerar parser, testes, configs e documentação de forma consistente.",Biblioteca de prompts reutilizável.,OPS-001
+AI-003,IA e Segurança,V2,P1,Assistente de classificação de observações,Usar IA só para sugerir interpretação de observações/faltas/atrasos com aprovação humana.,Toda sugestão vira pendência revisável; nada entra automático sem regra.,MAP-005
+MOD-001,Módulos futuros,V2,P1,Implementar módulo de adiantamento,Duplicar pipeline para arquivos e validações de adiantamento.,Fluxo de adiantamento roda separado do mensal.,"VAL-003,UI-001"
+MOD-002,Módulos futuros,V3,P2,Implementar módulo PLR,Fluxo específico para PLR.,PLR opera em pipeline próprio.,MOD-001
+MOD-003,Módulos futuros,V3,P2,Implementar normalizador de ponto,Consumir Folha de Ponto/Apuração de Ponto como etapa anterior à planilha canônica.,Horas/faltas podem nascer do ponto estruturado.,ING-006
+MOD-004,Módulos futuros,V3,P2,Implementar módulo CNAB bancário,"Usar os TXTs BTC de 240 posições para remessa bancária, separado do motor Domínio.",Módulo CNAB não compartilha layout com importação Domínio.,DATA-002
+ROLLOUT-001,Rollout,V1,P0,Pilotar com Dela More,Homologar primeiro fluxo de folha mensal usando planilha corrigida + amostras de importação + resumo.,Caso real produz TXT reproduzível com reconciliação.,"VAL-002,VAL-003"
+ROLLOUT-002,Rollout,V1,P1,Generalizar com FORTEBOX ou MAC,Usar empresa com alta densidade documental para testar flexibilidade do motor.,"Nova empresa entra por configuração, não por hardcode.","ROLLOUT-001,OPS-002"
+ROLLOUT-003,Rollout,V2,P1,Onboarding em lote por ondas,Aplicar ondas de implantação derivadas do inventário do escritório.,Cada onda adiciona empresas com evidência e fixtures suficientes.,ROLLOUT-002

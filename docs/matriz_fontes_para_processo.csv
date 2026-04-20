@@ -1,0 +1,22 @@
+ativo,qtd,classe,uso_no_produto,modulo_destino,fase,decisao,relevancia_v1,observacoes
+amostras_importacao_dominio_txt_43,4,gabarito_externo,Especificação real do layout de importação do Domínio (linhas de 43 posições).,serializer_v1,V1,usar como golden file primário,SIM,Arquivos fora do inventário do escritório; vêm do caso DELA MORE
+planilha_corrigida_marco_xlsx,1,entrada_canonica,Modelo canônico de entrada para o motor.,ingestao_v1,V1,usar como contrato inicial de entrada,SIM,Base para schema e parser
+resumo_folha_pagamento,198,nucleo,"Reconciliação agregada por rubrica, empresa e competência.",validacao,V1,obrigatório para reconciliação pós-geração,SIM,Melhor fonte para conferir totais por evento
+folha_pagamento,197,nucleo,Amostragem por colaborador e leitura de eventos efetivamente lançados.,validacao,V1,usar para auditoria por colaborador,SIM,Complementa o resumo
+holerites_pagamento,204,validacao,Checagem do líquido e conferência amostral do resultado final.,validacao,V1,"usar em amostragem, não como motor principal",PARCIAL,Especialmente útil para incidentes
+dae,175,validacao,Validação tributária pós-importação.,auditoria,V2,guardar para trilha fiscal,NAO,Não entra na geração do TXT
+gfd,260,validacao,Conferência de bases e encargos.,auditoria,V2,guardar para trilha fiscal,NAO,Não entra na geração do TXT
+re_gfd,180,validacao,Conferência complementar de bases.,auditoria,V2,guardar para trilha fiscal,NAO,Não entra na geração do TXT
+gfd_consignado,160,validacao,Conferência de consignados e descontos.,auditoria,V2,guardar para trilha fiscal,NAO,Entrará quando houver módulo de consignado
+folha_adiantamento,98,nucleo,Casos de adiantamento salarial.,modulo_adiantamento,V2,separar como fluxo próprio,NAO,Não misturar com folha mensal na V1
+resumo_folha_adiantamento,98,nucleo,Reconciliação do módulo de adiantamento.,modulo_adiantamento,V2,usar quando módulo adiantamento existir,NAO,Fluxo próprio
+holerites_adiantamento,101,validacao,Validação amostral do módulo de adiantamento.,modulo_adiantamento,V2,futuro,NAO,Fluxo próprio
+liquido_pagamento,27,validacao,Conferência de valor líquido e pagamento.,auditoria,V2,usar como trilha auxiliar,PARCIAL,Útil quando disponível
+liquido_adiantamento,14,validacao,Conferência de pagamento do adiantamento.,modulo_adiantamento,V2,futuro,NAO,Fluxo próprio
+folha_plr,30,nucleo,Fluxo de PLR separado da folha mensal.,modulo_plr,V3,separar como módulo próprio,NAO,Não entra na V1
+resumo_folha_plr,8,nucleo,Reconciliação PLR.,modulo_plr,V3,futuro,NAO,Fluxo próprio
+holerites_plr,20,validacao,Validação amostral PLR.,modulo_plr,V3,futuro,NAO,Fluxo próprio
+folha_ponto,20,nucleo,Fonte upstream para normalizar horas e faltas antes da planilha canônica.,normalizador_ponto,V3,guardar para módulo anterior à planilha,NAO,Não mistura com serializer V1
+txt_btc_cnab_240,5,apoio,"TXT do acervo BTC são remessas CNAB bancárias de 240 posições, não arquivos de importação do Domínio.",modulo_cnab,V3,separar explicitamente do motor de importação,NAO,"Úteis para futuro módulo de pagamento bancário, não para V1"
+outros_whitelist,496,apoio,"Whitelistar apenas Demonstrativo INSS, Encargos IRRF/INSS, Recibos de VT/VA/Cesta e Líquidos.",apoio,V2,processar por whitelist de filename,NAO,"Demais “outros” ficam em quarentena; whitelist inicial inclui Demonstrativo INSS, Encargos de IRRF/INSS, líquidos e recibos de benefícios"
+trct_ferias_rescisao,258,secundario,Conjunto para rescisão/férias.,modulos_futuros,V3,não entrar no escopo do motor mensal,NAO,Módulos futuros
