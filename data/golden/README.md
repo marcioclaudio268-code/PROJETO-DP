@@ -4,23 +4,34 @@ Esta pasta guarda fixtures douradas e artefatos de referencia do motor.
 
 ## Convencao
 
-- Cada caso deve ficar em uma subpasta propria.
-- O caso piloto inicial e `dela_more`.
-- Cada fixture deve ter entrada, saida esperada e manifestos suficientes para reproduzir o teste.
+- Cada caso V1 deve ficar em `data/golden/v1/<nome_do_caso>/`.
+- Cada caso deve trazer entrada humana e saidas persistidas do pipeline completo.
+- O caso deve ser pequeno, rastreavel e estavel para diff.
 - Fixtures nao devem ser editadas silenciosamente; qualquer mudanca de regra exige novo artefato ou nova versao.
 
 ## Itens esperados
 
-Exemplo de estrutura futura:
+Estrutura esperada:
 
 ```text
 data/golden/
-  dela_more/
-    2024-03/
+  v1/
+    happy_path/
       input.xlsx
+      company_config.json
+      expected.snapshot.json
+      expected.mapped.json
       expected.txt
-      expected_manifest.json
-      expected_pending.csv
+      expected.serialization.json
+      expected.validation.json
+    warning_exclusion/
+      input.xlsx
+      company_config.json
+      expected.snapshot.json
+      expected.mapped.json
+      expected.txt
+      expected.serialization.json
+      expected.validation.json
 ```
 
 ## Regra

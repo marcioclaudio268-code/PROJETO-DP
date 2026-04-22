@@ -139,9 +139,14 @@ O projeto usa fixtures imutaveis para garantir determinismo.
 
 - `data/golden` guarda os artefatos de referencia.
 - `tests/golden` guarda a intencao dos testes regressivos e a convencao de comparacao.
+- Cada caso V1 fica em `data/golden/v1/<nome_do_caso>/`.
+- Cada caso deve trazer pelo menos: `input.xlsx`, `company_config.json`, `expected.snapshot.json`, `expected.mapped.json`, `expected.txt`, `expected.serialization.json` e `expected.validation.json`.
+- As comparacoes golden normalizam apenas campos realmente volateis de caminho: `input.mapped_artifact_path`, `txt_path`, `inputs.snapshot_path`, `inputs.mapped_artifact_path`, `inputs.txt_path`, `inputs.serialization_summary_path` e `inputs.serialization_summary_sha256`.
 - Cada fixture deve ser pequena, nomeada e rastreavel por caso, competencia e versao.
 - Nenhuma regra nova entra sem fixture e teste correspondente.
 
 ## Proxima etapa esperada
 
-O pipeline V1 esta fechado de ponta a ponta. As proximas evolucoes naturais passam a ser refinamento de cobertura, golden files, novos layouts ou novos fluxos fora da espinha dorsal atual.
+O pipeline V1 esta fechado de ponta a ponta. A fase atual passa a ser hardening: refinamento de cobertura, golden files, regressao ponta a ponta e correcoes pequenas de confiabilidade. Novos layouts ou novos fluxos ficam fora da espinha dorsal atual.
+
+`docs/mapa_implantacao_motor_txt.md` permanece como contexto historico de implantacao e inventario. O estado corrente do V1 deve ser lido a partir deste README e de `docs/architecture.md`.

@@ -1,0 +1,109 @@
+{
+  "artifact_version": "mapping_result_v1",
+  "config": {
+    "active_employee_mappings": 1,
+    "active_event_mappings": 2,
+    "company_code": "72",
+    "company_name": "Dela More",
+    "competence": "03/2024",
+    "config_version": "cfg-v1",
+    "default_process": "11"
+  },
+  "counts": {
+    "blocked_movements": 0,
+    "blocking_mapping_pendings": 0,
+    "mapped_movements": 2,
+    "mapping_pendings": 0,
+    "ready_movements": 2
+  },
+  "execution": {
+    "engine_version": "0.1.0",
+    "status": "success"
+  },
+  "mapped_movements": [
+    {
+      "amount": null,
+      "canonical_blocked": false,
+      "canonical_domain_registration": "123",
+      "canonical_movement_id": "mov-00001",
+      "company_code": "72",
+      "competence": "03/2024",
+      "default_process": "11",
+      "employee_key": "col-001",
+      "employee_name": "Ana Lima",
+      "employee_resolution_source": "snapshot_e_config",
+      "event_name": "horas_extras_50",
+      "event_nature": null,
+      "hours": {
+        "text": "02:30",
+        "total_minutes": 150
+      },
+      "informed_rubric": null,
+      "inherited_pending_codes": [],
+      "inherited_pending_messages": [],
+      "mapping_pending_codes": [],
+      "mapping_pending_messages": [],
+      "observation": null,
+      "output_rubric": "350",
+      "payroll_type": "mensal",
+      "quantity": null,
+      "resolved_domain_registration": "123",
+      "rubric_resolution_source": "config_event_mapping",
+      "serialization_unit": "HH:MM",
+      "source": {
+        "cell": "G2",
+        "column_name": "horas_extras_50",
+        "row_number": 2,
+        "sheet_name": "LANCAMENTOS_FACEIS"
+      },
+      "status": "pronto_para_serializer",
+      "value_type": "horas"
+    },
+    {
+      "amount": "100",
+      "canonical_blocked": false,
+      "canonical_domain_registration": "123",
+      "canonical_movement_id": "mov-00002",
+      "company_code": "72",
+      "competence": "03/2024",
+      "default_process": "11",
+      "employee_key": "col-001",
+      "employee_name": "Ana Lima",
+      "employee_resolution_source": "snapshot_e_config",
+      "event_name": "gratificacao",
+      "event_nature": null,
+      "hours": null,
+      "informed_rubric": null,
+      "inherited_pending_codes": [],
+      "inherited_pending_messages": [],
+      "mapping_pending_codes": [],
+      "mapping_pending_messages": [],
+      "observation": null,
+      "output_rubric": "201",
+      "payroll_type": "mensal",
+      "quantity": null,
+      "resolved_domain_registration": "123",
+      "rubric_resolution_source": "config_event_mapping",
+      "serialization_unit": "BRL",
+      "source": {
+        "cell": "H2",
+        "column_name": "gratificacao",
+        "row_number": 2,
+        "sheet_name": "LANCAMENTOS_FACEIS"
+      },
+      "status": "pronto_para_serializer",
+      "value_type": "monetario"
+    }
+  ],
+  "mapping_pendings": [],
+  "snapshot": {
+    "company_code": "72",
+    "company_name": "Dela More",
+    "competence": "03/2024",
+    "execution_status": "success",
+    "layout_version": "v1",
+    "movement_count": 2,
+    "pending_count": 0,
+    "snapshot_version": "ingestion_snapshot_v1"
+  }
+}

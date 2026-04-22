@@ -1,0 +1,186 @@
+{
+  "counts": {
+    "blocked_movements": 1,
+    "blocking_pendings": 1,
+    "employees": 2,
+    "movements": 3,
+    "pendings": 1
+  },
+  "employees": [
+    {
+      "allows_entries": true,
+      "domain_registration": "123",
+      "employee_key": "col-001",
+      "employee_name": "Ana Lima",
+      "registration_source": "cadastro_auxiliar",
+      "registry_consistent": true,
+      "resolved_from_registry": true,
+      "source": {
+        "cell": "A2",
+        "column_name": "chave_colaborador",
+        "row_number": 2,
+        "sheet_name": "FUNCIONARIOS"
+      },
+      "status": "ativo"
+    },
+    {
+      "allows_entries": true,
+      "domain_registration": null,
+      "employee_key": "col-002",
+      "employee_name": "Bruno Souza",
+      "registration_source": "nao_resolvida",
+      "registry_consistent": true,
+      "resolved_from_registry": true,
+      "source": {
+        "cell": "A3",
+        "column_name": "chave_colaborador",
+        "row_number": 3,
+        "sheet_name": "FUNCIONARIOS"
+      },
+      "status": "ativo"
+    }
+  ],
+  "execution": {
+    "engine_version": "0.1.0",
+    "layout_version": "v1",
+    "status": "blocked"
+  },
+  "movements": [
+    {
+      "amount": null,
+      "blocked": false,
+      "company_code": "72",
+      "competence": "03/2024",
+      "default_process": "11",
+      "domain_registration": "123",
+      "employee_key": "col-001",
+      "employee_name": "Ana Lima",
+      "event_name": "horas_extras_50",
+      "event_nature": null,
+      "hours": {
+        "text": "02:30",
+        "total_minutes": 150
+      },
+      "informed_rubric": null,
+      "movement_id": "mov-00001",
+      "observation": null,
+      "output_rubric": null,
+      "payroll_type": "mensal",
+      "pending_codes": [],
+      "pending_messages": [],
+      "quantity": null,
+      "serialization_unit": "HH:MM",
+      "source": {
+        "cell": "G2",
+        "column_name": "horas_extras_50",
+        "row_number": 2,
+        "sheet_name": "LANCAMENTOS_FACEIS"
+      },
+      "value_type": "horas"
+    },
+    {
+      "amount": "100",
+      "blocked": false,
+      "company_code": "72",
+      "competence": "03/2024",
+      "default_process": "11",
+      "domain_registration": "123",
+      "employee_key": "col-001",
+      "employee_name": "Ana Lima",
+      "event_name": "gratificacao",
+      "event_nature": null,
+      "hours": null,
+      "informed_rubric": null,
+      "movement_id": "mov-00002",
+      "observation": null,
+      "output_rubric": null,
+      "payroll_type": "mensal",
+      "pending_codes": [],
+      "pending_messages": [],
+      "quantity": null,
+      "serialization_unit": "BRL",
+      "source": {
+        "cell": "H2",
+        "column_name": "gratificacao",
+        "row_number": 2,
+        "sheet_name": "LANCAMENTOS_FACEIS"
+      },
+      "value_type": "monetario"
+    },
+    {
+      "amount": "50",
+      "blocked": true,
+      "company_code": "72",
+      "competence": "03/2024",
+      "default_process": "11",
+      "domain_registration": null,
+      "employee_key": "col-002",
+      "employee_name": "Bruno Souza",
+      "event_name": "gratificacao",
+      "event_nature": null,
+      "hours": null,
+      "informed_rubric": null,
+      "movement_id": "mov-00003",
+      "observation": null,
+      "output_rubric": null,
+      "payroll_type": "mensal",
+      "pending_codes": [
+        "matricula_dominio_ausente"
+      ],
+      "pending_messages": [
+        "A matricula Dominio esta ausente para a linha preenchida."
+      ],
+      "quantity": null,
+      "serialization_unit": "BRL",
+      "source": {
+        "cell": "H3",
+        "column_name": "gratificacao",
+        "row_number": 3,
+        "sheet_name": "LANCAMENTOS_FACEIS"
+      },
+      "value_type": "monetario"
+    }
+  ],
+  "parameters": {
+    "company_code": "72",
+    "company_name": "Dela More",
+    "competence": "03/2024",
+    "default_process": "11",
+    "layout_version": "v1",
+    "payroll_type": "mensal",
+    "source_cells": {
+      "competencia": "B4",
+      "empresa_codigo": "B2",
+      "empresa_nome": "B3",
+      "processo_padrao": "B6",
+      "tipo_folha": "B5",
+      "versao_layout": "B7"
+    }
+  },
+  "pendings": [
+    {
+      "company_code": "72",
+      "competence": "03/2024",
+      "description": "A matricula Dominio esta ausente para a linha preenchida.",
+      "domain_registration": null,
+      "employee_key": "col-002",
+      "employee_name": "Bruno Souza",
+      "event_name": null,
+      "manual_resolution": null,
+      "pending_code": "matricula_dominio_ausente",
+      "pending_id": "pend-00001",
+      "recommended_action": "Informar a matricula Dominio no cadastro ou na propria linha antes de seguir.",
+      "resolved_at": null,
+      "resolved_by": null,
+      "severity": "bloqueante",
+      "source": {
+        "cell": "D3",
+        "column_name": "matricula_dominio",
+        "row_number": 3,
+        "sheet_name": "LANCAMENTOS_FACEIS"
+      },
+      "treatment_status": "aberta"
+    }
+  ],
+  "snapshot_version": "ingestion_snapshot_v1"
+}

@@ -1,0 +1,27 @@
+{
+  "artifact_version": "serialization_summary_v1",
+  "counts": {
+    "blocked_or_non_serialized": 0,
+    "non_serialized": 0,
+    "serialized": 2,
+    "total_mapped_movements": 2
+  },
+  "execution": {
+    "engine_version": "0.1.0",
+    "status": "success"
+  },
+  "input": {
+    "company_code": "72",
+    "company_name": "Dela More",
+    "competence": "03/2024",
+    "config_version": "cfg-v1",
+    "mapped_artifact_path": "<mapped_artifact_path>",
+    "mapped_artifact_sha256": "sha256:d32b4878da2042c4b8064a2a16776305161e93bc020366950df3873db1f52622",
+    "mapped_artifact_version": "mapping_result_v1",
+    "snapshot_version": "ingestion_snapshot_v1"
+  },
+  "non_serialized_movements": [],
+  "non_serialized_reason_counts": {},
+  "txt_path": "<txt_path>",
+  "txt_sha256": "sha256:2bf4e7456c59f3b53e5d9790eb536bfd8231764b013a2cccdfc4265f5710f35f"
+}

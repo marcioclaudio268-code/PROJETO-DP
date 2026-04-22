@@ -1,0 +1,56 @@
+{
+  "artifact_version": "final_validation_v1",
+  "execution": {
+    "engine_version": "0.1.0",
+    "status": "success_with_warnings"
+  },
+  "fatal_errors": [],
+  "human_summary": "status=success_with_warnings fatal=0 inconsistencias=0 warnings=1 linhas_txt=2",
+  "inconsistencies": [],
+  "ingestion_summary": {
+    "blocked_movements": 1,
+    "blocking_pendings": 1,
+    "employees": 2,
+    "movements": 3,
+    "pendings": 1
+  },
+  "inputs": {
+    "mapped_artifact_path": "<mapped_artifact_path>",
+    "mapped_artifact_sha256": "sha256:5c459a57910a1b2ba1100fb51f6912cb41131f47152cb0856cce5c5facad8bdc",
+    "serialization_summary_path": "<serialization_summary_path>",
+    "serialization_summary_sha256": "<volatile:serialization_summary_sha256>",
+    "snapshot_path": "<snapshot_path>",
+    "snapshot_sha256": "sha256:cc932f5b7f1c69c78be9dc8012170723cdb53963569306ebd4bcdeb7116d5474",
+    "txt_path": "<txt_path>",
+    "txt_sha256": "sha256:2bf4e7456c59f3b53e5d9790eb536bfd8231764b013a2cccdfc4265f5710f35f"
+  },
+  "mapping_summary": {
+    "blocked_movements": 1,
+    "mapped_movements": 3,
+    "mapping_pending_count": 0,
+    "ready_movements": 2
+  },
+  "recommendation": "TXT consistente, mas ha exclusoes ou alertas que exigem revisao antes do uso operacional.",
+  "serialization_summary": {
+    "blocked_or_non_serialized": 1,
+    "non_serialized": 1,
+    "serialized": 2,
+    "total_mapped_movements": 3
+  },
+  "validation_summary": {
+    "actual_txt_lines": 2,
+    "expected_txt_lines": 2,
+    "fatal_error_count": 0,
+    "inconsistency_count": 0,
+    "warning_count": 1
+  },
+  "warnings": [
+    {
+      "canonical_movement_id": null,
+      "code": "movimentos_excluidos_com_consistencia",
+      "line_number": null,
+      "message": "1 movimento(s) ficaram fora do TXT de forma consistente com o resumo da serializacao.",
+      "severity": "warning"
+    }
+  ]
+}

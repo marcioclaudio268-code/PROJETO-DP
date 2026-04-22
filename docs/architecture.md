@@ -50,10 +50,11 @@ Pydantic models for company config, mapping records, pending policy and run mani
 
 - `data/golden` contains immutable fixtures and expected artifacts.
 - `tests/golden` documents and hosts regression checks against those fixtures.
+- The V1 golden convention is one folder per case with human input, company config and all persisted artifacts from ingestion, mapping, serialization and final validation.
 
 ## Non-goals for this foundation
 
-- No serializer implementation beyond layout metadata and minimal width checks.
+- No new serializer layout beyond the implemented 43-character V1 contract.
 - No adiantamento, PLR, ponto, ferias, rescisao or CNAB.
 - No web UI.
 - No silent AI decision making in production.
@@ -114,4 +115,4 @@ snapshot canonico
 
 ## Next implementation slot
 
-The V1 backbone is now complete. The next work should focus on refinement: stronger golden coverage, narrower business rules, additional layouts or additional payroll flows without rewriting the core pipeline.
+The V1 backbone is now complete. The next work should focus on hardening: stronger golden coverage, end-to-end regression checks and small reliability fixes without rewriting the core pipeline.

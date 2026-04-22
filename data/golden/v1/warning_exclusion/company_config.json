@@ -1,0 +1,37 @@
+{
+  "company_code": "72",
+  "company_name": "Dela More",
+  "competence": "03/2024",
+  "config_version": "cfg-v1",
+  "default_process": "11",
+  "employee_mappings": [
+    {
+      "domain_registration": "123",
+      "source_employee_key": "col-001",
+      "source_employee_name": "Ana Lima"
+    },
+    {
+      "domain_registration": "456",
+      "source_employee_key": "col-002",
+      "source_employee_name": "Bruno Souza"
+    }
+  ],
+  "event_mappings": [
+    {
+      "event_negocio": "gratificacao",
+      "rubrica_saida": "201"
+    },
+    {
+      "event_negocio": "horas_extras_50",
+      "rubrica_saida": "350"
+    }
+  ],
+  "pending_policy": {
+    "block_on_ambiguous_observations": true,
+    "block_on_unmapped_employee": true,
+    "block_on_unmapped_event": true,
+    "review_required_event_negocios": [],
+    "review_required_fields": []
+  },
+  "validation_flags": {}
+}

@@ -1,0 +1,48 @@
+{
+  "artifact_version": "final_validation_v1",
+  "execution": {
+    "engine_version": "0.1.0",
+    "status": "success"
+  },
+  "fatal_errors": [],
+  "human_summary": "status=success fatal=0 inconsistencias=0 warnings=0 linhas_txt=2",
+  "inconsistencies": [],
+  "ingestion_summary": {
+    "blocked_movements": 0,
+    "blocking_pendings": 0,
+    "employees": 1,
+    "movements": 2,
+    "pendings": 0
+  },
+  "inputs": {
+    "mapped_artifact_path": "<mapped_artifact_path>",
+    "mapped_artifact_sha256": "sha256:d32b4878da2042c4b8064a2a16776305161e93bc020366950df3873db1f52622",
+    "serialization_summary_path": "<serialization_summary_path>",
+    "serialization_summary_sha256": "<volatile:serialization_summary_sha256>",
+    "snapshot_path": "<snapshot_path>",
+    "snapshot_sha256": "sha256:7ca812441b85cc223fabf20abba00d404481d5ff88306d96b35f44d60f5d13c8",
+    "txt_path": "<txt_path>",
+    "txt_sha256": "sha256:2bf4e7456c59f3b53e5d9790eb536bfd8231764b013a2cccdfc4265f5710f35f"
+  },
+  "mapping_summary": {
+    "blocked_movements": 0,
+    "mapped_movements": 2,
+    "mapping_pending_count": 0,
+    "ready_movements": 2
+  },
+  "recommendation": "Pronto para seguir para exportacao operacional controlada.",
+  "serialization_summary": {
+    "blocked_or_non_serialized": 0,
+    "non_serialized": 0,
+    "serialized": 2,
+    "total_mapped_movements": 2
+  },
+  "validation_summary": {
+    "actual_txt_lines": 2,
+    "expected_txt_lines": 2,
+    "fatal_error_count": 0,
+    "inconsistency_count": 0,
+    "warning_count": 0
+  },
+  "warnings": []
+}

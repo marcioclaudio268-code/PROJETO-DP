@@ -1,0 +1,113 @@
+{
+  "counts": {
+    "blocked_movements": 0,
+    "blocking_pendings": 0,
+    "employees": 1,
+    "movements": 2,
+    "pendings": 0
+  },
+  "employees": [
+    {
+      "allows_entries": true,
+      "domain_registration": "123",
+      "employee_key": "col-001",
+      "employee_name": "Ana Lima",
+      "registration_source": "cadastro_auxiliar",
+      "registry_consistent": true,
+      "resolved_from_registry": true,
+      "source": {
+        "cell": "A2",
+        "column_name": "chave_colaborador",
+        "row_number": 2,
+        "sheet_name": "FUNCIONARIOS"
+      },
+      "status": "ativo"
+    }
+  ],
+  "execution": {
+    "engine_version": "0.1.0",
+    "layout_version": "v1",
+    "status": "success"
+  },
+  "movements": [
+    {
+      "amount": null,
+      "blocked": false,
+      "company_code": "72",
+      "competence": "03/2024",
+      "default_process": "11",
+      "domain_registration": "123",
+      "employee_key": "col-001",
+      "employee_name": "Ana Lima",
+      "event_name": "horas_extras_50",
+      "event_nature": null,
+      "hours": {
+        "text": "02:30",
+        "total_minutes": 150
+      },
+      "informed_rubric": null,
+      "movement_id": "mov-00001",
+      "observation": null,
+      "output_rubric": null,
+      "payroll_type": "mensal",
+      "pending_codes": [],
+      "pending_messages": [],
+      "quantity": null,
+      "serialization_unit": "HH:MM",
+      "source": {
+        "cell": "G2",
+        "column_name": "horas_extras_50",
+        "row_number": 2,
+        "sheet_name": "LANCAMENTOS_FACEIS"
+      },
+      "value_type": "horas"
+    },
+    {
+      "amount": "100",
+      "blocked": false,
+      "company_code": "72",
+      "competence": "03/2024",
+      "default_process": "11",
+      "domain_registration": "123",
+      "employee_key": "col-001",
+      "employee_name": "Ana Lima",
+      "event_name": "gratificacao",
+      "event_nature": null,
+      "hours": null,
+      "informed_rubric": null,
+      "movement_id": "mov-00002",
+      "observation": null,
+      "output_rubric": null,
+      "payroll_type": "mensal",
+      "pending_codes": [],
+      "pending_messages": [],
+      "quantity": null,
+      "serialization_unit": "BRL",
+      "source": {
+        "cell": "H2",
+        "column_name": "gratificacao",
+        "row_number": 2,
+        "sheet_name": "LANCAMENTOS_FACEIS"
+      },
+      "value_type": "monetario"
+    }
+  ],
+  "parameters": {
+    "company_code": "72",
+    "company_name": "Dela More",
+    "competence": "03/2024",
+    "default_process": "11",
+    "layout_version": "v1",
+    "payroll_type": "mensal",
+    "source_cells": {
+      "competencia": "B4",
+      "empresa_codigo": "B2",
+      "empresa_nome": "B3",
+      "processo_padrao": "B6",
+      "tipo_folha": "B5",
+      "versao_layout": "B7"
+    }
+  },
+  "pendings": [],
+  "snapshot_version": "ingestion_snapshot_v1"
+}

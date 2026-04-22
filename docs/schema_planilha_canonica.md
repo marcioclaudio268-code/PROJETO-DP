@@ -9,7 +9,7 @@ A planilha canonica e a entrada corrigida para o motor. Ela nao e a planilha bag
 | Campo | Obrigatorio | Tipo inicial | Descricao | Status |
 | --- | --- | --- | --- | --- |
 | empresa_filial | Sim | string | Identificador da empresa e/ou filial da linha. A forma exata do codigo e ABERTO. | Fechado estruturalmente |
-| competencia | Sim | string | Competencia da linha. O formato final sera definido na proxima etapa. | Fechado estruturalmente |
+| competencia | Sim | string | Competencia da linha no formato `MM/AAAA` no V1. | Fechado estruturalmente |
 | colaborador | Sim | string | Identificador legivel do colaborador na origem. | Fechado estruturalmente |
 | matricula_dominio | Condicional | string | Matricula no Dominio. Quando nao existir, a linha deve usar uma chave de resolucao. | ABERTO |
 | chave_resolucao | Condicional | string | Chave de resolucao para chegar na matricula Dominio. | ABERTO |
@@ -25,10 +25,10 @@ A planilha canonica e a entrada corrigida para o motor. Ela nao e a planilha bag
 ## Regras minimas
 
 - Uma linha canonica representa um fato de folha que sera avaliado pelo motor.
-- O loader futuro nao deve inferir regra de negocio a partir de observacoes textuais ambiguas.
+- O loader do V1 nao deve inferir regra de negocio a partir de observacoes textuais ambiguas.
 - `matricula_dominio` e `chave_resolucao` nao devem ser tratados como hardcode por empresa.
 - A origem da linha e da celula precisa ser preservada para auditoria.
-- As colunas `quantidade`, `horas` e `valor` ainda dependem do catalogo de eventos e da regra de negocio da proxima tarefa.
+- As colunas `quantidade`, `horas` e `valor` dependem do catalogo de eventos canonicos e ja sao tratadas de forma deterministica no V1 para moeda, horas e dias.
 
 ## Campos obrigatorios vs opcionais
 
@@ -39,8 +39,5 @@ A planilha canonica e a entrada corrigida para o motor. Ela nao e a planilha bag
 
 ## Pendencias abertas
 
-- Formato exato de `competencia`.
 - Regra de exclusividade entre `matricula_dominio` e `chave_resolucao`.
 - Regra de exclusividade entre `quantidade`, `horas` e `valor`.
-- Estrategia de normalizacao de horas e moeda.
-- Taxonomia de pendencia.
