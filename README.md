@@ -24,7 +24,7 @@ Fluxo alvo:
 - Ferias.
 - Rescisao.
 - CNAB bancario.
-- Interface web.
+- Interface web remota, multiusuario ou separada do dashboard local.
 - Normalizador da planilha baguncada.
 
 ## Principios
@@ -43,6 +43,7 @@ Fluxo alvo:
 - `src/serialization`: contrato do layout fixed-width, consumo do artefato mapeado, geracao do TXT de 43 posicoes e persistencia do resumo operacional da serializacao.
 - `src/validation`: validacao estrutural do TXT, reconciliacao entre snapshot, artefato mapeado, resumo da serializacao e TXT final, e persistencia do artefato final de validacao.
 - `src/dashboard`: camada operacional local para o escritorio, com estado de execucao, overrides auditaveis, reprocessamento guiado e regra de liberacao do TXT.
+- `app`: entrypoint local do dashboard Streamlit.
 - `src/config`: modelos Pydantic para configuracao por empresa e manifestos de execucao.
 - `data/templates`: templates XLSX versionados para preenchimento humano.
 - `data/golden`: fixtures douradas e artefatos de referencia.

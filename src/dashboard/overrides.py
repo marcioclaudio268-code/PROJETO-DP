@@ -9,7 +9,6 @@ from uuid import uuid4
 from openpyxl import load_workbook
 
 from config import CompanyConfig
-from ingestion.template_v1 import LANCAMENTOS_FACEIS_HEADERS
 from ingestion.template_v1_loader import EVENT_SPECS
 
 from .errors import DashboardOperationError

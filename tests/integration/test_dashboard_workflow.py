@@ -133,10 +133,13 @@ def test_dashboard_happy_path_enables_txt(tmp_path: Path) -> None:
     paths = create_dashboard_run_from_paths(workbook_path, config_path, runs_root=tmp_path / "runs")
 
     result = run_dashboard_analysis(paths)
+    persisted = load_dashboard_run(paths)
 
     assert result.summary.txt_enabled is True
     assert result.summary.serialized_line_count == 2
     assert result.summary.pending_count == 0
+    assert persisted.summary.txt_enabled is True
+    assert persisted.summary.serialized_line_count == 2
 
 
 def test_dashboard_can_fix_missing_registration_and_reprocess(tmp_path: Path) -> None:

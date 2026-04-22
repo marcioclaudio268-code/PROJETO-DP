@@ -60,7 +60,7 @@ Pydantic models for company config, mapping records, pending policy and run mani
 
 - No new serializer layout beyond the implemented 43-character V1 contract.
 - No adiantamento, PLR, ponto, ferias, rescisao or CNAB.
-- No web UI.
+- No remote, multiuser or standalone web UI beyond the implemented local dashboard.
 - No silent AI decision making in production.
 
 ## Current ingestion state

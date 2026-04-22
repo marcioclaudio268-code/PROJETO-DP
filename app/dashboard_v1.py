@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 import streamlit as st
 
 from dashboard import (
-    DashboardOperationError,
     apply_workbook_cell_correction,
     build_dashboard_paths,
     create_dashboard_run_from_uploads,
@@ -24,7 +21,6 @@ ERROR_KEY = "dashboard_v1_last_error"
 def main() -> None:
     st.set_page_config(
         page_title="Dashboard operacional V1",
-        page_icon="📄",
         layout="wide",
     )
 

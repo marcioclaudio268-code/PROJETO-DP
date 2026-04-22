@@ -12,6 +12,7 @@ from dashboard import (
     ignore_pending_for_import,
     is_txt_download_enabled,
     load_dashboard_state,
+    upsert_employee_mapping_override,
     upsert_event_mapping_override,
 )
 from ingestion import save_planilha_padrao_folha_v1
@@ -185,4 +186,25 @@ def test_upsert_event_mapping_override_updates_config(tmp_path: Path) -> None:
         item for item in payload["event_mappings"] if item["event_negocio"] == "horas_extras_50"
     )
     assert mapping["rubrica_saida"] == "350"
+    assert mapping["active"] is True
+
+
+def test_upsert_employee_mapping_override_updates_config(tmp_path: Path) -> None:
+    workbook_path, config_path = _prepare_workbook_and_config(tmp_path)
+    paths = create_dashboard_run_from_paths(workbook_path, config_path, runs_root=tmp_path / "runs")
+
+    upsert_employee_mapping_override(
+        paths,
+        employee_key="col-002",
+        employee_name="Bruno Souza",
+        domain_registration="456",
+        pending_uid="mapeamento:pend-002",
+    )
+
+    payload = json.loads(paths.editable_config_path.read_text(encoding="utf-8"))
+    mapping = next(
+        item for item in payload["employee_mappings"] if item["source_employee_key"] == "col-002"
+    )
+    assert mapping["domain_registration"] == "456"
+    assert mapping["source_employee_name"] == "Bruno Souza"
     assert mapping["active"] is True
