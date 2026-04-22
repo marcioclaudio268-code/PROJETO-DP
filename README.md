@@ -41,7 +41,7 @@ Fluxo alvo:
 - `src/ingestion`: loader da planilha humana V1, normalizacao, snapshot canonico, manifesto e persistencia operacional.
 - `src/mapping`: consumo do snapshot canonico, carga de configuracao versionada, resolucao deterministica de matricula e rubrica de saida, e persistencia do artefato mapeado.
 - `src/serialization`: contrato do layout fixed-width, consumo do artefato mapeado, geracao do TXT de 43 posicoes e persistencia do resumo operacional da serializacao.
-- `src/validation`: validacoes estruturais, layout e reconciliacao futura.
+- `src/validation`: validacao estrutural do TXT, reconciliacao entre snapshot, artefato mapeado, resumo da serializacao e TXT final, e persistencia do artefato final de validacao.
 - `src/config`: modelos Pydantic para configuracao por empresa e manifestos de execucao.
 - `data/templates`: templates XLSX versionados para preenchimento humano.
 - `data/golden`: fixtures douradas e artefatos de referencia.
@@ -91,6 +91,12 @@ Consumir um artefato mapeado e gerar o TXT fixed-width:
 python scripts/serialize_txt_fixed_width.py --mapped path/para/input.mapped.json
 ```
 
+Validar e reconciliar os artefatos finais do pipeline:
+
+```bash
+python scripts/validate_pipeline_v1.py --snapshot path/para/input.snapshot.json --mapped path/para/input.mapped.json --txt path/para/input.txt --serialization-summary path/para/input.serialization.json
+```
+
 ## Estado atual da ingestao V1
 
 - O template humano V1 ja existe e e preenchido principalmente em `LANCAMENTOS_FACEIS`.
@@ -119,6 +125,14 @@ python scripts/serialize_txt_fixed_width.py --mapped path/para/input.mapped.json
 - Movimentos bloqueados ou com dados essenciais ausentes ficam fora do TXT com motivo explicito no resumo JSON.
 - O serializer persiste dois artefatos: o `.txt` e um resumo JSON da execucao.
 
+## Estado atual da validacao final
+
+- A validacao final ja consome snapshot canonico, artefato mapeado, TXT e resumo da serializacao.
+- A validacao reconcilia contagens, status, hashes e consistencia de linhas entre os artefatos.
+- O TXT e validado estruturalmente no contrato de 43 caracteres.
+- Divergencias entre resumo, artefato mapeado e TXT final viram inconsistencias bloqueantes.
+- A etapa persiste um JSON final de validacao com status, contagens, alertas, inconsistencias e recomendacao operacional.
+
 ## Fixtures e golden files
 
 O projeto usa fixtures imutaveis para garantir determinismo.
@@ -130,4 +144,4 @@ O projeto usa fixtures imutaveis para garantir determinismo.
 
 ## Proxima etapa esperada
 
-Implementar a validacao final e a reconciliacao ampla dos artefatos gerados antes da exportacao operacional definitiva.
+O pipeline V1 esta fechado de ponta a ponta. As proximas evolucoes naturais passam a ser refinamento de cobertura, golden files, novos layouts ou novos fluxos fora da espinha dorsal atual.

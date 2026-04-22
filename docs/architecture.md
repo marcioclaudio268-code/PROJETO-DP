@@ -4,7 +4,7 @@
 
 This repository is the foundation of a deterministic payroll TXT engine for Dominio.
 
-The repository is intentionally small at this stage. It already includes the V1 human spreadsheet template, the ingestion loader, the canonical in-memory model, explicit pendings, workbook technical-tab writing, the persisted ingestion snapshot, the deterministic company-level mapping stage and the fixed-width TXT serializer. Final validation and reconciliation still do not exist.
+The repository is intentionally small at this stage. It already includes the V1 human spreadsheet template, the ingestion loader, the canonical in-memory model, explicit pendings, workbook technical-tab writing, the persisted ingestion snapshot, the deterministic company-level mapping stage, the fixed-width TXT serializer and the final validation/reconciliation artifact.
 
 ## Pipeline
 
@@ -40,7 +40,7 @@ Fixed-width layout metadata, mapped-artifact loading, the TXT encoder and persis
 
 ### `src/validation`
 
-Layout validation, structural checks, manifest validation and future reconciliation gates.
+Layout validation, structural checks, TXT reading, serialization-summary loading, cross-artifact reconciliation and persistence of the final validation artifact.
 
 ### `src/config`
 
@@ -98,6 +98,20 @@ artefato JSON mapeado
   -> resumo JSON da serializacao
 ```
 
+## Current final validation state
+
+The current validation flow is:
+
+```text
+snapshot canonico
+  + artefato mapeado
+  + resumo JSON da serializacao
+  + TXT gerado
+  -> reconciliacao deterministica entre etapas
+  -> validacao estrutural do TXT
+  -> artefato JSON final de validacao
+```
+
 ## Next implementation slot
 
-The next task should validate and reconcile the generated TXT and JSON summaries before any production-grade export workflow.
+The V1 backbone is now complete. The next work should focus on refinement: stronger golden coverage, narrower business rules, additional layouts or additional payroll flows without rewriting the core pipeline.
