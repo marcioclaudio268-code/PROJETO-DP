@@ -42,6 +42,7 @@ Fluxo alvo:
 - `src/mapping`: consumo do snapshot canonico, carga de configuracao versionada, resolucao deterministica de matricula e rubrica de saida, e persistencia do artefato mapeado.
 - `src/serialization`: contrato do layout fixed-width, consumo do artefato mapeado, geracao do TXT de 43 posicoes e persistencia do resumo operacional da serializacao.
 - `src/validation`: validacao estrutural do TXT, reconciliacao entre snapshot, artefato mapeado, resumo da serializacao e TXT final, e persistencia do artefato final de validacao.
+- `src/dashboard`: camada operacional local para o escritorio, com estado de execucao, overrides auditaveis, reprocessamento guiado e regra de liberacao do TXT.
 - `src/config`: modelos Pydantic para configuracao por empresa e manifestos de execucao.
 - `data/templates`: templates XLSX versionados para preenchimento humano.
 - `data/golden`: fixtures douradas e artefatos de referencia.
@@ -97,6 +98,12 @@ Validar e reconciliar os artefatos finais do pipeline:
 python scripts/validate_pipeline_v1.py --snapshot path/para/input.snapshot.json --mapped path/para/input.mapped.json --txt path/para/input.txt --serialization-summary path/para/input.serialization.json
 ```
 
+Subir o dashboard operacional local:
+
+```bash
+streamlit run app/dashboard_v1.py
+```
+
 ## Estado atual da ingestao V1
 
 - O template humano V1 ja existe e e preenchido principalmente em `LANCAMENTOS_FACEIS`.
@@ -133,6 +140,14 @@ python scripts/validate_pipeline_v1.py --snapshot path/para/input.snapshot.json 
 - Divergencias entre resumo, artefato mapeado e TXT final viram inconsistencias bloqueantes.
 - A etapa persiste um JSON final de validacao com status, contagens, alertas, inconsistencias e recomendacao operacional.
 
+## Estado atual do dashboard operacional
+
+- O dashboard local reutiliza o pipeline V1 sem reimplementar ingestao, mapping, serializer ou validacao.
+- A interface trabalha com uma copia local da planilha e da configuracao da empresa dentro de uma pasta de execucao em `data/runs/dashboard_v1`.
+- Correcoes guiadas e itens ignorados ficam registrados no estado local da execucao atual.
+- O dashboard so libera o botao de baixar TXT quando a validacao final estiver sem bloqueios e houver pelo menos uma linha serializada.
+- A configuracao por empresa continua obrigatoria para a etapa de mapping; o dashboard a recebe como arquivo JSON versionado do motor.
+
 ## Fixtures e golden files
 
 O projeto usa fixtures imutaveis para garantir determinismo.
@@ -147,6 +162,6 @@ O projeto usa fixtures imutaveis para garantir determinismo.
 
 ## Proxima etapa esperada
 
-O pipeline V1 esta fechado de ponta a ponta. A fase atual passa a ser hardening: refinamento de cobertura, golden files, regressao ponta a ponta e correcoes pequenas de confiabilidade. Novos layouts ou novos fluxos ficam fora da espinha dorsal atual.
+O pipeline V1 esta fechado de ponta a ponta e agora possui camada operacional local. As proximas evolucoes naturais passam a ser refinamento de UX, ampliacao da cobertura de overrides guiados, fortalecimento de golden coverage e novos fluxos sem reabrir o core atual.
 
 `docs/mapa_implantacao_motor_txt.md` permanece como contexto historico de implantacao e inventario. O estado corrente do V1 deve ser lido a partir deste README e de `docs/architecture.md`.

@@ -42,6 +42,10 @@ Fixed-width layout metadata, mapped-artifact loading, the TXT encoder and persis
 
 Layout validation, structural checks, TXT reading, serialization-summary loading, cross-artifact reconciliation and persistence of the final validation artifact.
 
+### `src/dashboard`
+
+Local operational UI support. This package orchestrates the existing pipeline, persists execution-local state, applies guided overrides on top of editable workbook/config copies and decides when the TXT download can be released safely.
+
 ### `src/config`
 
 Pydantic models for company config, mapping records, pending policy and run manifest.
@@ -113,6 +117,20 @@ snapshot canonico
   -> artefato JSON final de validacao
 ```
 
+## Current dashboard state
+
+The current dashboard flow is:
+
+```text
+planilha + configuracao por empresa
+  -> copia local editavel da execucao
+  -> analise guiada sobre o pipeline V1 existente
+  -> lista de pendencias compreensivel para o escritorio
+  -> correcao guiada / ignorar nesta importacao com rastreabilidade
+  -> reprocessamento
+  -> liberacao controlada do TXT
+```
+
 ## Next implementation slot
 
-The V1 backbone is now complete. The next work should focus on hardening: stronger golden coverage, end-to-end regression checks and small reliability fixes without rewriting the core pipeline.
+The V1 backbone is now complete and wrapped by a local dashboard. The next work should focus on operational refinement: better guided correction coverage, stronger regression checks and narrower UX improvements without rewriting the core pipeline.
