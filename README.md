@@ -40,7 +40,7 @@ Fluxo alvo:
 - `src/domain`: objetos puros e invariantes do dominio.
 - `src/ingestion`: loader da planilha humana V1, normalizacao, snapshot canonico, manifesto e persistencia operacional.
 - `src/mapping`: consumo do snapshot canonico, carga de configuracao versionada, resolucao deterministica de matricula e rubrica de saida, e persistencia do artefato mapeado.
-- `src/serialization`: contrato de layout fixed-width e futuro serializer.
+- `src/serialization`: contrato do layout fixed-width, consumo do artefato mapeado, geracao do TXT de 43 posicoes e persistencia do resumo operacional da serializacao.
 - `src/validation`: validacoes estruturais, layout e reconciliacao futura.
 - `src/config`: modelos Pydantic para configuracao por empresa e manifestos de execucao.
 - `data/templates`: templates XLSX versionados para preenchimento humano.
@@ -85,6 +85,12 @@ Consumir um snapshot persistido e aplicar o mapping por empresa:
 python scripts/map_snapshot_por_empresa.py --snapshot data/templates/planilha_padrao_folha_v1.snapshot.json --config path/para/company_config.json
 ```
 
+Consumir um artefato mapeado e gerar o TXT fixed-width:
+
+```bash
+python scripts/serialize_txt_fixed_width.py --mapped path/para/input.mapped.json
+```
+
 ## Estado atual da ingestao V1
 
 - O template humano V1 ja existe e e preenchido principalmente em `LANCAMENTOS_FACEIS`.
@@ -104,6 +110,15 @@ python scripts/map_snapshot_por_empresa.py --snapshot data/templates/planilha_pa
 - Conflitos, ausencia de mapeamento e ambiguidade relevante viram pendencia explicita de mapping.
 - O resultado do mapping e persistido em JSON deterministico, ainda pre-TXT.
 
+## Estado atual do serializer TXT
+
+- O serializer ja consome o artefato intermediario mapeado persistido.
+- Apenas movimentos `pronto_para_serializer` entram no TXT.
+- O encoder gera linhas fixed-width com exatamente 43 caracteres.
+- O serializer nunca trunca silenciosamente campos que excedem largura.
+- Movimentos bloqueados ou com dados essenciais ausentes ficam fora do TXT com motivo explicito no resumo JSON.
+- O serializer persiste dois artefatos: o `.txt` e um resumo JSON da execucao.
+
 ## Fixtures e golden files
 
 O projeto usa fixtures imutaveis para garantir determinismo.
@@ -115,4 +130,4 @@ O projeto usa fixtures imutaveis para garantir determinismo.
 
 ## Proxima etapa esperada
 
-Consumir o artefato mapeado por empresa para iniciar o serializer TXT fixed-width, sem abrir UI, banco ou regras fora do V1.
+Implementar a validacao final e a reconciliacao ampla dos artefatos gerados antes da exportacao operacional definitiva.

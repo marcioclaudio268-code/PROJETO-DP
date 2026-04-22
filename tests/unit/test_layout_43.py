@@ -14,13 +14,13 @@ def test_layout_43_spec_has_seven_fields_and_correct_widths():
     assert LAYOUT_43_TOTAL_WIDTH == 43
     assert layout_43_widths() == (1, 11, 6, 4, 2, 9, 10)
     assert layout_43_field_names() == (
-        "campo_01",
-        "campo_02",
-        "campo_03",
-        "campo_04",
-        "campo_05",
-        "campo_06",
-        "campo_07",
+        "tipo_registro",
+        "matricula_dominio",
+        "rubrica_saida",
+        "codigo_empresa",
+        "codigo_processo",
+        "referencia",
+        "valor",
     )
 
 

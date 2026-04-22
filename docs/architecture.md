@@ -4,7 +4,7 @@
 
 This repository is the foundation of a deterministic payroll TXT engine for Dominio.
 
-The repository is intentionally small at this stage. It already includes the V1 human spreadsheet template, the ingestion loader, the canonical in-memory model, explicit pendings, workbook technical-tab writing, the persisted ingestion snapshot and the first deterministic company-level mapping stage. The full TXT generation pipeline still does not exist.
+The repository is intentionally small at this stage. It already includes the V1 human spreadsheet template, the ingestion loader, the canonical in-memory model, explicit pendings, workbook technical-tab writing, the persisted ingestion snapshot, the deterministic company-level mapping stage and the fixed-width TXT serializer. Final validation and reconciliation still do not exist.
 
 ## Pipeline
 
@@ -15,6 +15,7 @@ XLSX canonico
   -> mapping por empresa
   -> artefato mapeado pre-TXT
   -> serialization fixed-width
+  -> TXT pre-validacao
   -> validation
   -> TXT
 ```
@@ -35,7 +36,7 @@ Company-level resolution for employee registration, event mapping and pending po
 
 ### `src/serialization`
 
-Fixed-width layout metadata and, later, the TXT encoder. The 43-character contract lives here as a structural spec.
+Fixed-width layout metadata, mapped-artifact loading, the TXT encoder and persistence of the `.txt` plus a serialization summary JSON. The 43-character contract lives here as executable spec.
 
 ### `src/validation`
 
@@ -85,6 +86,18 @@ snapshot JSON canonico
   -> artefato JSON mapeado pre-TXT
 ```
 
+## Current serialization state
+
+The current serialization flow is:
+
+```text
+artefato JSON mapeado
+  -> filtro deterministico de elegibilidade
+  -> encoder fixed-width de 43 posicoes
+  -> arquivo TXT
+  -> resumo JSON da serializacao
+```
+
 ## Next implementation slot
 
-The next task should consume the mapped intermediate artifact and implement the fixed-width TXT serializer without moving company rules back into the domain.
+The next task should validate and reconcile the generated TXT and JSON summaries before any production-grade export workflow.

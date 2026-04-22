@@ -7,8 +7,6 @@ from serialization.layout import LAYOUT_43_TOTAL_WIDTH
 
 def validate_layout_43_line(line: str) -> None:
     """Validate that a TXT line has exactly 43 characters.
-
-    The serializer is not implemented yet, so this function only checks width.
     """
 
     if not isinstance(line, str):
