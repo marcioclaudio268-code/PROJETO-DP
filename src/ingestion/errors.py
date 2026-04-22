@@ -12,6 +12,15 @@ class TemplateV1IngestionError(ValueError):
         self.source = source
 
 
+class IngestionSnapshotError(ValueError):
+    """Raised when a persisted ingestion snapshot cannot be consumed safely."""
+
+    def __init__(self, code: str, message: str, source: str | None = None) -> None:
+        super().__init__(message)
+        self.code = code
+        self.source = source
+
+
 class NormalizationError(ValueError):
     """Raised when a human-entered value cannot be normalized safely."""
 

@@ -5,21 +5,28 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from decimal import Decimal
 from hashlib import sha256
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 from uuid import uuid4
 
 from config.models import RunManifest
 from domain import (
     CanonicalMovement,
     IngestionResult,
+    NormalizedHours,
     PendingSeverity,
     PayrollFileParameters,
     PendingItem,
+    RegistrationSource,
     ResolvedEmployee,
+    SourceRef,
+    ValueType,
     decimal_to_plain_string,
 )
+
+from .errors import IngestionSnapshotError
 
 
 SNAPSHOT_SCHEMA_VERSION = "ingestion_snapshot_v1"
@@ -97,6 +104,60 @@ def write_ingestion_snapshot(
     )
     target_path.write_text(content, encoding="utf-8")
     return target_path
+
+
+def deserialize_ingestion_result(payload: Mapping[str, Any]) -> IngestionResult:
+    if payload.get("snapshot_version") != SNAPSHOT_SCHEMA_VERSION:
+        raise IngestionSnapshotError(
+            "snapshot_canonico_nao_suportado",
+            (
+                "Snapshot canonico nao suportado. "
+                f"Esperado '{SNAPSHOT_SCHEMA_VERSION}' e recebido '{payload.get('snapshot_version')}'."
+            ),
+        )
+
+    try:
+        parameters = _deserialize_parameters(payload["parameters"])
+        employees = tuple(_deserialize_employee(item) for item in payload.get("employees", ()))
+        movements = tuple(_deserialize_movement(item) for item in payload.get("movements", ()))
+        pendings = tuple(_deserialize_pending(item) for item in payload.get("pendings", ()))
+    except KeyError as exc:
+        raise IngestionSnapshotError(
+            "snapshot_canonico_invalido",
+            f"Snapshot canonico invalido. Campo obrigatorio ausente: {exc.args[0]}.",
+        ) from exc
+    except (TypeError, ValueError) as exc:
+        raise IngestionSnapshotError(
+            "snapshot_canonico_invalido",
+            f"Snapshot canonico invalido. {exc}",
+        ) from exc
+
+    return IngestionResult(
+        parameters=parameters,
+        employees=employees,
+        movements=movements,
+        pendings=pendings,
+    )
+
+
+def load_ingestion_snapshot(path: str | Path) -> IngestionResult:
+    snapshot_path = Path(path)
+    try:
+        payload = json.loads(snapshot_path.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise IngestionSnapshotError(
+            "snapshot_canonico_ausente",
+            f"Snapshot canonico nao encontrado: {snapshot_path}.",
+            source=str(snapshot_path),
+        ) from exc
+    except json.JSONDecodeError as exc:
+        raise IngestionSnapshotError(
+            "snapshot_canonico_invalido",
+            f"Snapshot canonico invalido. JSON malformado em {snapshot_path}.",
+            source=str(snapshot_path),
+        ) from exc
+
+    return deserialize_ingestion_result(payload)
 
 
 def build_ingestion_manifest(
@@ -283,3 +344,100 @@ def _serialize_pending(pending: PendingItem) -> dict[str, Any]:
         "resolved_by": pending.resolved_by,
         "resolved_at": pending.resolved_at,
     }
+
+
+def _deserialize_parameters(payload: Mapping[str, Any]) -> PayrollFileParameters:
+    return PayrollFileParameters(
+        company_code=str(payload["company_code"]),
+        company_name=str(payload["company_name"]),
+        competence=str(payload["competence"]),
+        payroll_type=str(payload["payroll_type"]),
+        default_process=str(payload["default_process"]),
+        layout_version=str(payload["layout_version"]),
+        source_cells={str(key): str(value) for key, value in dict(payload.get("source_cells", {})).items()},
+    )
+
+
+def _deserialize_employee(payload: Mapping[str, Any]) -> ResolvedEmployee:
+    return ResolvedEmployee(
+        employee_key=payload.get("employee_key"),
+        employee_name=payload.get("employee_name"),
+        domain_registration=payload.get("domain_registration"),
+        status=payload.get("status"),
+        allows_entries=payload.get("allows_entries"),
+        source=_deserialize_source(payload.get("source")),
+        resolved_from_registry=bool(payload["resolved_from_registry"]),
+        registration_source=RegistrationSource(payload["registration_source"]),
+        registry_consistent=bool(payload.get("registry_consistent", True)),
+    )
+
+
+def _deserialize_movement(payload: Mapping[str, Any]) -> CanonicalMovement:
+    hours_payload = payload.get("hours")
+    hours = None
+    if hours_payload is not None:
+        hours = NormalizedHours(
+            text=str(hours_payload["text"]),
+            total_minutes=int(hours_payload["total_minutes"]),
+        )
+
+    quantity = payload.get("quantity")
+    amount = payload.get("amount")
+
+    return CanonicalMovement(
+        movement_id=str(payload["movement_id"]),
+        company_code=str(payload["company_code"]),
+        competence=str(payload["competence"]),
+        payroll_type=str(payload["payroll_type"]),
+        default_process=str(payload["default_process"]),
+        employee_key=payload.get("employee_key"),
+        employee_name=payload.get("employee_name"),
+        domain_registration=payload.get("domain_registration"),
+        event_name=str(payload["event_name"]),
+        value_type=ValueType(payload["value_type"]),
+        quantity=Decimal(str(quantity)) if quantity is not None else None,
+        hours=hours,
+        amount=Decimal(str(amount)) if amount is not None else None,
+        source=_deserialize_source(payload["source"]),
+        blocked=bool(payload.get("blocked", False)),
+        pending_codes=tuple(str(item) for item in payload.get("pending_codes", ())),
+        pending_messages=tuple(str(item) for item in payload.get("pending_messages", ())),
+        observation=payload.get("observation"),
+        informed_rubric=payload.get("informed_rubric"),
+        output_rubric=payload.get("output_rubric"),
+        event_nature=payload.get("event_nature"),
+        serialization_unit=payload.get("serialization_unit"),
+    )
+
+
+def _deserialize_pending(payload: Mapping[str, Any]) -> PendingItem:
+    return PendingItem(
+        pending_id=str(payload["pending_id"]),
+        severity=PendingSeverity(payload["severity"]),
+        company_code=payload.get("company_code"),
+        competence=payload.get("competence"),
+        employee_key=payload.get("employee_key"),
+        employee_name=payload.get("employee_name"),
+        domain_registration=payload.get("domain_registration"),
+        event_name=payload.get("event_name"),
+        source=_deserialize_source(payload["source"]),
+        pending_code=str(payload["pending_code"]),
+        description=str(payload["description"]),
+        recommended_action=str(payload["recommended_action"]),
+        treatment_status=str(payload.get("treatment_status", "aberta")),
+        manual_resolution=payload.get("manual_resolution"),
+        resolved_by=payload.get("resolved_by"),
+        resolved_at=payload.get("resolved_at"),
+    )
+
+
+def _deserialize_source(payload: Mapping[str, Any] | None) -> SourceRef | None:
+    if payload is None:
+        return None
+
+    return SourceRef(
+        sheet_name=str(payload["sheet_name"]),
+        row_number=int(payload["row_number"]),
+        cell=str(payload["cell"]),
+        column_name=payload.get("column_name"),
+    )

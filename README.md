@@ -39,7 +39,7 @@ Fluxo alvo:
 
 - `src/domain`: objetos puros e invariantes do dominio.
 - `src/ingestion`: loader da planilha humana V1, normalizacao, snapshot canonico, manifesto e persistencia operacional.
-- `src/mapping`: resolucao por empresa, matricula e rubrica.
+- `src/mapping`: consumo do snapshot canonico, carga de configuracao versionada, resolucao deterministica de matricula e rubrica de saida, e persistencia do artefato mapeado.
 - `src/serialization`: contrato de layout fixed-width e futuro serializer.
 - `src/validation`: validacoes estruturais, layout e reconciliacao futura.
 - `src/config`: modelos Pydantic para configuracao por empresa e manifestos de execucao.
@@ -79,6 +79,12 @@ Ingerir e persistir workbook tecnico, snapshot e manifesto:
 python scripts/ingest_planilha_padrao_v1.py --input data/templates/planilha_padrao_folha_v1.xlsx --snapshot-output data/templates/planilha_padrao_folha_v1.snapshot.json
 ```
 
+Consumir um snapshot persistido e aplicar o mapping por empresa:
+
+```bash
+python scripts/map_snapshot_por_empresa.py --snapshot data/templates/planilha_padrao_folha_v1.snapshot.json --config path/para/company_config.json
+```
+
 ## Estado atual da ingestao V1
 
 - O template humano V1 ja existe e e preenchido principalmente em `LANCAMENTOS_FACEIS`.
@@ -88,6 +94,15 @@ python scripts/ingest_planilha_padrao_v1.py --input data/templates/planilha_padr
 - Ambiguidades, conflitos de matricula e eventos nao automatizaveis viram pendencia explicita.
 - As abas tecnicas `MOVIMENTOS_CANONICOS` e `PENDENCIAS` ja podem ser atualizadas automaticamente.
 - O resultado da ingestao pode ser persistido em snapshot JSON e manifesto minimo.
+
+## Estado atual do mapping por empresa
+
+- O mapping ja consome o snapshot canonico persistido da ingestao.
+- A configuracao por empresa e lida de forma versionada via `CompanyConfig`.
+- A resolucao de matricula usa o snapshot e `employee_mappings` sem hardcode no dominio.
+- O mapeamento `evento_negocio -> rubrica_saida` usa `event_mappings` e nunca inventa rubrica.
+- Conflitos, ausencia de mapeamento e ambiguidade relevante viram pendencia explicita de mapping.
+- O resultado do mapping e persistido em JSON deterministico, ainda pre-TXT.
 
 ## Fixtures e golden files
 
@@ -100,4 +115,4 @@ O projeto usa fixtures imutaveis para garantir determinismo.
 
 ## Proxima etapa esperada
 
-Consumir o snapshot canonico junto com configuracao versionada por empresa para preparar o mapeamento deterministico de `evento_negocio`, sem avancar ainda para serializer TXT.
+Consumir o artefato mapeado por empresa para iniciar o serializer TXT fixed-width, sem abrir UI, banco ou regras fora do V1.

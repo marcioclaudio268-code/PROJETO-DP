@@ -4,7 +4,7 @@
 
 This repository is the foundation of a deterministic payroll TXT engine for Dominio.
 
-The repository is intentionally small at this stage. It already includes the V1 human spreadsheet template, the ingestion loader, the canonical in-memory model, explicit pendings, workbook technical-tab writing and the persisted ingestion snapshot. The full TXT generation pipeline still does not exist.
+The repository is intentionally small at this stage. It already includes the V1 human spreadsheet template, the ingestion loader, the canonical in-memory model, explicit pendings, workbook technical-tab writing, the persisted ingestion snapshot and the first deterministic company-level mapping stage. The full TXT generation pipeline still does not exist.
 
 ## Pipeline
 
@@ -13,6 +13,7 @@ XLSX canonico
   -> ingestion
   -> domain model
   -> mapping por empresa
+  -> artefato mapeado pre-TXT
   -> serialization fixed-width
   -> validation
   -> TXT
@@ -30,7 +31,7 @@ This package already hosts the V1 human template generator, the XLSX loader for 
 
 ### `src/mapping`
 
-Company-level resolution for employee registration, event mapping and pending policies. The domain must stay free of company-specific hardcode.
+Company-level resolution for employee registration, event mapping and pending policies. This package consumes the persisted canonical snapshot plus `CompanyConfig`, produces a mapped intermediate artifact and keeps the domain free of company-specific hardcode.
 
 ### `src/serialization`
 
@@ -71,6 +72,19 @@ planilha_padrao_folha_v1.xlsx
   -> manifesto minimo de execucao
 ```
 
+## Current mapping state
+
+The current mapping flow is:
+
+```text
+snapshot JSON canonico
+  + configuracao versionada por empresa
+  -> resolucao deterministica de matricula
+  -> resolucao deterministica de rubrica_saida
+  -> pendencias explicitas de mapping
+  -> artefato JSON mapeado pre-TXT
+```
+
 ## Next implementation slot
 
-The next task should consume the persisted canonical snapshot together with company configuration so the project can move toward deterministic event mapping without jumping yet to TXT serialization.
+The next task should consume the mapped intermediate artifact and implement the fixed-width TXT serializer without moving company rules back into the domain.

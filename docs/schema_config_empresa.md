@@ -33,6 +33,13 @@ A configuracao por empresa e versionada e substitui qualquer hardcode no codigo 
 - Mudancas de mapeamento exigem nova versao de configuracao.
 - Flags de validacao devem permanecer extensiveis.
 
+## Uso operacional atual
+
+- A CLI atual de mapping consome `CompanyConfig` serializado em JSON UTF-8.
+- `event_mappings` duplicados sao rejeitados no carregamento da configuracao.
+- `employee_mappings` duplicados por `source_employee_key` sao rejeitados no carregamento da configuracao.
+- Ambiguidade introduzida por `aliases` continua sendo tratada na etapa de mapping como pendencia explicita, nunca como decisao silenciosa.
+
 ## Pendencias abertas
 
 - Forma final de serializacao da configuracao em arquivo.

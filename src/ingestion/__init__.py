@@ -5,7 +5,7 @@ The V1 human template generator, loader, snapshot persistence and ingestion
 pipeline live here.
 """
 
-from .errors import NormalizationError, TemplateV1IngestionError
+from .errors import IngestionSnapshotError, NormalizationError, TemplateV1IngestionError
 from .normalization import (
     is_empty_value,
     normalize_hours_hhmm,
@@ -19,10 +19,12 @@ from .snapshot import (
     PersistedIngestionArtifacts,
     build_ingestion_manifest,
     compute_file_sha256,
+    deserialize_ingestion_result,
     default_manifest_path,
     default_snapshot_path,
     get_engine_version,
     infer_execution_status,
+    load_ingestion_snapshot,
     render_ingestion_snapshot_json,
     render_manifest_json,
     serialize_ingestion_result,
@@ -46,6 +48,7 @@ from .taxonomy import FatalIngestionCode, FATAL_ERROR_CATALOG, PENDING_CATALOG
 __all__ = [
     "FATAL_ERROR_CATALOG",
     "FatalIngestionCode",
+    "IngestionSnapshotError",
     "NormalizationError",
     "PENDING_CATALOG",
     "PersistedIngestionArtifacts",
@@ -54,6 +57,7 @@ __all__ = [
     "build_ingestion_manifest",
     "compute_file_sha256",
     "create_planilha_padrao_folha_v1",
+    "deserialize_ingestion_result",
     "default_manifest_path",
     "default_snapshot_path",
     "ingest_and_fill_planilha_padrao_v1",
@@ -61,6 +65,7 @@ __all__ = [
     "ingest_template_v1_workbook",
     "infer_execution_status",
     "is_empty_value",
+    "load_ingestion_snapshot",
     "load_planilha_padrao_folha_v1",
     "normalize_hours_hhmm",
     "normalize_money_brl",
