@@ -38,7 +38,7 @@ class DashboardActionRecord(DashboardBaseModel):
 class DashboardState(DashboardBaseModel):
     session_version: str
     source_workbook_name: str
-    source_config_name: str
+    source_config_name: str | None = None
     actions: list[DashboardActionRecord] = Field(default_factory=list)
     last_analysis: dict[str, Any] | None = None
 
@@ -125,6 +125,22 @@ class DashboardSummary:
     recommendation: str
     txt_enabled: bool
     txt_status_label: str
+    config_status: str
+    config_status_label: str
+    config_source: str | None
+    config_version: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class DashboardConfigResolution:
+    status: str
+    status_label: str
+    message: str
+    company_code: str
+    competence: str
+    config_source: str | None
+    config_version: str | None
+    source_path: str | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -132,6 +148,7 @@ class DashboardRunResult:
     paths: DashboardPaths
     state: DashboardState
     summary: DashboardSummary
+    config_resolution: DashboardConfigResolution
     pendings: tuple[DashboardPendingItem, ...]
     snapshot_payload: dict[str, Any]
     mapped_payload: dict[str, Any]

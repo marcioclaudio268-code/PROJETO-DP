@@ -36,7 +36,7 @@ def main() -> None:
         return
 
     paths = build_dashboard_paths(run_root)
-    if not paths.validation_path.exists():
+    if not paths.state_path.exists():
         return
 
     try:
@@ -58,7 +58,7 @@ def main() -> None:
 def _render_upload_area() -> None:
     st.subheader("Importar planilha")
     st.write(
-        "Envie a planilha preenchida e a configuracao da empresa para iniciar uma analise guiada do caso."
+        "Envie apenas a planilha preenchida. O sistema detecta empresa e competencia e tenta resolver internamente a configuracao da empresa."
     )
 
     uploaded_workbook = st.file_uploader(
@@ -66,29 +66,19 @@ def _render_upload_area() -> None:
         type=["xlsx"],
         accept_multiple_files=False,
     )
-    uploaded_config = st.file_uploader(
-        "Configuracao da empresa (.json)",
-        type=["json"],
-        accept_multiple_files=False,
-        help="Este arquivo traz o cadastro versionado de matriculas e rubricas usado pelo pipeline.",
-    )
 
     if uploaded_workbook is not None:
         st.write(f"Planilha selecionada: `{uploaded_workbook.name}`")
-    if uploaded_config is not None:
-        st.write(f"Configuracao selecionada: `{uploaded_config.name}`")
 
     if st.button(
         "Iniciar analise",
         type="primary",
-        disabled=uploaded_workbook is None or uploaded_config is None,
+        disabled=uploaded_workbook is None,
     ):
         try:
             paths = create_dashboard_run_from_uploads(
                 workbook_name=uploaded_workbook.name,
                 workbook_bytes=uploaded_workbook.getvalue(),
-                config_name=uploaded_config.name,
-                config_bytes=uploaded_config.getvalue(),
             )
             run_dashboard_analysis(paths)
             st.session_state[RUN_ROOT_KEY] = str(paths.run_root)
@@ -110,6 +100,13 @@ def _render_summary(result) -> None:
     col6.metric("Itens ignorados", result.summary.ignored_count)
 
     st.write(f"Status geral: **{result.summary.status_label}**")
+    st.write(f"Empresa detectada: **{result.summary.company_name}** ({result.summary.company_code})")
+    st.write(f"Competencia detectada: **{result.summary.competence}**")
+    st.write(f"Configuracao interna: **{result.summary.config_status_label}**")
+    if result.summary.config_source is not None:
+        st.write(f"Origem da configuracao aplicada: `{result.summary.config_source}`")
+    if result.summary.config_version is not None:
+        st.write(f"Versao da configuracao aplicada: `{result.summary.config_version}`")
     st.write(f"Recomendacao: {result.summary.recommendation}")
 
     if result.summary.txt_enabled:

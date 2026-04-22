@@ -43,8 +43,10 @@ Fluxo alvo:
 - `src/serialization`: contrato do layout fixed-width, consumo do artefato mapeado, geracao do TXT de 43 posicoes e persistencia do resumo operacional da serializacao.
 - `src/validation`: validacao estrutural do TXT, reconciliacao entre snapshot, artefato mapeado, resumo da serializacao e TXT final, e persistencia do artefato final de validacao.
 - `src/dashboard`: camada operacional local para o escritorio, com estado de execucao, overrides auditaveis, reprocessamento guiado e regra de liberacao do TXT.
+- `data/company_master`: cadastro mestre interno e configs vinculadas, consultados primeiro pelo backend do dashboard.
+- `configs/companies`: fallback legado versionado por empresa.
 - `app`: entrypoint local do dashboard Streamlit.
-- `src/config`: modelos Pydantic para configuracao por empresa e manifestos de execucao.
+- `src/config`: modelos Pydantic, cadastro mestre interno, store JSON e manifestos de execucao.
 - `data/templates`: templates XLSX versionados para preenchimento humano.
 - `data/golden`: fixtures douradas e artefatos de referencia.
 - `tests/golden`: testes de regressao baseados em golden files.
@@ -79,6 +81,12 @@ Ingerir e persistir workbook tecnico, snapshot e manifesto:
 
 ```bash
 python scripts/ingest_planilha_padrao_v1.py --input data/templates/planilha_padrao_folha_v1.xlsx --snapshot-output data/templates/planilha_padrao_folha_v1.snapshot.json
+```
+
+Importar a planilha-resumo para o cadastro mestre interno:
+
+```bash
+python scripts/import_resumo_mensal.py --input "C:/caminho/Resumo Mensal.xls"
 ```
 
 Consumir um snapshot persistido e aplicar o mapping por empresa:
@@ -144,10 +152,13 @@ streamlit run app/dashboard_v1.py
 ## Estado atual do dashboard operacional
 
 - O dashboard local reutiliza o pipeline V1 sem reimplementar ingestao, mapping, serializer ou validacao.
-- A interface trabalha com uma copia local da planilha e da configuracao da empresa dentro de uma pasta de execucao em `data/runs/dashboard_v1`.
+- A interface trabalha com uma copia local da planilha e, quando existir, com uma configuracao interna resolvida automaticamente dentro de uma pasta de execucao em `data/runs/dashboard_v1`.
+- O operador envia apenas a planilha `.xlsx`; o backend detecta empresa e competencia e tenta resolver a configuracao interna pela ordem `empresa+competencia -> active.json -> pendencia interna`.
+- O `ConfigResolver` hoje consulta primeiro o cadastro mestre interno em `data/company_master` e depois cai para o fallback legado em `configs/companies/<empresa>/`.
+- A Fase 2 acrescenta um cadastro mestre interno em `data/company_master`, alimentado pela importacao do `Resumo Mensal.xls` e consultado antes do fallback legado.
 - Correcoes guiadas e itens ignorados ficam registrados no estado local da execucao atual.
 - O dashboard so libera o botao de baixar TXT quando a validacao final estiver sem bloqueios e houver pelo menos uma linha serializada.
-- A configuracao por empresa continua obrigatoria para a etapa de mapping; o dashboard a recebe como arquivo JSON versionado do motor.
+- A configuracao por empresa continua obrigatoria para a etapa de mapping, mas agora e um ativo interno do sistema atras de um `ConfigResolver`.
 
 ## Fixtures e golden files
 

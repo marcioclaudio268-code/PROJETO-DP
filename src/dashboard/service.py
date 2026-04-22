@@ -13,7 +13,14 @@ from validation.pipeline import validate_pipeline_v1
 
 from ingestion.pipeline import ingest_fill_and_persist_planilha_padrao_v1
 
-from .models import DashboardPaths, DashboardPendingItem, DashboardRunResult, DashboardSummary
+from .config_resolver import ConfigResolutionResult, ConfigResolutionStatus, ConfigResolver
+from .models import (
+    DashboardConfigResolution,
+    DashboardPaths,
+    DashboardPendingItem,
+    DashboardRunResult,
+    DashboardSummary,
+)
 from .overrides import describe_ignore_strategy
 from .storage import load_dashboard_state, write_dashboard_state
 
@@ -28,7 +35,12 @@ CONFIG_EDIT_EVENT_CODES = {
 }
 
 
-def run_dashboard_analysis(paths: DashboardPaths) -> DashboardRunResult:
+def run_dashboard_analysis(
+    paths: DashboardPaths,
+    *,
+    config_resolver: ConfigResolver | None = None,
+) -> DashboardRunResult:
+    resolver = config_resolver or ConfigResolver()
     ingest_fill_and_persist_planilha_padrao_v1(
         paths.editable_workbook_path,
         output_path=paths.analyzed_workbook_path,
@@ -36,6 +48,22 @@ def run_dashboard_analysis(paths: DashboardPaths) -> DashboardRunResult:
         manifest_path=paths.manifest_path,
         write_manifest_file=True,
     )
+    snapshot_payload = _load_json(paths.snapshot_path)
+    state = load_dashboard_state(paths.state_path)
+    resolution = resolver.resolve(
+        company_code=str(snapshot_payload["parameters"]["company_code"]),
+        competence=str(snapshot_payload["parameters"]["competence"]),
+    )
+
+    if resolution.status != ConfigResolutionStatus.FOUND:
+        return _build_blocked_run_without_config(
+            paths=paths,
+            state=state,
+            snapshot_payload=snapshot_payload,
+            resolution=resolution,
+        )
+
+    resolver.write_resolved_config(resolution, target_path=paths.editable_config_path)
     map_snapshot_with_company_config(
         paths.snapshot_path,
         paths.editable_config_path,
@@ -54,33 +82,33 @@ def run_dashboard_analysis(paths: DashboardPaths) -> DashboardRunResult:
         output_path=paths.validation_path,
     )
 
-    snapshot_payload = _load_json(paths.snapshot_path)
     mapped_payload = _load_json(paths.mapped_artifact_path)
     serialization_payload = _load_json(paths.serialization_summary_path)
     validation_payload = _load_json(paths.validation_path)
-    state = load_dashboard_state(paths.state_path)
     pendings = collect_dashboard_pendings(
         paths=paths,
         snapshot_payload=snapshot_payload,
         mapped_payload=mapped_payload,
     )
+    config_resolution = _resolution_to_dashboard_config(resolution)
     summary = build_dashboard_summary(
         state=state,
         snapshot_payload=snapshot_payload,
         serialization_payload=serialization_payload,
         validation_payload=validation_payload,
         pending_count=len(pendings),
+        config_resolution=config_resolution,
     )
 
     updated_state = state.model_copy(
         update={
+            "source_config_name": (
+                resolution.source_path.name if resolution.source_path is not None else state.source_config_name
+            ),
             "last_analysis": {
-                "company_name": summary.company_name,
-                "competence": summary.competence,
-                "validation_status": summary.validation_status,
-                "txt_enabled": summary.txt_enabled,
-                "pending_count": summary.pending_count,
-                "serialized_line_count": summary.serialized_line_count,
+                "summary": _serialize_summary(summary),
+                "config_resolution": _serialize_config_resolution(config_resolution),
+                "pendings": [_serialize_pending_item(item) for item in pendings],
             }
         }
     )
@@ -90,6 +118,7 @@ def run_dashboard_analysis(paths: DashboardPaths) -> DashboardRunResult:
         paths=paths,
         state=updated_state,
         summary=summary,
+        config_resolution=config_resolution,
         pendings=pendings,
         snapshot_payload=snapshot_payload,
         mapped_payload=mapped_payload,
@@ -99,27 +128,36 @@ def run_dashboard_analysis(paths: DashboardPaths) -> DashboardRunResult:
 
 
 def load_dashboard_run(paths: DashboardPaths) -> DashboardRunResult:
-    snapshot_payload = _load_json(paths.snapshot_path)
-    mapped_payload = _load_json(paths.mapped_artifact_path)
-    serialization_payload = _load_json(paths.serialization_summary_path)
-    validation_payload = _load_json(paths.validation_path)
     state = load_dashboard_state(paths.state_path)
-    pendings = collect_dashboard_pendings(
-        paths=paths,
-        snapshot_payload=snapshot_payload,
-        mapped_payload=mapped_payload,
+    if state.last_analysis is None:
+        raise FileNotFoundError("Nenhuma analise anterior foi encontrada para este caso.")
+
+    snapshot_payload = _load_json(paths.snapshot_path) if paths.snapshot_path.exists() else {}
+    mapped_payload = _load_json(paths.mapped_artifact_path) if paths.mapped_artifact_path.exists() else {}
+    serialization_payload = (
+        _load_json(paths.serialization_summary_path)
+        if paths.serialization_summary_path.exists()
+        else {"counts": {"serialized": 0, "non_serialized": 0, "blocked_or_non_serialized": 0, "total_mapped_movements": 0}}
     )
-    summary = build_dashboard_summary(
-        state=state,
-        snapshot_payload=snapshot_payload,
-        serialization_payload=serialization_payload,
-        validation_payload=validation_payload,
-        pending_count=len(pendings),
+    validation_payload = (
+        _load_json(paths.validation_path)
+        if paths.validation_path.exists()
+        else {
+            "execution": {"status": state.last_analysis["summary"]["validation_status"]},
+            "fatal_errors": [],
+            "inconsistencies": [],
+            "recommendation": state.last_analysis["summary"]["recommendation"],
+        }
     )
+    summary = _deserialize_summary(state.last_analysis["summary"])
+    config_resolution = _deserialize_config_resolution(state.last_analysis["config_resolution"])
+    pendings = tuple(_deserialize_pending_item(item) for item in state.last_analysis["pendings"])
+
     return DashboardRunResult(
         paths=paths,
         state=state,
         summary=summary,
+        config_resolution=config_resolution,
         pendings=pendings,
         snapshot_payload=snapshot_payload,
         mapped_payload=mapped_payload,
@@ -135,6 +173,7 @@ def build_dashboard_summary(
     serialization_payload: dict,
     validation_payload: dict,
     pending_count: int,
+    config_resolution: DashboardConfigResolution,
 ) -> DashboardSummary:
     parameters = snapshot_payload["parameters"]
     counts = snapshot_payload["counts"]
@@ -162,6 +201,10 @@ def build_dashboard_summary(
         recommendation=str(validation_payload["recommendation"]),
         txt_enabled=txt_enabled,
         txt_status_label="Liberado para baixar" if txt_enabled else "Ainda bloqueado",
+        config_status=config_resolution.status,
+        config_status_label=config_resolution.status_label,
+        config_source=config_resolution.config_source,
+        config_version=config_resolution.config_version,
     )
 
 
@@ -185,7 +228,7 @@ def collect_dashboard_pendings(
     mapped_payload: dict,
 ) -> tuple[DashboardPendingItem, ...]:
     workbook = load_workbook(paths.editable_workbook_path, data_only=False)
-    config_payload = _load_json(paths.editable_config_path)
+    config_payload = _load_json(paths.editable_config_path) if paths.editable_config_path.exists() else {}
 
     pendings: list[DashboardPendingItem] = []
     for pending_payload in snapshot_payload.get("pendings", ()):
@@ -209,6 +252,66 @@ def collect_dashboard_pendings(
         )
 
     return tuple(pendings)
+
+
+def _build_blocked_run_without_config(
+    *,
+    paths: DashboardPaths,
+    state,
+    snapshot_payload: dict,
+    resolution: ConfigResolutionResult,
+) -> DashboardRunResult:
+    _cleanup_downstream_artifacts(paths)
+    config_resolution = _resolution_to_dashboard_config(resolution)
+    internal_pending = _build_config_resolution_pending(snapshot_payload, config_resolution)
+    pendings = (
+        *collect_dashboard_pendings(paths=paths, snapshot_payload=snapshot_payload, mapped_payload={}),
+        internal_pending,
+    )
+    serialization_payload = {
+        "counts": {
+            "serialized": 0,
+            "non_serialized": 0,
+            "blocked_or_non_serialized": 0,
+            "total_mapped_movements": 0,
+        }
+    }
+    validation_payload = {
+        "execution": {"status": "blocked"},
+        "fatal_errors": [],
+        "inconsistencies": [],
+        "recommendation": config_resolution.message,
+    }
+    summary = build_dashboard_summary(
+        state=state,
+        snapshot_payload=snapshot_payload,
+        serialization_payload=serialization_payload,
+        validation_payload=validation_payload,
+        pending_count=len(pendings),
+        config_resolution=config_resolution,
+    )
+    updated_state = state.model_copy(
+        update={
+            "source_config_name": None,
+            "last_analysis": {
+                "summary": _serialize_summary(summary),
+                "config_resolution": _serialize_config_resolution(config_resolution),
+                "pendings": [_serialize_pending_item(item) for item in pendings],
+            },
+        }
+    )
+    write_dashboard_state(paths.state_path, updated_state)
+    return DashboardRunResult(
+        paths=paths,
+        state=updated_state,
+        summary=summary,
+        config_resolution=config_resolution,
+        pendings=tuple(pendings),
+        snapshot_payload=snapshot_payload,
+        mapped_payload={},
+        serialization_payload=serialization_payload,
+        validation_payload=validation_payload,
+    )
 
 
 def _build_pending_item(
@@ -316,6 +419,149 @@ def _humanize_validation_status(status: str) -> str:
     if status == "empty":
         return "Sem linhas liberadas para exportacao"
     return "Analise bloqueada"
+
+
+def _resolution_to_dashboard_config(result: ConfigResolutionResult) -> DashboardConfigResolution:
+    if result.status == ConfigResolutionStatus.FOUND:
+        if result.config_source in {"registry_company_competence", "legacy_company_competence"}:
+            status_label = "Configuracao interna encontrada para a competencia"
+        elif result.config_source in {"registry_company_active", "legacy_company_active"}:
+            status_label = "Configuracao ativa da empresa aplicada"
+        else:
+            status_label = "Configuracao interna encontrada"
+    elif result.status == ConfigResolutionStatus.NOT_FOUND:
+        status_label = "Configuracao interna nao encontrada"
+    elif result.status == ConfigResolutionStatus.AMBIGUOUS:
+        status_label = "Mais de uma configuracao interna candidata foi encontrada"
+    else:
+        status_label = "Configuracao interna encontrada, mas inconsistente"
+
+    return DashboardConfigResolution(
+        status=result.status.value,
+        status_label=status_label,
+        message=result.message,
+        company_code=result.company_code,
+        competence=result.competence,
+        config_source=result.config_source,
+        config_version=result.config_version,
+        source_path=str(result.source_path) if result.source_path is not None else None,
+    )
+
+
+def _build_config_resolution_pending(
+    snapshot_payload: dict,
+    config_resolution: DashboardConfigResolution,
+) -> DashboardPendingItem:
+    parameters = snapshot_payload["parameters"]
+    return DashboardPendingItem(
+        uid=f"configuracao:{config_resolution.status}",
+        stage="configuracao",
+        pending_id=f"config-{config_resolution.status.lower()}",
+        code=f"config_resolution_{config_resolution.status.lower()}",
+        severity="bloqueante",
+        employee_name=None,
+        employee_key=None,
+        event_name=None,
+        field_label="configuracao interna da empresa",
+        found_value=f"empresa={parameters['company_code']} | competencia={parameters['competence']}",
+        problem=config_resolution.message,
+        recommended_action=(
+            "Cadastrar ou corrigir a configuracao interna da empresa no backend antes de repetir a analise."
+        ),
+        source_sheet=None,
+        source_cell=None,
+        source_row=None,
+        source_column_name=None,
+        can_edit_workbook=False,
+        can_edit_employee_mapping=False,
+        can_edit_event_mapping=False,
+        can_ignore=False,
+    )
+
+
+def _cleanup_downstream_artifacts(paths: DashboardPaths) -> None:
+    for target in (
+        paths.editable_config_path,
+        paths.mapped_artifact_path,
+        paths.txt_path,
+        paths.serialization_summary_path,
+        paths.validation_path,
+    ):
+        target.unlink(missing_ok=True)
+
+
+def _serialize_pending_item(item: DashboardPendingItem) -> dict:
+    return {
+        "uid": item.uid,
+        "stage": item.stage,
+        "pending_id": item.pending_id,
+        "code": item.code,
+        "severity": item.severity,
+        "employee_name": item.employee_name,
+        "employee_key": item.employee_key,
+        "event_name": item.event_name,
+        "field_label": item.field_label,
+        "found_value": item.found_value,
+        "problem": item.problem,
+        "recommended_action": item.recommended_action,
+        "source_sheet": item.source_sheet,
+        "source_cell": item.source_cell,
+        "source_row": item.source_row,
+        "source_column_name": item.source_column_name,
+        "can_edit_workbook": item.can_edit_workbook,
+        "can_edit_employee_mapping": item.can_edit_employee_mapping,
+        "can_edit_event_mapping": item.can_edit_event_mapping,
+        "can_ignore": item.can_ignore,
+        "ignore_mode": item.ignore_mode,
+        "ignore_label": item.ignore_label,
+    }
+
+
+def _deserialize_pending_item(payload: dict) -> DashboardPendingItem:
+    return DashboardPendingItem(**payload)
+
+
+def _serialize_summary(summary: DashboardSummary) -> dict:
+    return {
+        "company_name": summary.company_name,
+        "company_code": summary.company_code,
+        "competence": summary.competence,
+        "employee_count": summary.employee_count,
+        "relevant_movement_count": summary.relevant_movement_count,
+        "pending_count": summary.pending_count,
+        "ignored_count": summary.ignored_count,
+        "serialized_line_count": summary.serialized_line_count,
+        "validation_status": summary.validation_status,
+        "status_label": summary.status_label,
+        "recommendation": summary.recommendation,
+        "txt_enabled": summary.txt_enabled,
+        "txt_status_label": summary.txt_status_label,
+        "config_status": summary.config_status,
+        "config_status_label": summary.config_status_label,
+        "config_source": summary.config_source,
+        "config_version": summary.config_version,
+    }
+
+
+def _deserialize_summary(payload: dict) -> DashboardSummary:
+    return DashboardSummary(**payload)
+
+
+def _serialize_config_resolution(config_resolution: DashboardConfigResolution) -> dict:
+    return {
+        "status": config_resolution.status,
+        "status_label": config_resolution.status_label,
+        "message": config_resolution.message,
+        "company_code": config_resolution.company_code,
+        "competence": config_resolution.competence,
+        "config_source": config_resolution.config_source,
+        "config_version": config_resolution.config_version,
+        "source_path": config_resolution.source_path,
+    }
+
+
+def _deserialize_config_resolution(payload: dict) -> DashboardConfigResolution:
+    return DashboardConfigResolution(**payload)
 
 
 def _load_json(path: str | Path) -> dict:

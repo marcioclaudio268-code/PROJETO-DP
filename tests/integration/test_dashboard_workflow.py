@@ -6,6 +6,8 @@ from pathlib import Path
 from openpyxl import load_workbook
 
 from dashboard import (
+    ConfigResolutionStatus,
+    ConfigResolver,
     apply_workbook_cell_correction,
     create_dashboard_run_from_paths,
     ignore_pending_for_import,
@@ -18,20 +20,43 @@ from ingestion import save_planilha_padrao_folha_v1
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
-def _prepare_config(path: Path) -> Path:
+def _write_internal_config(
+    root: Path,
+    *,
+    company_code: str,
+    file_name: str,
+    competence: str,
+    config_version: str = "cfg-v1",
+    payload_override: dict | None = None,
+) -> Path:
     payload = {
-        "company_code": "72",
+        "company_code": company_code,
         "company_name": "Dela More",
         "default_process": "11",
-        "competence": "03/2024",
-        "config_version": "cfg-v1",
+        "competence": competence,
+        "config_version": config_version,
         "event_mappings": [
             {
                 "event_negocio": "gratificacao",
                 "rubrica_saida": "201",
-            }
+            },
+            {
+                "event_negocio": "horas_extras_50",
+                "rubrica_saida": "350",
+            },
         ],
-        "employee_mappings": [],
+        "employee_mappings": [
+            {
+                "source_employee_key": "col-001",
+                "source_employee_name": "Ana Lima",
+                "domain_registration": "123",
+            },
+            {
+                "source_employee_key": "col-999",
+                "source_employee_name": "Nova Pessoa",
+                "domain_registration": "999",
+            },
+        ],
         "pending_policy": {
             "review_required_event_negocios": [],
             "review_required_fields": [],
@@ -41,6 +66,10 @@ def _prepare_config(path: Path) -> Path:
         },
         "validation_flags": {},
     }
+    if payload_override:
+        payload.update(payload_override)
+    path = root / company_code / file_name
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, ensure_ascii=True, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return path
 
@@ -66,9 +95,8 @@ def _prepare_single_row_workbook(tmp_path: Path) -> Path:
     return workbook_path
 
 
-def _prepare_non_automatable_workbook(tmp_path: Path) -> tuple[Path, Path]:
+def _prepare_non_automatable_workbook(tmp_path: Path) -> Path:
     workbook_path = tmp_path / "input.xlsx"
-    config_path = tmp_path / "company_config.json"
     save_planilha_padrao_folha_v1(workbook_path)
 
     workbook = load_workbook(workbook_path)
@@ -95,59 +123,51 @@ def _prepare_non_automatable_workbook(tmp_path: Path) -> tuple[Path, Path]:
     lancamentos["N2"] = "revisar"
     workbook.save(workbook_path)
 
-    payload = {
-        "company_code": "72",
-        "company_name": "Dela More",
-        "default_process": "11",
-        "competence": "03/2024",
-        "config_version": "cfg-v1",
-        "event_mappings": [
-            {
-                "event_negocio": "gratificacao",
-                "rubrica_saida": "201",
-            }
-        ],
-        "employee_mappings": [
-            {
-                "source_employee_key": "col-001",
-                "source_employee_name": "Ana Lima",
-                "domain_registration": "123",
-            }
-        ],
-        "pending_policy": {
-            "review_required_event_negocios": [],
-            "review_required_fields": [],
-            "block_on_ambiguous_observations": True,
-            "block_on_unmapped_employee": True,
-            "block_on_unmapped_event": True,
-        },
-        "validation_flags": {},
-    }
-    config_path.write_text(json.dumps(payload, ensure_ascii=True, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    return workbook_path, config_path
+    return workbook_path
 
 
 def test_dashboard_happy_path_enables_txt(tmp_path: Path) -> None:
     workbook_path = REPO_ROOT / "data" / "golden" / "v1" / "happy_path" / "input.xlsx"
-    config_path = REPO_ROOT / "data" / "golden" / "v1" / "happy_path" / "company_config.json"
-    paths = create_dashboard_run_from_paths(workbook_path, config_path, runs_root=tmp_path / "runs")
+    configs_root = tmp_path / "configs"
+    _write_internal_config(configs_root, company_code="72", file_name="03-2024.json", competence="03/2024")
+    paths = create_dashboard_run_from_paths(workbook_path, runs_root=tmp_path / "runs")
 
-    result = run_dashboard_analysis(paths)
+    result = run_dashboard_analysis(
+        paths,
+        config_resolver=ConfigResolver(registry_root=tmp_path / "master", legacy_root=configs_root),
+    )
     persisted = load_dashboard_run(paths)
 
     assert result.summary.txt_enabled is True
     assert result.summary.serialized_line_count == 2
     assert result.summary.pending_count == 0
+    assert result.summary.config_status == ConfigResolutionStatus.FOUND.value
     assert persisted.summary.txt_enabled is True
     assert persisted.summary.serialized_line_count == 2
 
 
+def test_dashboard_default_master_data_allows_xlsx_only_flow(tmp_path: Path) -> None:
+    workbook_path = REPO_ROOT / "data" / "golden" / "v1" / "happy_path" / "input.xlsx"
+    paths = create_dashboard_run_from_paths(workbook_path, runs_root=tmp_path / "runs")
+
+    result = run_dashboard_analysis(paths)
+
+    assert result.summary.txt_enabled is True
+    assert result.summary.config_status == ConfigResolutionStatus.FOUND.value
+    assert result.summary.config_source == "registry_company_active"
+    assert result.summary.config_version == "cfg-v1"
+
+
 def test_dashboard_can_fix_missing_registration_and_reprocess(tmp_path: Path) -> None:
     workbook_path = _prepare_single_row_workbook(tmp_path)
-    config_path = _prepare_config(tmp_path / "company_config.json")
-    paths = create_dashboard_run_from_paths(workbook_path, config_path, runs_root=tmp_path / "runs")
+    configs_root = tmp_path / "configs"
+    _write_internal_config(configs_root, company_code="72", file_name="active.json", competence="01/2024")
+    paths = create_dashboard_run_from_paths(workbook_path, runs_root=tmp_path / "runs")
 
-    initial = run_dashboard_analysis(paths)
+    initial = run_dashboard_analysis(
+        paths,
+        config_resolver=ConfigResolver(registry_root=tmp_path / "master", legacy_root=configs_root),
+    )
     assert initial.summary.txt_enabled is False
     pending = next(item for item in initial.pendings if item.code == "matricula_dominio_ausente")
 
@@ -158,26 +178,91 @@ def test_dashboard_can_fix_missing_registration_and_reprocess(tmp_path: Path) ->
         new_value="999",
         pending_uid=pending.uid,
     )
-    updated = run_dashboard_analysis(paths)
+    updated = run_dashboard_analysis(
+        paths,
+        config_resolver=ConfigResolver(registry_root=tmp_path / "master", legacy_root=configs_root),
+    )
 
     assert updated.summary.txt_enabled is True
     assert updated.summary.serialized_line_count == 1
     assert not any(item.code == "matricula_dominio_ausente" for item in updated.pendings)
+    assert updated.summary.config_source == "legacy_company_active"
 
 
 def test_dashboard_can_ignore_non_automatizable_event_and_reprocess(tmp_path: Path) -> None:
-    workbook_path, config_path = _prepare_non_automatable_workbook(tmp_path)
-    paths = create_dashboard_run_from_paths(workbook_path, config_path, runs_root=tmp_path / "runs")
+    workbook_path = _prepare_non_automatable_workbook(tmp_path)
+    configs_root = tmp_path / "configs"
+    _write_internal_config(configs_root, company_code="72", file_name="03-2024.json", competence="03/2024")
+    paths = create_dashboard_run_from_paths(workbook_path, runs_root=tmp_path / "runs")
 
-    initial = run_dashboard_analysis(paths)
+    initial = run_dashboard_analysis(
+        paths,
+        config_resolver=ConfigResolver(registry_root=tmp_path / "master", legacy_root=configs_root),
+    )
     assert initial.summary.pending_count == 1
     pending = next(item for item in initial.pendings if item.code == "evento_nao_automatizavel")
 
     ignore_pending_for_import(paths, pending)
-    updated = run_dashboard_analysis(paths)
+    updated = run_dashboard_analysis(
+        paths,
+        config_resolver=ConfigResolver(registry_root=tmp_path / "master", legacy_root=configs_root),
+    )
 
     assert updated.summary.pending_count == 0
     assert updated.summary.ignored_count == 1
     assert updated.summary.txt_enabled is True
     workbook = load_workbook(paths.editable_workbook_path)
     assert workbook["LANCAMENTOS_FACEIS"]["N2"].value is None
+
+
+def test_dashboard_returns_internal_pending_when_config_is_missing(tmp_path: Path) -> None:
+    workbook_path = REPO_ROOT / "data" / "golden" / "v1" / "happy_path" / "input.xlsx"
+    paths = create_dashboard_run_from_paths(workbook_path, runs_root=tmp_path / "runs")
+
+    result = run_dashboard_analysis(
+        paths,
+        config_resolver=ConfigResolver(registry_root=tmp_path / "master", legacy_root=tmp_path / "configs"),
+    )
+
+    assert result.summary.txt_enabled is False
+    assert result.summary.config_status == ConfigResolutionStatus.NOT_FOUND.value
+    assert any(item.stage == "configuracao" for item in result.pendings)
+
+
+def test_dashboard_returns_internal_pending_when_config_is_ambiguous(tmp_path: Path) -> None:
+    workbook_path = REPO_ROOT / "data" / "golden" / "v1" / "happy_path" / "input.xlsx"
+    configs_root = tmp_path / "configs"
+    _write_internal_config(configs_root, company_code="72", file_name="03-2024.json", competence="03/2024")
+    _write_internal_config(configs_root, company_code="72", file_name="03_2024.json", competence="03/2024")
+    paths = create_dashboard_run_from_paths(workbook_path, runs_root=tmp_path / "runs")
+
+    result = run_dashboard_analysis(
+        paths,
+        config_resolver=ConfigResolver(registry_root=tmp_path / "master", legacy_root=configs_root),
+    )
+
+    assert result.summary.txt_enabled is False
+    assert result.summary.config_status == ConfigResolutionStatus.AMBIGUOUS.value
+    assert any(item.stage == "configuracao" for item in result.pendings)
+
+
+def test_dashboard_returns_internal_pending_when_config_is_mismatch(tmp_path: Path) -> None:
+    workbook_path = REPO_ROOT / "data" / "golden" / "v1" / "happy_path" / "input.xlsx"
+    configs_root = tmp_path / "configs"
+    _write_internal_config(
+        configs_root,
+        company_code="72",
+        file_name="03-2024.json",
+        competence="03/2024",
+        payload_override={"company_code": "99"},
+    )
+    paths = create_dashboard_run_from_paths(workbook_path, runs_root=tmp_path / "runs")
+
+    result = run_dashboard_analysis(
+        paths,
+        config_resolver=ConfigResolver(registry_root=tmp_path / "master", legacy_root=configs_root),
+    )
+
+    assert result.summary.txt_enabled is False
+    assert result.summary.config_status == ConfigResolutionStatus.MISMATCH.value
+    assert any(item.stage == "configuracao" for item in result.pendings)

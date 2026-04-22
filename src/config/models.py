@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Sequence
+from typing import Any, Sequence
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -138,3 +138,70 @@ class RunManifest(StrictModel):
         if not self.config_version and not self.layout_version:
             raise ValueError("RunManifest requires config_version or layout_version.")
         return self
+
+
+class CompanyRegistryEntry(StrictModel):
+    """Master company registry entry used by the internal resolver."""
+
+    id: str = Field(..., min_length=1, description="Stable registry id")
+    company_code: str = Field(..., min_length=1, description="Primary company code")
+    cnpj: str | None = Field(default=None, description="Company CNPJ, normalized as digits")
+    razao_social: str | None = Field(default=None, description="Registered company name")
+    nome_fantasia: str | None = Field(default=None, description="Trading name")
+    status: str = Field(default="active", min_length=1, description="Registry status")
+    is_active: bool = Field(default=True, description="Marks the company as active")
+    default_template_id: str | None = Field(default=None, description="Optional template id")
+    active_config_id: str | None = Field(default=None, description="Linked active config id")
+    last_competence_seen: str | None = Field(default=None, description="Most recent competence seen")
+    source_import: str = Field(default="resumo_mensal", min_length=1, description="Import source")
+    created_at: datetime = Field(default_factory=_utc_now)
+    updated_at: datetime = Field(default_factory=_utc_now)
+
+
+class CompanyConfigRecord(StrictModel):
+    """Internal config record linked to one registry company."""
+
+    id: str = Field(..., min_length=1, description="Stable config record id")
+    company_id: str = Field(..., min_length=1, description="Linked registry id")
+    version: str = Field(..., min_length=1, description="Internal config version")
+    competence_start: str | None = Field(default=None, description="Optional competence start")
+    competence_end: str | None = Field(default=None, description="Optional competence end")
+    status: str = Field(default="active", min_length=1, description="Config status")
+    config_payload_internal: dict[str, Any] = Field(default_factory=dict, description="Validated config payload")
+    validated_at: datetime | None = Field(default=None)
+    created_at: datetime = Field(default_factory=_utc_now)
+    updated_at: datetime = Field(default_factory=_utc_now)
+
+
+class CompanyConfigIssue(StrictModel):
+    """Internal issue created during registry/import maintenance."""
+
+    id: str = Field(..., min_length=1, description="Stable issue id")
+    company_id: str = Field(..., min_length=1, description="Linked registry id")
+    issue_type: str = Field(..., min_length=1, description="Issue code")
+    description: str = Field(..., min_length=1, description="Human readable description")
+    status: str = Field(default="open", min_length=1, description="Issue status")
+    created_at: datetime = Field(default_factory=_utc_now)
+    updated_at: datetime = Field(default_factory=_utc_now)
+
+
+class MasterDataImportResult(StrictModel):
+    """Summary of a Resumo Mensal import into the internal company master data."""
+
+    source_path: str = Field(..., min_length=1, description="Imported workbook path")
+    sheet_name: str | None = Field(default=None, description="Imported sheet name")
+    rows_read: int = Field(default=0, ge=0)
+    sections_read: int = Field(default=0, ge=0)
+    companies_seen: int = Field(default=0, ge=0)
+    duplicate_company_sections_ignored: int = Field(default=0, ge=0)
+    companies_created: int = Field(default=0, ge=0)
+    companies_updated: int = Field(default=0, ge=0)
+    configs_created: int = Field(default=0, ge=0)
+    configs_updated: int = Field(default=0, ge=0)
+    issues_created: int = Field(default=0, ge=0)
+    detected_fields: list[str] = Field(default_factory=list, description="Detected workbook fields")
+    parse_mode: str = Field(default="tabular", min_length=1, description="Import parsing mode")
+    registry_path: str = Field(..., min_length=1, description="Registry JSON path")
+    configs_path: str = Field(..., min_length=1, description="Configs JSON path")
+    issues_path: str = Field(..., min_length=1, description="Issues JSON path")
+    message: str = Field(default="", description="Summary message")

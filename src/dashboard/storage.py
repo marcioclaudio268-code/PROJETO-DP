@@ -38,22 +38,25 @@ def build_dashboard_paths(run_root: str | Path) -> DashboardPaths:
 
 def create_dashboard_run_from_paths(
     workbook_path: str | Path,
-    config_path: str | Path,
+    config_path: str | Path | None = None,
     *,
     runs_root: str | Path | None = None,
     run_id: str | None = None,
 ) -> DashboardPaths:
     source_workbook = Path(workbook_path)
-    source_config = Path(config_path)
     target_paths = _prepare_run_root(runs_root=runs_root, run_id=run_id)
 
     shutil.copy2(source_workbook, target_paths.editable_workbook_path)
-    shutil.copy2(source_config, target_paths.editable_config_path)
+    source_config_name = None
+    if config_path is not None:
+        source_config = Path(config_path)
+        shutil.copy2(source_config, target_paths.editable_config_path)
+        source_config_name = source_config.name
 
     state = DashboardState(
         session_version=DASHBOARD_SESSION_VERSION,
         source_workbook_name=source_workbook.name,
-        source_config_name=source_config.name,
+        source_config_name=source_config_name,
     )
     write_dashboard_state(target_paths.state_path, state)
     return target_paths
@@ -63,20 +66,17 @@ def create_dashboard_run_from_uploads(
     *,
     workbook_name: str,
     workbook_bytes: bytes,
-    config_name: str,
-    config_bytes: bytes,
     runs_root: str | Path | None = None,
     run_id: str | None = None,
 ) -> DashboardPaths:
     target_paths = _prepare_run_root(runs_root=runs_root, run_id=run_id)
 
     target_paths.editable_workbook_path.write_bytes(workbook_bytes)
-    target_paths.editable_config_path.write_bytes(config_bytes)
 
     state = DashboardState(
         session_version=DASHBOARD_SESSION_VERSION,
         source_workbook_name=workbook_name,
-        source_config_name=config_name,
+        source_config_name=None,
     )
     write_dashboard_state(target_paths.state_path, state)
     return target_paths

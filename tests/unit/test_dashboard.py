@@ -6,6 +6,8 @@ from pathlib import Path
 from openpyxl import load_workbook
 
 from dashboard import (
+    ConfigResolutionStatus,
+    ConfigResolver,
     DashboardPendingItem,
     apply_workbook_cell_correction,
     create_dashboard_run_from_paths,
@@ -79,6 +81,51 @@ def _prepare_workbook_and_config(tmp_path: Path) -> tuple[Path, Path]:
         encoding="utf-8",
     )
     return workbook_path, config_path
+
+
+def _write_internal_config(
+    root: Path,
+    *,
+    company_code: str,
+    file_name: str,
+    competence: str,
+    config_version: str = "cfg-v1",
+    payload_override: dict | None = None,
+) -> Path:
+    payload = {
+        "company_code": company_code,
+        "company_name": "Dela More",
+        "default_process": "11",
+        "competence": competence,
+        "config_version": config_version,
+        "event_mappings": [
+            {
+                "event_negocio": "gratificacao",
+                "rubrica_saida": "201",
+            }
+        ],
+        "employee_mappings": [
+            {
+                "source_employee_key": "col-001",
+                "source_employee_name": "Ana Lima",
+                "domain_registration": "123",
+            }
+        ],
+        "pending_policy": {
+            "review_required_event_negocios": [],
+            "review_required_fields": [],
+            "block_on_ambiguous_observations": True,
+            "block_on_unmapped_employee": True,
+            "block_on_unmapped_event": True,
+        },
+        "validation_flags": {},
+    }
+    if payload_override:
+        payload.update(payload_override)
+    path = root / company_code / file_name
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, ensure_ascii=True, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return path
 
 
 def test_txt_download_enabled_requires_success_and_serialized_lines() -> None:
@@ -208,3 +255,69 @@ def test_upsert_employee_mapping_override_updates_config(tmp_path: Path) -> None
     assert mapping["domain_registration"] == "456"
     assert mapping["source_employee_name"] == "Bruno Souza"
     assert mapping["active"] is True
+
+
+def test_config_resolver_prefers_specific_company_competence(tmp_path: Path) -> None:
+    root = tmp_path / "configs"
+    _write_internal_config(root, company_code="72", file_name="03-2024.json", competence="03/2024", config_version="cfg-specific")
+    _write_internal_config(root, company_code="72", file_name="active.json", competence="01/2024", config_version="cfg-active")
+
+    result = ConfigResolver(registry_root=tmp_path / "master", legacy_root=root).resolve(
+        company_code="72", competence="03/2024"
+    )
+
+    assert result.status == ConfigResolutionStatus.FOUND
+    assert result.config_source == "legacy_company_competence"
+    assert result.config_version == "cfg-specific"
+
+
+def test_config_resolver_returns_not_found_when_no_internal_config_exists(tmp_path: Path) -> None:
+    result = ConfigResolver(registry_root=tmp_path / "master", legacy_root=tmp_path / "configs").resolve(
+        company_code="72", competence="03/2024"
+    )
+
+    assert result.status == ConfigResolutionStatus.NOT_FOUND
+
+
+def test_config_resolver_returns_ambiguous_when_multiple_specific_candidates_exist(tmp_path: Path) -> None:
+    root = tmp_path / "configs"
+    _write_internal_config(root, company_code="72", file_name="03-2024.json", competence="03/2024")
+    _write_internal_config(root, company_code="72", file_name="03_2024.json", competence="03/2024")
+
+    result = ConfigResolver(registry_root=tmp_path / "master", legacy_root=root).resolve(
+        company_code="72", competence="03/2024"
+    )
+
+    assert result.status == ConfigResolutionStatus.AMBIGUOUS
+
+
+def test_config_resolver_returns_mismatch_for_wrong_company(tmp_path: Path) -> None:
+    root = tmp_path / "configs"
+    _write_internal_config(
+        root,
+        company_code="72",
+        file_name="03-2024.json",
+        competence="03/2024",
+        payload_override={"company_code": "99"},
+    )
+
+    result = ConfigResolver(registry_root=tmp_path / "master", legacy_root=root).resolve(
+        company_code="72", competence="03/2024"
+    )
+
+    assert result.status == ConfigResolutionStatus.MISMATCH
+
+
+def test_config_resolver_falls_back_to_active_json(tmp_path: Path) -> None:
+    root = tmp_path / "configs"
+    _write_internal_config(root, company_code="72", file_name="active.json", competence="01/2024", config_version="cfg-active")
+
+    result = ConfigResolver(registry_root=tmp_path / "master", legacy_root=root).resolve(
+        company_code="72", competence="03/2024"
+    )
+
+    assert result.status == ConfigResolutionStatus.FOUND
+    assert result.config_source == "legacy_company_active"
+    assert result.config_version == "cfg-active"
+    assert result.config_payload is not None
+    assert result.config_payload["competence"] == "03/2024"

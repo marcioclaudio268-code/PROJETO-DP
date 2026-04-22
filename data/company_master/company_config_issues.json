@@ -1,0 +1,1955 @@
+[
+  {
+    "company_id": "company:3",
+    "created_at": "2026-04-22T19:43:07.035046Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 3 na competencia 03/2026.",
+    "id": "issue:company:3:company_config_missing:8779579ca7",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.035050Z"
+  },
+  {
+    "company_id": "company:24",
+    "created_at": "2026-04-22T19:43:07.044549Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 24 na competencia 03/2026.",
+    "id": "issue:company:24:company_config_missing:f85ea32764",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.044552Z"
+  },
+  {
+    "company_id": "company:34",
+    "created_at": "2026-04-22T19:43:07.054738Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 34 na competencia 03/2026.",
+    "id": "issue:company:34:company_config_missing:491f8b6de9",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.054741Z"
+  },
+  {
+    "company_id": "company:35",
+    "created_at": "2026-04-22T19:43:07.064467Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 35 na competencia 03/2026.",
+    "id": "issue:company:35:company_config_missing:925b78fcb4",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.064470Z"
+  },
+  {
+    "company_id": "company:39",
+    "created_at": "2026-04-22T19:43:07.074623Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 39 na competencia 03/2026.",
+    "id": "issue:company:39:company_config_missing:6bea526f21",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.074626Z"
+  },
+  {
+    "company_id": "company:43",
+    "created_at": "2026-04-22T19:43:07.084746Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 43 na competencia 03/2026.",
+    "id": "issue:company:43:company_config_missing:1063a45095",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.084749Z"
+  },
+  {
+    "company_id": "company:47",
+    "created_at": "2026-04-22T19:43:07.094950Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 47 na competencia 03/2026.",
+    "id": "issue:company:47:company_config_missing:038dd931b0",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.094953Z"
+  },
+  {
+    "company_id": "company:50",
+    "created_at": "2026-04-22T19:43:07.106122Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 50 na competencia 03/2026.",
+    "id": "issue:company:50:company_config_missing:654bd0a6c0",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.106124Z"
+  },
+  {
+    "company_id": "company:56",
+    "created_at": "2026-04-22T19:43:07.116831Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 56 na competencia 03/2026.",
+    "id": "issue:company:56:company_config_missing:dc1a786eff",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.116835Z"
+  },
+  {
+    "company_id": "company:57",
+    "created_at": "2026-04-22T19:43:07.127612Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 57 na competencia 03/2026.",
+    "id": "issue:company:57:company_config_missing:b85de8925b",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.127615Z"
+  },
+  {
+    "company_id": "company:67",
+    "created_at": "2026-04-22T19:43:07.137943Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 67 na competencia 03/2026.",
+    "id": "issue:company:67:company_config_missing:14835a37a3",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.137945Z"
+  },
+  {
+    "company_id": "company:71",
+    "created_at": "2026-04-22T19:43:07.148974Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 71 na competencia 03/2026.",
+    "id": "issue:company:71:company_config_missing:1536e1d869",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.148977Z"
+  },
+  {
+    "company_id": "company:78",
+    "created_at": "2026-04-22T19:43:07.173271Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 78 na competencia 03/2026.",
+    "id": "issue:company:78:company_config_missing:1e1d6cd827",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.173275Z"
+  },
+  {
+    "company_id": "company:84",
+    "created_at": "2026-04-22T19:43:07.184638Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 84 na competencia 03/2026.",
+    "id": "issue:company:84:company_config_missing:9c15ccfa3c",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.184641Z"
+  },
+  {
+    "company_id": "company:85",
+    "created_at": "2026-04-22T19:43:07.196232Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 85 na competencia 03/2026.",
+    "id": "issue:company:85:company_config_missing:25604fed1f",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.196235Z"
+  },
+  {
+    "company_id": "company:89",
+    "created_at": "2026-04-22T19:43:07.207746Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 89 na competencia 03/2026.",
+    "id": "issue:company:89:company_config_missing:44d3401f4b",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.207749Z"
+  },
+  {
+    "company_id": "company:92",
+    "created_at": "2026-04-22T19:43:07.219066Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 92 na competencia 03/2026.",
+    "id": "issue:company:92:company_config_missing:fc5f01a69e",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.219069Z"
+  },
+  {
+    "company_id": "company:94",
+    "created_at": "2026-04-22T19:43:07.230776Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 94 na competencia 03/2026.",
+    "id": "issue:company:94:company_config_missing:5bc6e0a272",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.230778Z"
+  },
+  {
+    "company_id": "company:99",
+    "created_at": "2026-04-22T19:43:07.242626Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 99 na competencia 04/2026.",
+    "id": "issue:company:99:company_config_missing:ff5e650056",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.242629Z"
+  },
+  {
+    "company_id": "company:116",
+    "created_at": "2026-04-22T19:43:07.254644Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 116 na competencia 03/2026.",
+    "id": "issue:company:116:company_config_missing:8e6af0be96",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.254647Z"
+  },
+  {
+    "company_id": "company:123",
+    "created_at": "2026-04-22T19:43:07.266726Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 123 na competencia 03/2026.",
+    "id": "issue:company:123:company_config_missing:e9148f89b0",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.266729Z"
+  },
+  {
+    "company_id": "company:127",
+    "created_at": "2026-04-22T19:43:07.278997Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 127 na competencia 03/2026.",
+    "id": "issue:company:127:company_config_missing:c8964dc4c4",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.279000Z"
+  },
+  {
+    "company_id": "company:129",
+    "created_at": "2026-04-22T19:43:07.291580Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 129 na competencia 03/2026.",
+    "id": "issue:company:129:company_config_missing:b9974cb590",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.291583Z"
+  },
+  {
+    "company_id": "company:131",
+    "created_at": "2026-04-22T19:43:07.304200Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 131 na competencia 03/2026.",
+    "id": "issue:company:131:company_config_missing:ea8f33f556",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.304203Z"
+  },
+  {
+    "company_id": "company:134",
+    "created_at": "2026-04-22T19:43:07.317140Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 134 na competencia 03/2026.",
+    "id": "issue:company:134:company_config_missing:29ac3811e1",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.317143Z"
+  },
+  {
+    "company_id": "company:136",
+    "created_at": "2026-04-22T19:43:07.330256Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 136 na competencia 04/2026.",
+    "id": "issue:company:136:company_config_missing:c0af512099",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.330260Z"
+  },
+  {
+    "company_id": "company:143",
+    "created_at": "2026-04-22T19:43:07.343439Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 143 na competencia 03/2026.",
+    "id": "issue:company:143:company_config_missing:622eadb929",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.343442Z"
+  },
+  {
+    "company_id": "company:147",
+    "created_at": "2026-04-22T19:43:07.356609Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 147 na competencia 03/2026.",
+    "id": "issue:company:147:company_config_missing:bf90412078",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.356612Z"
+  },
+  {
+    "company_id": "company:148",
+    "created_at": "2026-04-22T19:43:07.370552Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 148 na competencia 03/2026.",
+    "id": "issue:company:148:company_config_missing:7d7f534c81",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.370556Z"
+  },
+  {
+    "company_id": "company:149",
+    "created_at": "2026-04-22T19:43:07.384533Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 149 na competencia 03/2026.",
+    "id": "issue:company:149:company_config_missing:73a543004b",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.384537Z"
+  },
+  {
+    "company_id": "company:150",
+    "created_at": "2026-04-22T19:43:07.398220Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 150 na competencia 03/2026.",
+    "id": "issue:company:150:company_config_missing:c5aac20ae4",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.398223Z"
+  },
+  {
+    "company_id": "company:152",
+    "created_at": "2026-04-22T19:43:07.412429Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 152 na competencia 03/2026.",
+    "id": "issue:company:152:company_config_missing:8854c4be49",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.412433Z"
+  },
+  {
+    "company_id": "company:156",
+    "created_at": "2026-04-22T19:43:07.427137Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 156 na competencia 03/2026.",
+    "id": "issue:company:156:company_config_missing:d122ee2f9b",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.427140Z"
+  },
+  {
+    "company_id": "company:160",
+    "created_at": "2026-04-22T19:43:07.442303Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 160 na competencia 03/2026.",
+    "id": "issue:company:160:company_config_missing:64feab6798",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.442307Z"
+  },
+  {
+    "company_id": "company:164",
+    "created_at": "2026-04-22T19:43:07.457826Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 164 na competencia 03/2026.",
+    "id": "issue:company:164:company_config_missing:41f7626a6e",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.457829Z"
+  },
+  {
+    "company_id": "company:165",
+    "created_at": "2026-04-22T19:43:07.472809Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 165 na competencia 04/2026.",
+    "id": "issue:company:165:company_config_missing:bab79d4947",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.472812Z"
+  },
+  {
+    "company_id": "company:167",
+    "created_at": "2026-04-22T19:43:07.487678Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 167 na competencia 03/2026.",
+    "id": "issue:company:167:company_config_missing:cf011e9cd7",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.487681Z"
+  },
+  {
+    "company_id": "company:170",
+    "created_at": "2026-04-22T19:43:07.504264Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 170 na competencia 03/2026.",
+    "id": "issue:company:170:company_config_missing:e44c43a9e4",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.504270Z"
+  },
+  {
+    "company_id": "company:173",
+    "created_at": "2026-04-22T19:43:07.521168Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 173 na competencia 04/2026.",
+    "id": "issue:company:173:company_config_missing:677ae7d400",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.521171Z"
+  },
+  {
+    "company_id": "company:183",
+    "created_at": "2026-04-22T19:43:07.536807Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 183 na competencia 03/2026.",
+    "id": "issue:company:183:company_config_missing:9098f98da2",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.536810Z"
+  },
+  {
+    "company_id": "company:197",
+    "created_at": "2026-04-22T19:43:07.552706Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 197 na competencia 03/2026.",
+    "id": "issue:company:197:company_config_missing:5926de55f9",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.552709Z"
+  },
+  {
+    "company_id": "company:202",
+    "created_at": "2026-04-22T19:43:07.568475Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 202 na competencia 03/2026.",
+    "id": "issue:company:202:company_config_missing:7509412a10",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.568478Z"
+  },
+  {
+    "company_id": "company:244",
+    "created_at": "2026-04-22T19:43:07.584872Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 244 na competencia 03/2026.",
+    "id": "issue:company:244:company_config_missing:9472408b27",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.584876Z"
+  },
+  {
+    "company_id": "company:245",
+    "created_at": "2026-04-22T19:43:07.601288Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 245 na competencia 03/2026.",
+    "id": "issue:company:245:company_config_missing:4fbf639d68",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.601291Z"
+  },
+  {
+    "company_id": "company:249",
+    "created_at": "2026-04-22T19:43:07.617049Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 249 na competencia 04/2026.",
+    "id": "issue:company:249:company_config_missing:42750490c7",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.617052Z"
+  },
+  {
+    "company_id": "company:283",
+    "created_at": "2026-04-22T19:43:07.633619Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 283 na competencia 03/2026.",
+    "id": "issue:company:283:company_config_missing:074200583a",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.633623Z"
+  },
+  {
+    "company_id": "company:305",
+    "created_at": "2026-04-22T19:43:07.650334Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 305 na competencia 03/2026.",
+    "id": "issue:company:305:company_config_missing:43f3915062",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.650337Z"
+  },
+  {
+    "company_id": "company:311",
+    "created_at": "2026-04-22T19:43:07.666971Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 311 na competencia 03/2026.",
+    "id": "issue:company:311:company_config_missing:a15401b2fc",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.666974Z"
+  },
+  {
+    "company_id": "company:312",
+    "created_at": "2026-04-22T19:43:07.684434Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 312 na competencia 03/2026.",
+    "id": "issue:company:312:company_config_missing:7f192c4894",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.684438Z"
+  },
+  {
+    "company_id": "company:328",
+    "created_at": "2026-04-22T19:43:07.701617Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 328 na competencia 03/2026.",
+    "id": "issue:company:328:company_config_missing:e1e9453f99",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.701620Z"
+  },
+  {
+    "company_id": "company:331",
+    "created_at": "2026-04-22T19:43:07.719624Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 331 na competencia 04/2026.",
+    "id": "issue:company:331:company_config_missing:f4d5aa647a",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.719628Z"
+  },
+  {
+    "company_id": "company:337",
+    "created_at": "2026-04-22T19:43:07.736906Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 337 na competencia 03/2026.",
+    "id": "issue:company:337:company_config_missing:4bd2f85e8b",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.736909Z"
+  },
+  {
+    "company_id": "company:342",
+    "created_at": "2026-04-22T19:43:07.754436Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 342 na competencia 03/2026.",
+    "id": "issue:company:342:company_config_missing:d961303b04",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.754439Z"
+  },
+  {
+    "company_id": "company:366",
+    "created_at": "2026-04-22T19:43:07.772265Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 366 na competencia 04/2026.",
+    "id": "issue:company:366:company_config_missing:8e0981bac0",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.772269Z"
+  },
+  {
+    "company_id": "company:367",
+    "created_at": "2026-04-22T19:43:07.790470Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 367 na competencia 03/2026.",
+    "id": "issue:company:367:company_config_missing:568ca3f575",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.790473Z"
+  },
+  {
+    "company_id": "company:376",
+    "created_at": "2026-04-22T19:43:07.808588Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 376 na competencia 03/2026.",
+    "id": "issue:company:376:company_config_missing:562cb5347e",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.808591Z"
+  },
+  {
+    "company_id": "company:388",
+    "created_at": "2026-04-22T19:43:07.826598Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 388 na competencia 03/2026.",
+    "id": "issue:company:388:company_config_missing:32f5d3673e",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.826601Z"
+  },
+  {
+    "company_id": "company:395",
+    "created_at": "2026-04-22T19:43:07.844949Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 395 na competencia 03/2026.",
+    "id": "issue:company:395:company_config_missing:70b322edce",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.844953Z"
+  },
+  {
+    "company_id": "company:403",
+    "created_at": "2026-04-22T19:43:07.863946Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 403 na competencia 03/2026.",
+    "id": "issue:company:403:company_config_missing:626293876a",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.863949Z"
+  },
+  {
+    "company_id": "company:413",
+    "created_at": "2026-04-22T19:43:07.882476Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 413 na competencia 03/2026.",
+    "id": "issue:company:413:company_config_missing:c9863782f6",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.882480Z"
+  },
+  {
+    "company_id": "company:419",
+    "created_at": "2026-04-22T19:43:07.902500Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 419 na competencia 03/2026.",
+    "id": "issue:company:419:company_config_missing:d4fbd7bef1",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.902504Z"
+  },
+  {
+    "company_id": "company:428",
+    "created_at": "2026-04-22T19:43:07.922021Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 428 na competencia 03/2026.",
+    "id": "issue:company:428:company_config_missing:68102664d6",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.922024Z"
+  },
+  {
+    "company_id": "company:434",
+    "created_at": "2026-04-22T19:43:07.942338Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 434 na competencia 03/2026.",
+    "id": "issue:company:434:company_config_missing:ffc14a9a88",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.942341Z"
+  },
+  {
+    "company_id": "company:436",
+    "created_at": "2026-04-22T19:43:07.962229Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 436 na competencia 04/2026.",
+    "id": "issue:company:436:company_config_missing:0a4b5c0676",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.962232Z"
+  },
+  {
+    "company_id": "company:437",
+    "created_at": "2026-04-22T19:43:07.981551Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 437 na competencia 03/2026.",
+    "id": "issue:company:437:company_config_missing:b36b2973bb",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:07.981555Z"
+  },
+  {
+    "company_id": "company:439",
+    "created_at": "2026-04-22T19:43:08.000866Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 439 na competencia 03/2026.",
+    "id": "issue:company:439:company_config_missing:375d3f49a9",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.000869Z"
+  },
+  {
+    "company_id": "company:446",
+    "created_at": "2026-04-22T19:43:08.020818Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 446 na competencia 03/2026.",
+    "id": "issue:company:446:company_config_missing:bafc82ee3e",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.020822Z"
+  },
+  {
+    "company_id": "company:448",
+    "created_at": "2026-04-22T19:43:08.041089Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 448 na competencia 04/2026.",
+    "id": "issue:company:448:company_config_missing:e028c2a18a",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.041092Z"
+  },
+  {
+    "company_id": "company:458",
+    "created_at": "2026-04-22T19:43:08.061267Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 458 na competencia 04/2026.",
+    "id": "issue:company:458:company_config_missing:4b7743dee2",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.061270Z"
+  },
+  {
+    "company_id": "company:470",
+    "created_at": "2026-04-22T19:43:08.081427Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 470 na competencia 03/2026.",
+    "id": "issue:company:470:company_config_missing:1c73121eee",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.081430Z"
+  },
+  {
+    "company_id": "company:476",
+    "created_at": "2026-04-22T19:43:08.101770Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 476 na competencia 03/2026.",
+    "id": "issue:company:476:company_config_missing:235cc74f1b",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.101774Z"
+  },
+  {
+    "company_id": "company:502",
+    "created_at": "2026-04-22T19:43:08.122653Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 502 na competencia 03/2026.",
+    "id": "issue:company:502:company_config_missing:b1b1db78fd",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.122657Z"
+  },
+  {
+    "company_id": "company:503",
+    "created_at": "2026-04-22T19:43:08.143443Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 503 na competencia 03/2026.",
+    "id": "issue:company:503:company_config_missing:8bceacac23",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.143446Z"
+  },
+  {
+    "company_id": "company:504",
+    "created_at": "2026-04-22T19:43:08.164457Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 504 na competencia 03/2026.",
+    "id": "issue:company:504:company_config_missing:ab951d8149",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.164460Z"
+  },
+  {
+    "company_id": "company:505",
+    "created_at": "2026-04-22T19:43:08.188919Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 505 na competencia 03/2026.",
+    "id": "issue:company:505:company_config_missing:81fdb30d65",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.188923Z"
+  },
+  {
+    "company_id": "company:506",
+    "created_at": "2026-04-22T19:43:08.210554Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 506 na competencia 03/2026.",
+    "id": "issue:company:506:company_config_missing:53d2bfd71a",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.210558Z"
+  },
+  {
+    "company_id": "company:508",
+    "created_at": "2026-04-22T19:43:08.231421Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 508 na competencia 03/2026.",
+    "id": "issue:company:508:company_config_missing:80740e0c8d",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.231425Z"
+  },
+  {
+    "company_id": "company:525",
+    "created_at": "2026-04-22T19:43:08.253247Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 525 na competencia 03/2026.",
+    "id": "issue:company:525:company_config_missing:0e65facfa1",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.253250Z"
+  },
+  {
+    "company_id": "company:528",
+    "created_at": "2026-04-22T19:43:08.274607Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 528 na competencia 04/2026.",
+    "id": "issue:company:528:company_config_missing:b9142fc427",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.274611Z"
+  },
+  {
+    "company_id": "company:543",
+    "created_at": "2026-04-22T19:43:08.296234Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 543 na competencia 03/2026.",
+    "id": "issue:company:543:company_config_missing:35534df7c5",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.296238Z"
+  },
+  {
+    "company_id": "company:546",
+    "created_at": "2026-04-22T19:43:08.317665Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 546 na competencia 03/2026.",
+    "id": "issue:company:546:company_config_missing:8bf9879bb7",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.317668Z"
+  },
+  {
+    "company_id": "company:549",
+    "created_at": "2026-04-22T19:43:08.339508Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 549 na competencia 03/2026.",
+    "id": "issue:company:549:company_config_missing:829420b1ad",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.339512Z"
+  },
+  {
+    "company_id": "company:552",
+    "created_at": "2026-04-22T19:43:08.361493Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 552 na competencia 03/2026.",
+    "id": "issue:company:552:company_config_missing:3a06727b20",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.361496Z"
+  },
+  {
+    "company_id": "company:554",
+    "created_at": "2026-04-22T19:43:08.383938Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 554 na competencia 03/2026.",
+    "id": "issue:company:554:company_config_missing:cad1e40449",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.383941Z"
+  },
+  {
+    "company_id": "company:605",
+    "created_at": "2026-04-22T19:43:08.408265Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 605 na competencia 03/2026.",
+    "id": "issue:company:605:company_config_missing:16e77747f2",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.408269Z"
+  },
+  {
+    "company_id": "company:707",
+    "created_at": "2026-04-22T19:43:08.432788Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 707 na competencia 03/2026.",
+    "id": "issue:company:707:company_config_missing:57b668831f",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.432792Z"
+  },
+  {
+    "company_id": "company:726",
+    "created_at": "2026-04-22T19:43:08.456154Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 726 na competencia 03/2026.",
+    "id": "issue:company:726:company_config_missing:8a4d7bf16e",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.456157Z"
+  },
+  {
+    "company_id": "company:729",
+    "created_at": "2026-04-22T19:43:08.479277Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 729 na competencia 03/2026.",
+    "id": "issue:company:729:company_config_missing:d4927dd375",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.479280Z"
+  },
+  {
+    "company_id": "company:730",
+    "created_at": "2026-04-22T19:43:08.502365Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 730 na competencia 04/2026.",
+    "id": "issue:company:730:company_config_missing:c8c61e013f",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.502368Z"
+  },
+  {
+    "company_id": "company:733",
+    "created_at": "2026-04-22T19:43:08.526518Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 733 na competencia 03/2026.",
+    "id": "issue:company:733:company_config_missing:7c6274b73b",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.526522Z"
+  },
+  {
+    "company_id": "company:736",
+    "created_at": "2026-04-22T19:43:08.550845Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 736 na competencia 03/2026.",
+    "id": "issue:company:736:company_config_missing:3ce3d28fa6",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.550848Z"
+  },
+  {
+    "company_id": "company:737",
+    "created_at": "2026-04-22T19:43:08.574980Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 737 na competencia 03/2026.",
+    "id": "issue:company:737:company_config_missing:6d306db45b",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.574984Z"
+  },
+  {
+    "company_id": "company:739",
+    "created_at": "2026-04-22T19:43:08.600823Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 739 na competencia 03/2026.",
+    "id": "issue:company:739:company_config_missing:7c2125374e",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.600827Z"
+  },
+  {
+    "company_id": "company:742",
+    "created_at": "2026-04-22T19:43:08.627984Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 742 na competencia 03/2026.",
+    "id": "issue:company:742:company_config_missing:ab82006e64",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.627988Z"
+  },
+  {
+    "company_id": "company:744",
+    "created_at": "2026-04-22T19:43:08.653526Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 744 na competencia 03/2026.",
+    "id": "issue:company:744:company_config_missing:bf50c8d565",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.653529Z"
+  },
+  {
+    "company_id": "company:746",
+    "created_at": "2026-04-22T19:43:08.678352Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 746 na competencia 03/2026.",
+    "id": "issue:company:746:company_config_missing:9802c459b5",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.678356Z"
+  },
+  {
+    "company_id": "company:752",
+    "created_at": "2026-04-22T19:43:08.703998Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 752 na competencia 03/2026.",
+    "id": "issue:company:752:company_config_missing:703aa51d9a",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.704002Z"
+  },
+  {
+    "company_id": "company:755",
+    "created_at": "2026-04-22T19:43:08.730464Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 755 na competencia 04/2026.",
+    "id": "issue:company:755:company_config_missing:a2c7ee0c9d",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.730468Z"
+  },
+  {
+    "company_id": "company:756",
+    "created_at": "2026-04-22T19:43:08.760194Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 756 na competencia 03/2026.",
+    "id": "issue:company:756:company_config_missing:f4405a8465",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.760198Z"
+  },
+  {
+    "company_id": "company:784",
+    "created_at": "2026-04-22T19:43:08.786112Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 784 na competencia 03/2026.",
+    "id": "issue:company:784:company_config_missing:e916a9b5c1",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.786116Z"
+  },
+  {
+    "company_id": "company:786",
+    "created_at": "2026-04-22T19:43:08.812833Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 786 na competencia 03/2026.",
+    "id": "issue:company:786:company_config_missing:1287bac599",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.812837Z"
+  },
+  {
+    "company_id": "company:789",
+    "created_at": "2026-04-22T19:43:08.839547Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 789 na competencia 03/2026.",
+    "id": "issue:company:789:company_config_missing:32349408b2",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.839551Z"
+  },
+  {
+    "company_id": "company:790",
+    "created_at": "2026-04-22T19:43:08.868158Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 790 na competencia 03/2026.",
+    "id": "issue:company:790:company_config_missing:e6de1abafc",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.868162Z"
+  },
+  {
+    "company_id": "company:793",
+    "created_at": "2026-04-22T19:43:08.897920Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 793 na competencia 03/2026.",
+    "id": "issue:company:793:company_config_missing:fa035168d1",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.897923Z"
+  },
+  {
+    "company_id": "company:802",
+    "created_at": "2026-04-22T19:43:08.925890Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 802 na competencia 03/2026.",
+    "id": "issue:company:802:company_config_missing:58d57e43e4",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.925895Z"
+  },
+  {
+    "company_id": "company:804",
+    "created_at": "2026-04-22T19:43:08.953755Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 804 na competencia 03/2026.",
+    "id": "issue:company:804:company_config_missing:d510d5bac8",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.953759Z"
+  },
+  {
+    "company_id": "company:812",
+    "created_at": "2026-04-22T19:43:08.982448Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 812 na competencia 03/2026.",
+    "id": "issue:company:812:company_config_missing:88c08b1f0d",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:08.982452Z"
+  },
+  {
+    "company_id": "company:814",
+    "created_at": "2026-04-22T19:43:09.010655Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 814 na competencia 03/2026.",
+    "id": "issue:company:814:company_config_missing:9ab0a69531",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:09.010658Z"
+  },
+  {
+    "company_id": "company:817",
+    "created_at": "2026-04-22T19:43:09.039791Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 817 na competencia 03/2026.",
+    "id": "issue:company:817:company_config_missing:51848a16ef",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:09.039796Z"
+  },
+  {
+    "company_id": "company:821",
+    "created_at": "2026-04-22T19:43:09.071226Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 821 na competencia 03/2026.",
+    "id": "issue:company:821:company_config_missing:a8e9b40098",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:09.071231Z"
+  },
+  {
+    "company_id": "company:823",
+    "created_at": "2026-04-22T19:43:09.104547Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 823 na competencia 03/2026.",
+    "id": "issue:company:823:company_config_missing:325bbda757",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:09.104551Z"
+  },
+  {
+    "company_id": "company:824",
+    "created_at": "2026-04-22T19:43:09.135210Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 824 na competencia 03/2026.",
+    "id": "issue:company:824:company_config_missing:e7aec0d4af",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:09.135214Z"
+  },
+  {
+    "company_id": "company:825",
+    "created_at": "2026-04-22T19:43:09.165483Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 825 na competencia 03/2026.",
+    "id": "issue:company:825:company_config_missing:d8757c7e8f",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:09.165487Z"
+  },
+  {
+    "company_id": "company:830",
+    "created_at": "2026-04-22T19:43:09.196733Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 830 na competencia 03/2026.",
+    "id": "issue:company:830:company_config_missing:fe3dd71aa1",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:09.196736Z"
+  },
+  {
+    "company_id": "company:833",
+    "created_at": "2026-04-22T19:43:09.227960Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 833 na competencia 03/2026.",
+    "id": "issue:company:833:company_config_missing:abf9ee5992",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:09.227964Z"
+  },
+  {
+    "company_id": "company:835",
+    "created_at": "2026-04-22T19:43:09.262182Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 835 na competencia 03/2026.",
+    "id": "issue:company:835:company_config_missing:539886f453",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:09.262186Z"
+  },
+  {
+    "company_id": "company:837",
+    "created_at": "2026-04-22T19:43:09.293623Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 837 na competencia 03/2026.",
+    "id": "issue:company:837:company_config_missing:d73ed7a432",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:09.293627Z"
+  },
+  {
+    "company_id": "company:838",
+    "created_at": "2026-04-22T19:43:09.325026Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 838 na competencia 03/2026.",
+    "id": "issue:company:838:company_config_missing:f999be07f1",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:09.325031Z"
+  },
+  {
+    "company_id": "company:839",
+    "created_at": "2026-04-22T19:43:09.358386Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 839 na competencia 03/2026.",
+    "id": "issue:company:839:company_config_missing:9996b6e577",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:09.358391Z"
+  },
+  {
+    "company_id": "company:841",
+    "created_at": "2026-04-22T19:43:09.396904Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 841 na competencia 03/2026.",
+    "id": "issue:company:841:company_config_missing:49acb46624",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:09.396908Z"
+  },
+  {
+    "company_id": "company:847",
+    "created_at": "2026-04-22T19:43:09.432126Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 847 na competencia 03/2026.",
+    "id": "issue:company:847:company_config_missing:9c0caa3640",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:09.432131Z"
+  },
+  {
+    "company_id": "company:850",
+    "created_at": "2026-04-22T19:43:09.464451Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 850 na competencia 03/2026.",
+    "id": "issue:company:850:company_config_missing:971abfd090",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:09.464455Z"
+  },
+  {
+    "company_id": "company:854",
+    "created_at": "2026-04-22T19:43:09.495968Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 854 na competencia 03/2026.",
+    "id": "issue:company:854:company_config_missing:b00cb01197",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:09.495972Z"
+  },
+  {
+    "company_id": "company:855",
+    "created_at": "2026-04-22T19:43:09.526953Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 855 na competencia 03/2026.",
+    "id": "issue:company:855:company_config_missing:3544708777",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:09.526958Z"
+  },
+  {
+    "company_id": "company:856",
+    "created_at": "2026-04-22T19:43:09.559351Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 856 na competencia 03/2026.",
+    "id": "issue:company:856:company_config_missing:5fe17091d4",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:09.559355Z"
+  },
+  {
+    "company_id": "company:857",
+    "created_at": "2026-04-22T19:43:09.598116Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 857 na competencia 03/2026.",
+    "id": "issue:company:857:company_config_missing:cdf690caaa",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:09.598121Z"
+  },
+  {
+    "company_id": "company:872",
+    "created_at": "2026-04-22T19:43:09.639172Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 872 na competencia 03/2026.",
+    "id": "issue:company:872:company_config_missing:35a5d62688",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:09.639176Z"
+  },
+  {
+    "company_id": "company:876",
+    "created_at": "2026-04-22T19:43:09.680796Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 876 na competencia 03/2026.",
+    "id": "issue:company:876:company_config_missing:44013a39b3",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:09.680800Z"
+  },
+  {
+    "company_id": "company:878",
+    "created_at": "2026-04-22T19:43:09.717545Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 878 na competencia 03/2026.",
+    "id": "issue:company:878:company_config_missing:a1f2833727",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:09.717550Z"
+  },
+  {
+    "company_id": "company:879",
+    "created_at": "2026-04-22T19:43:09.754683Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 879 na competencia 03/2026.",
+    "id": "issue:company:879:company_config_missing:0dbf0039bc",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:09.754688Z"
+  },
+  {
+    "company_id": "company:885",
+    "created_at": "2026-04-22T19:43:09.789702Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 885 na competencia 03/2026.",
+    "id": "issue:company:885:company_config_missing:8726998108",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:09.789707Z"
+  },
+  {
+    "company_id": "company:887",
+    "created_at": "2026-04-22T19:43:09.824380Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 887 na competencia 03/2026.",
+    "id": "issue:company:887:company_config_missing:ca8d5fb1b3",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:09.824385Z"
+  },
+  {
+    "company_id": "company:889",
+    "created_at": "2026-04-22T19:43:09.858430Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 889 na competencia 03/2026.",
+    "id": "issue:company:889:company_config_missing:16a87a85e3",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:09.858434Z"
+  },
+  {
+    "company_id": "company:895",
+    "created_at": "2026-04-22T19:43:09.896403Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 895 na competencia 03/2026.",
+    "id": "issue:company:895:company_config_missing:b194c4e5b3",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:09.896410Z"
+  },
+  {
+    "company_id": "company:901",
+    "created_at": "2026-04-22T19:43:09.932865Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 901 na competencia 03/2026.",
+    "id": "issue:company:901:company_config_missing:5e2f9f114a",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:09.932869Z"
+  },
+  {
+    "company_id": "company:903",
+    "created_at": "2026-04-22T19:43:09.968601Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 903 na competencia 03/2026.",
+    "id": "issue:company:903:company_config_missing:ba3bb8b478",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:09.968605Z"
+  },
+  {
+    "company_id": "company:907",
+    "created_at": "2026-04-22T19:43:10.002286Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 907 na competencia 03/2026.",
+    "id": "issue:company:907:company_config_missing:262f5e1d78",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:10.002290Z"
+  },
+  {
+    "company_id": "company:910",
+    "created_at": "2026-04-22T19:43:10.035561Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 910 na competencia 03/2026.",
+    "id": "issue:company:910:company_config_missing:fb8dd6c142",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:10.035565Z"
+  },
+  {
+    "company_id": "company:913",
+    "created_at": "2026-04-22T19:43:10.069159Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 913 na competencia 03/2026.",
+    "id": "issue:company:913:company_config_missing:7fa40f92a1",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:10.069163Z"
+  },
+  {
+    "company_id": "company:916",
+    "created_at": "2026-04-22T19:43:10.120935Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 916 na competencia 03/2026.",
+    "id": "issue:company:916:company_config_missing:ad14f74cc5",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:10.120941Z"
+  },
+  {
+    "company_id": "company:917",
+    "created_at": "2026-04-22T19:43:10.162336Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 917 na competencia 03/2026.",
+    "id": "issue:company:917:company_config_missing:3da8fb5c38",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:10.162340Z"
+  },
+  {
+    "company_id": "company:919",
+    "created_at": "2026-04-22T19:43:10.203518Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 919 na competencia 03/2026.",
+    "id": "issue:company:919:company_config_missing:3bab633945",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:10.203522Z"
+  },
+  {
+    "company_id": "company:923",
+    "created_at": "2026-04-22T19:43:10.241828Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 923 na competencia 04/2026.",
+    "id": "issue:company:923:company_config_missing:e9b3e85a94",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:10.241832Z"
+  },
+  {
+    "company_id": "company:926",
+    "created_at": "2026-04-22T19:43:10.278396Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 926 na competencia 03/2026.",
+    "id": "issue:company:926:company_config_missing:5e970c8b06",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:10.278401Z"
+  },
+  {
+    "company_id": "company:927",
+    "created_at": "2026-04-22T19:43:10.316907Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 927 na competencia 03/2026.",
+    "id": "issue:company:927:company_config_missing:c924fe7149",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:10.316911Z"
+  },
+  {
+    "company_id": "company:931",
+    "created_at": "2026-04-22T19:43:10.353313Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 931 na competencia 03/2026.",
+    "id": "issue:company:931:company_config_missing:7d081baa01",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:10.353317Z"
+  },
+  {
+    "company_id": "company:935",
+    "created_at": "2026-04-22T19:43:10.390586Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 935 na competencia 03/2026.",
+    "id": "issue:company:935:company_config_missing:40dec3ff23",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:10.390590Z"
+  },
+  {
+    "company_id": "company:940",
+    "created_at": "2026-04-22T19:43:10.434880Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 940 na competencia 03/2026.",
+    "id": "issue:company:940:company_config_missing:ba284f1a52",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:10.434884Z"
+  },
+  {
+    "company_id": "company:941",
+    "created_at": "2026-04-22T19:43:10.470431Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 941 na competencia 03/2026.",
+    "id": "issue:company:941:company_config_missing:075126bedf",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:10.470436Z"
+  },
+  {
+    "company_id": "company:943",
+    "created_at": "2026-04-22T19:43:10.505982Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 943 na competencia 03/2026.",
+    "id": "issue:company:943:company_config_missing:92323d0a7c",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:10.505986Z"
+  },
+  {
+    "company_id": "company:944",
+    "created_at": "2026-04-22T19:43:10.541919Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 944 na competencia 03/2026.",
+    "id": "issue:company:944:company_config_missing:9c59a35a0d",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:10.541923Z"
+  },
+  {
+    "company_id": "company:947",
+    "created_at": "2026-04-22T19:43:10.578570Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 947 na competencia 03/2026.",
+    "id": "issue:company:947:company_config_missing:c01c5aca31",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:10.578574Z"
+  },
+  {
+    "company_id": "company:948",
+    "created_at": "2026-04-22T19:43:10.627474Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 948 na competencia 03/2026.",
+    "id": "issue:company:948:company_config_missing:af0a13c5d8",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:10.627479Z"
+  },
+  {
+    "company_id": "company:959",
+    "created_at": "2026-04-22T19:43:10.671843Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 959 na competencia 03/2026.",
+    "id": "issue:company:959:company_config_missing:73b4822346",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:10.671847Z"
+  },
+  {
+    "company_id": "company:963",
+    "created_at": "2026-04-22T19:43:10.715402Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 963 na competencia 02/2026.",
+    "id": "issue:company:963:company_config_missing:25d75e17f4",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:10.715406Z"
+  },
+  {
+    "company_id": "company:964",
+    "created_at": "2026-04-22T19:43:10.758072Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 964 na competencia 03/2026.",
+    "id": "issue:company:964:company_config_missing:7dbd2772ad",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:10.758076Z"
+  },
+  {
+    "company_id": "company:969",
+    "created_at": "2026-04-22T19:43:10.798515Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 969 na competencia 03/2026.",
+    "id": "issue:company:969:company_config_missing:a714aaf883",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:10.798520Z"
+  },
+  {
+    "company_id": "company:970",
+    "created_at": "2026-04-22T19:43:10.838063Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 970 na competencia 03/2026.",
+    "id": "issue:company:970:company_config_missing:9499f74630",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:10.838067Z"
+  },
+  {
+    "company_id": "company:972",
+    "created_at": "2026-04-22T19:43:10.876054Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 972 na competencia 04/2026.",
+    "id": "issue:company:972:company_config_missing:e63c326fa1",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:10.876058Z"
+  },
+  {
+    "company_id": "company:973",
+    "created_at": "2026-04-22T19:43:10.913737Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 973 na competencia 04/2026.",
+    "id": "issue:company:973:company_config_missing:5d1a220189",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:10.913742Z"
+  },
+  {
+    "company_id": "company:976",
+    "created_at": "2026-04-22T19:43:10.954071Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 976 na competencia 03/2026.",
+    "id": "issue:company:976:company_config_missing:e26d5074a3",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:10.954076Z"
+  },
+  {
+    "company_id": "company:978",
+    "created_at": "2026-04-22T19:43:10.991975Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 978 na competencia 03/2026.",
+    "id": "issue:company:978:company_config_missing:8e472a5124",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:10.991978Z"
+  },
+  {
+    "company_id": "company:983",
+    "created_at": "2026-04-22T19:43:11.030316Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 983 na competencia 03/2026.",
+    "id": "issue:company:983:company_config_missing:47b9f4b7b0",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:11.030320Z"
+  },
+  {
+    "company_id": "company:987",
+    "created_at": "2026-04-22T19:43:11.073995Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 987 na competencia 03/2026.",
+    "id": "issue:company:987:company_config_missing:94306d774e",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:11.074001Z"
+  },
+  {
+    "company_id": "company:989",
+    "created_at": "2026-04-22T19:43:11.114245Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 989 na competencia 04/2026.",
+    "id": "issue:company:989:company_config_missing:02cb164eb6",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:11.114250Z"
+  },
+  {
+    "company_id": "company:990",
+    "created_at": "2026-04-22T19:43:11.153922Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 990 na competencia 03/2026.",
+    "id": "issue:company:990:company_config_missing:910354958d",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:11.153926Z"
+  },
+  {
+    "company_id": "company:991",
+    "created_at": "2026-04-22T19:43:11.195555Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 991 na competencia 03/2026.",
+    "id": "issue:company:991:company_config_missing:3b8d1d88df",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:11.195559Z"
+  },
+  {
+    "company_id": "company:992",
+    "created_at": "2026-04-22T19:43:11.238227Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 992 na competencia 03/2026.",
+    "id": "issue:company:992:company_config_missing:308bc32eaa",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:11.238231Z"
+  },
+  {
+    "company_id": "company:993",
+    "created_at": "2026-04-22T19:43:11.279470Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 993 na competencia 03/2026.",
+    "id": "issue:company:993:company_config_missing:5210d7e89e",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:11.279474Z"
+  },
+  {
+    "company_id": "company:994",
+    "created_at": "2026-04-22T19:43:11.321976Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 994 na competencia 03/2026.",
+    "id": "issue:company:994:company_config_missing:e5e40aae4c",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:11.321980Z"
+  },
+  {
+    "company_id": "company:995",
+    "created_at": "2026-04-22T19:43:11.365537Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 995 na competencia 03/2026.",
+    "id": "issue:company:995:company_config_missing:b69a161db6",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:11.365541Z"
+  },
+  {
+    "company_id": "company:996",
+    "created_at": "2026-04-22T19:43:11.409047Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 996 na competencia 03/2026.",
+    "id": "issue:company:996:company_config_missing:63c364ff34",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:11.409052Z"
+  },
+  {
+    "company_id": "company:999",
+    "created_at": "2026-04-22T19:43:11.453965Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 999 na competencia 03/2026.",
+    "id": "issue:company:999:company_config_missing:0eaf770b81",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:11.453969Z"
+  },
+  {
+    "company_id": "company:1000",
+    "created_at": "2026-04-22T19:43:11.494334Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1000 na competencia 03/2026.",
+    "id": "issue:company:1000:company_config_missing:1ad22533a2",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:11.494338Z"
+  },
+  {
+    "company_id": "company:1001",
+    "created_at": "2026-04-22T19:43:11.542329Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1001 na competencia 03/2026.",
+    "id": "issue:company:1001:company_config_missing:297e1642ec",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:11.542334Z"
+  },
+  {
+    "company_id": "company:1002",
+    "created_at": "2026-04-22T19:43:11.592689Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1002 na competencia 03/2026.",
+    "id": "issue:company:1002:company_config_missing:04254f19fb",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:11.592693Z"
+  },
+  {
+    "company_id": "company:1003",
+    "created_at": "2026-04-22T19:43:11.641341Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1003 na competencia 03/2026.",
+    "id": "issue:company:1003:company_config_missing:83280ec5ba",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:11.641346Z"
+  },
+  {
+    "company_id": "company:1006",
+    "created_at": "2026-04-22T19:43:11.688234Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1006 na competencia 03/2026.",
+    "id": "issue:company:1006:company_config_missing:79220db085",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:11.688238Z"
+  },
+  {
+    "company_id": "company:1007",
+    "created_at": "2026-04-22T19:43:11.729262Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1007 na competencia 03/2026.",
+    "id": "issue:company:1007:company_config_missing:01c9ffe851",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:11.729266Z"
+  },
+  {
+    "company_id": "company:1008",
+    "created_at": "2026-04-22T19:43:11.770309Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1008 na competencia 02/2026.",
+    "id": "issue:company:1008:company_config_missing:dbd0cf1d45",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:11.770313Z"
+  },
+  {
+    "company_id": "company:1010",
+    "created_at": "2026-04-22T19:43:11.815159Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1010 na competencia 03/2026.",
+    "id": "issue:company:1010:company_config_missing:264986fd66",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:11.815163Z"
+  },
+  {
+    "company_id": "company:1014",
+    "created_at": "2026-04-22T19:43:11.858993Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1014 na competencia 03/2026.",
+    "id": "issue:company:1014:company_config_missing:3cc6411270",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:11.858996Z"
+  },
+  {
+    "company_id": "company:1015",
+    "created_at": "2026-04-22T19:43:11.902724Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1015 na competencia 03/2026.",
+    "id": "issue:company:1015:company_config_missing:12d9dabaa2",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:11.902728Z"
+  },
+  {
+    "company_id": "company:1016",
+    "created_at": "2026-04-22T19:43:11.949231Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1016 na competencia 04/2026.",
+    "id": "issue:company:1016:company_config_missing:d56a69344d",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:11.949236Z"
+  },
+  {
+    "company_id": "company:1017",
+    "created_at": "2026-04-22T19:43:11.994648Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1017 na competencia 02/2026.",
+    "id": "issue:company:1017:company_config_missing:0978552380",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:11.994653Z"
+  },
+  {
+    "company_id": "company:1019",
+    "created_at": "2026-04-22T19:43:12.038359Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1019 na competencia 03/2026.",
+    "id": "issue:company:1019:company_config_missing:f5a42bc24f",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:12.038363Z"
+  },
+  {
+    "company_id": "company:1020",
+    "created_at": "2026-04-22T19:43:12.080255Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1020 na competencia 03/2026.",
+    "id": "issue:company:1020:company_config_missing:ebeb347331",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:12.080259Z"
+  },
+  {
+    "company_id": "company:1021",
+    "created_at": "2026-04-22T19:43:12.122214Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1021 na competencia 03/2026.",
+    "id": "issue:company:1021:company_config_missing:1e9651d201",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:12.122218Z"
+  },
+  {
+    "company_id": "company:1023",
+    "created_at": "2026-04-22T19:43:12.165388Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1023 na competencia 03/2026.",
+    "id": "issue:company:1023:company_config_missing:c936d8348d",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:12.165393Z"
+  },
+  {
+    "company_id": "company:1025",
+    "created_at": "2026-04-22T19:43:12.210511Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1025 na competencia 02/2026.",
+    "id": "issue:company:1025:company_config_missing:0751927475",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:12.210516Z"
+  },
+  {
+    "company_id": "company:1026",
+    "created_at": "2026-04-22T19:43:12.253418Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1026 na competencia 03/2026.",
+    "id": "issue:company:1026:company_config_missing:4d753569e4",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:12.253422Z"
+  },
+  {
+    "company_id": "company:1027",
+    "created_at": "2026-04-22T19:43:12.295834Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1027 na competencia 03/2026.",
+    "id": "issue:company:1027:company_config_missing:cef7cb8e00",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:12.295838Z"
+  },
+  {
+    "company_id": "company:1028",
+    "created_at": "2026-04-22T19:43:12.338864Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1028 na competencia 03/2026.",
+    "id": "issue:company:1028:company_config_missing:91fa4a6ae9",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:12.338868Z"
+  },
+  {
+    "company_id": "company:1029",
+    "created_at": "2026-04-22T19:43:12.384174Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1029 na competencia 03/2026.",
+    "id": "issue:company:1029:company_config_missing:bade7836bc",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:12.384179Z"
+  },
+  {
+    "company_id": "company:1030",
+    "created_at": "2026-04-22T19:43:12.432139Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1030 na competencia 03/2026.",
+    "id": "issue:company:1030:company_config_missing:d951839bb8",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:12.432143Z"
+  },
+  {
+    "company_id": "company:1032",
+    "created_at": "2026-04-22T19:43:12.482135Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1032 na competencia 03/2026.",
+    "id": "issue:company:1032:company_config_missing:c2680df5c8",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:12.482140Z"
+  },
+  {
+    "company_id": "company:1035",
+    "created_at": "2026-04-22T19:43:12.528611Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1035 na competencia 03/2026.",
+    "id": "issue:company:1035:company_config_missing:a49eaf5d46",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:12.528615Z"
+  },
+  {
+    "company_id": "company:1037",
+    "created_at": "2026-04-22T19:43:12.574596Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1037 na competencia 03/2026.",
+    "id": "issue:company:1037:company_config_missing:48f6f54e0a",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:12.574600Z"
+  },
+  {
+    "company_id": "company:1039",
+    "created_at": "2026-04-22T19:43:12.623900Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1039 na competencia 03/2026.",
+    "id": "issue:company:1039:company_config_missing:eaade7cf85",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:12.623904Z"
+  },
+  {
+    "company_id": "company:1040",
+    "created_at": "2026-04-22T19:43:12.674241Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1040 na competencia 03/2026.",
+    "id": "issue:company:1040:company_config_missing:8b58a73785",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:12.674245Z"
+  },
+  {
+    "company_id": "company:1041",
+    "created_at": "2026-04-22T19:43:12.724114Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1041 na competencia 03/2026.",
+    "id": "issue:company:1041:company_config_missing:0638a9a120",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:12.724118Z"
+  },
+  {
+    "company_id": "company:1042",
+    "created_at": "2026-04-22T19:43:12.771808Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1042 na competencia 03/2026.",
+    "id": "issue:company:1042:company_config_missing:eb8bec84b1",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:12.771812Z"
+  },
+  {
+    "company_id": "company:1043",
+    "created_at": "2026-04-22T19:43:12.821062Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1043 na competencia 03/2026.",
+    "id": "issue:company:1043:company_config_missing:744b5e996a",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:12.821066Z"
+  },
+  {
+    "company_id": "company:1044",
+    "created_at": "2026-04-22T19:43:12.877487Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1044 na competencia 03/2026.",
+    "id": "issue:company:1044:company_config_missing:d6ae21a087",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:12.877492Z"
+  },
+  {
+    "company_id": "company:1045",
+    "created_at": "2026-04-22T19:43:12.929215Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1045 na competencia 03/2026.",
+    "id": "issue:company:1045:company_config_missing:5d677fd93c",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:12.929219Z"
+  },
+  {
+    "company_id": "company:1047",
+    "created_at": "2026-04-22T19:43:12.991676Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1047 na competencia 03/2026.",
+    "id": "issue:company:1047:company_config_missing:35db5f01cb",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:12.991680Z"
+  },
+  {
+    "company_id": "company:1048",
+    "created_at": "2026-04-22T19:43:13.036300Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1048 na competencia 03/2026.",
+    "id": "issue:company:1048:company_config_missing:61cb8bb446",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:13.036303Z"
+  },
+  {
+    "company_id": "company:1049",
+    "created_at": "2026-04-22T19:43:13.080143Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1049 na competencia 03/2026.",
+    "id": "issue:company:1049:company_config_missing:d684953594",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:13.080147Z"
+  },
+  {
+    "company_id": "company:1050",
+    "created_at": "2026-04-22T19:43:13.125463Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1050 na competencia 03/2026.",
+    "id": "issue:company:1050:company_config_missing:d3b676799f",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:13.125468Z"
+  },
+  {
+    "company_id": "company:1054",
+    "created_at": "2026-04-22T19:43:13.172015Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1054 na competencia 03/2026.",
+    "id": "issue:company:1054:company_config_missing:9118085b4d",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:13.172020Z"
+  },
+  {
+    "company_id": "company:1055",
+    "created_at": "2026-04-22T19:43:13.219300Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1055 na competencia 03/2026.",
+    "id": "issue:company:1055:company_config_missing:8221f707a5",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:13.219304Z"
+  },
+  {
+    "company_id": "company:1056",
+    "created_at": "2026-04-22T19:43:13.262938Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1056 na competencia 04/2026.",
+    "id": "issue:company:1056:company_config_missing:a4dd3f1619",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:13.262942Z"
+  },
+  {
+    "company_id": "company:1058",
+    "created_at": "2026-04-22T19:43:13.306420Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1058 na competencia 03/2026.",
+    "id": "issue:company:1058:company_config_missing:8a4eef5229",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:13.306423Z"
+  },
+  {
+    "company_id": "company:1063",
+    "created_at": "2026-04-22T19:43:13.349856Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1063 na competencia 03/2026.",
+    "id": "issue:company:1063:company_config_missing:45035709ad",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:13.349860Z"
+  },
+  {
+    "company_id": "company:1064",
+    "created_at": "2026-04-22T19:43:13.392970Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1064 na competencia 03/2026.",
+    "id": "issue:company:1064:company_config_missing:d862c302a7",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:13.392974Z"
+  },
+  {
+    "company_id": "company:1066",
+    "created_at": "2026-04-22T19:43:13.440197Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1066 na competencia 03/2026.",
+    "id": "issue:company:1066:company_config_missing:31ad8a675d",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:13.440201Z"
+  },
+  {
+    "company_id": "company:1070",
+    "created_at": "2026-04-22T19:43:13.489411Z",
+    "description": "Nenhuma configuracao interna foi localizada para a empresa 1070 na competencia 03/2026.",
+    "id": "issue:company:1070:company_config_missing:cabbebd21c",
+    "issue_type": "company_config_missing",
+    "status": "open",
+    "updated_at": "2026-04-22T19:43:13.489416Z"
+  }
+]

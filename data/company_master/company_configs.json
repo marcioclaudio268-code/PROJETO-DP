@@ -1,0 +1,54 @@
+[
+  {
+    "company_id": "company:72",
+    "competence_end": "03/2026",
+    "competence_start": "01/2026",
+    "config_payload_internal": {
+      "company_code": "72",
+      "company_name": "Dela More",
+      "competence": "03/2024",
+      "config_version": "cfg-v1",
+      "default_process": "11",
+      "employee_mappings": [
+        {
+          "active": true,
+          "aliases": [],
+          "domain_registration": "123",
+          "notes": null,
+          "source_employee_key": "col-001",
+          "source_employee_name": "Ana Lima"
+        }
+      ],
+      "event_mappings": [
+        {
+          "active": true,
+          "event_negocio": "gratificacao",
+          "notes": null,
+          "rubrica_saida": "201"
+        },
+        {
+          "active": true,
+          "event_negocio": "horas_extras_50",
+          "notes": null,
+          "rubrica_saida": "350"
+        }
+      ],
+      "notes": null,
+      "pending_policy": {
+        "block_on_ambiguous_observations": true,
+        "block_on_unmapped_employee": true,
+        "block_on_unmapped_event": true,
+        "notes": null,
+        "review_required_event_negocios": [],
+        "review_required_fields": []
+      },
+      "validation_flags": {}
+    },
+    "created_at": "2026-04-22T19:43:07.160152Z",
+    "id": "config:company:72:cfg-v1",
+    "status": "active",
+    "updated_at": "2026-04-22T19:43:07.152909Z",
+    "validated_at": "2026-04-22T19:43:07.160150Z",
+    "version": "cfg-v1"
+  }
+]

@@ -1,9 +1,16 @@
 """Operational dashboard helpers on top of the V1 pipeline."""
 
+from .config_resolver import (
+    DEFAULT_COMPANY_CONFIGS_ROOT,
+    ConfigResolutionResult,
+    ConfigResolutionStatus,
+    ConfigResolver,
+)
 from .errors import DashboardOperationError
 from .models import (
     DashboardActionRecord,
     DashboardActionType,
+    DashboardConfigResolution,
     DashboardPaths,
     DashboardPendingItem,
     DashboardRunResult,
@@ -35,10 +42,15 @@ from .storage import (
 )
 
 __all__ = [
+    "ConfigResolutionResult",
+    "ConfigResolutionStatus",
+    "ConfigResolver",
+    "DEFAULT_COMPANY_CONFIGS_ROOT",
     "DASHBOARD_SESSION_VERSION",
     "DEFAULT_DASHBOARD_RUNS_ROOT",
     "DashboardActionRecord",
     "DashboardActionType",
+    "DashboardConfigResolution",
     "DashboardOperationError",
     "DashboardPaths",
     "DashboardPendingItem",

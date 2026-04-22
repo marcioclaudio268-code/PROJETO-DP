@@ -44,11 +44,11 @@ Layout validation, structural checks, TXT reading, serialization-summary loading
 
 ### `src/dashboard`
 
-Local operational UI support. This package orchestrates the existing pipeline, persists execution-local state, applies guided overrides on top of editable workbook/config copies and decides when the TXT download can be released safely.
+Local operational UI support. This package orchestrates the existing pipeline, resolves the internal company config automatically, persists execution-local state, applies guided overrides on top of editable workbook/config copies and decides when the TXT download can be released safely. The automatic config lookup is isolated behind `ConfigResolver`, which checks the internal master data first and falls back to `configs/companies` only when needed.
 
 ### `src/config`
 
-Pydantic models for company config, mapping records, pending policy and run manifest.
+Pydantic models for company config, master registry records, config issue records, mapping records, pending policy and run manifest. This package also hosts the JSON-backed internal master-data store and the `Resumo Mensal.xls` import helper.
 
 ## Data and tests
 
@@ -122,14 +122,27 @@ snapshot canonico
 The current dashboard flow is:
 
 ```text
-planilha + configuracao por empresa
+planilha
   -> copia local editavel da execucao
+  -> deteccao de empresa e competencia
+  -> resolucao interna de configuracao por empresa
   -> analise guiada sobre o pipeline V1 existente
   -> lista de pendencias compreensivel para o escritorio
   -> correcao guiada / ignorar nesta importacao com rastreabilidade
   -> reprocessamento
   -> liberacao controlada do TXT
 ```
+
+The dashboard resolver now checks the internal company master data first. The priority is:
+
+```text
+registry + specific config
+  -> registry + active config
+  -> legacy file fallback
+  -> internal pending
+```
+
+The master data itself is stored under `data/company_master` and can be refreshed with `scripts/import_resumo_mensal.py --input /caminho/Resumo Mensal.xls`.
 
 ## Next implementation slot
 
