@@ -15,7 +15,7 @@
     "updated_at": "2026-04-22T19:43:07.152909Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:3:seed-v1-03-2026",
     "cnpj": "00274736000158",
     "company_code": "3",
     "created_at": "2026-04-22T19:43:07.028342Z",
@@ -27,10 +27,10 @@
     "razao_social": "M.C. BAURU PROMOCAO DE VENDAS LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.028342Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:24:seed-v1-03-2026",
     "cnpj": "05895105000170",
     "company_code": "24",
     "created_at": "2026-04-22T19:43:07.038622Z",
@@ -42,10 +42,10 @@
     "razao_social": "MOREIRA HOSPITALAR EIRELI",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.038622Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:34:seed-v1-03-2026",
     "cnpj": "20938269000120",
     "company_code": "34",
     "created_at": "2026-04-22T19:43:07.048193Z",
@@ -57,10 +57,10 @@
     "razao_social": "MAGNUS GTV ENGENHARIA E CONSTRUCOES",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.048193Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:35:seed-v1-03-2026",
     "cnpj": "56538564000137",
     "company_code": "35",
     "created_at": "2026-04-22T19:43:07.058259Z",
@@ -72,10 +72,10 @@
     "razao_social": "HIDROAR CONSTRUCAO E SERVICOS EIRELI",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.058259Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:39:seed-v1-03-2026",
     "cnpj": "15418859000192",
     "company_code": "39",
     "created_at": "2026-04-22T19:43:07.068195Z",
@@ -87,10 +87,10 @@
     "razao_social": "L G C COELHO VESTUARIOS ME",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.068195Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:43:seed-v1-03-2026",
     "cnpj": "19178468000107",
     "company_code": "43",
     "created_at": "2026-04-22T19:43:07.078180Z",
@@ -102,10 +102,10 @@
     "razao_social": "ANCORA STORE COMERCIO DE CONFECCOES LT",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.078180Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:47:seed-v1-03-2026",
     "cnpj": "10497112000153",
     "company_code": "47",
     "created_at": "2026-04-22T19:43:07.088468Z",
@@ -117,10 +117,10 @@
     "razao_social": "CASA DO CIRCO PRODUCOES ARTISTICAS LTD",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.088468Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:50:seed-v1-03-2026",
     "cnpj": "26245203000131",
     "company_code": "50",
     "created_at": "2026-04-22T19:43:07.099042Z",
@@ -132,10 +132,10 @@
     "razao_social": "CELIO AMARAL SOCIEDADE INDIVIDUAL DE",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.099042Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:56:seed-v1-03-2026",
     "cnpj": "26893100000188",
     "company_code": "56",
     "created_at": "2026-04-22T19:43:07.109995Z",
@@ -147,10 +147,10 @@
     "razao_social": "RECICLAGENS DE MATERIAIS RECUPERAVEIS",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.109995Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:57:seed-v1-03-2026",
     "cnpj": "26827366000122",
     "company_code": "57",
     "created_at": "2026-04-22T19:43:07.120914Z",
@@ -162,10 +162,10 @@
     "razao_social": "OMG COMERCIO DE CONFECCOES LTDA ME",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.120914Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:67:seed-v1-03-2026",
     "cnpj": "26272386000184",
     "company_code": "67",
     "created_at": "2026-04-22T19:43:07.131470Z",
@@ -177,10 +177,10 @@
     "razao_social": "JVR ALIMENTOS LTDA ME",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.131470Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:71:seed-v1-03-2026",
     "cnpj": "08235519000160",
     "company_code": "71",
     "created_at": "2026-04-22T19:43:07.142012Z",
@@ -192,10 +192,10 @@
     "razao_social": "MOREIRA LOZANO PRODUTOS HOSPITALAR PRO",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.142012Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:78:seed-v1-03-2026",
     "cnpj": "02618782000314",
     "company_code": "78",
     "created_at": "2026-04-22T19:43:07.164901Z",
@@ -207,10 +207,10 @@
     "razao_social": "DELA MORE COMERCIO E CONFECCOES FILIAL",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.164901Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:84:seed-v1-03-2026",
     "cnpj": "27909227000100",
     "company_code": "84",
     "created_at": "2026-04-22T19:43:07.177618Z",
@@ -222,10 +222,10 @@
     "razao_social": "G2 SERVICOS DE MARKETING EIRELI",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.177618Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:85:seed-v1-03-2026",
     "cnpj": "27645370000132",
     "company_code": "85",
     "created_at": "2026-04-22T19:43:07.188880Z",
@@ -237,10 +237,10 @@
     "razao_social": "CARDOSO COZZA SOCIEDADE INDIVIDUAL DE",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.188880Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:89:seed-v1-03-2026",
     "cnpj": "20347725000168",
     "company_code": "89",
     "created_at": "2026-04-22T19:43:07.200437Z",
@@ -252,10 +252,10 @@
     "razao_social": "EME CULTURAL PRODUCOES LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.200437Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:92:seed-v1-03-2026",
     "cnpj": "28917251000154",
     "company_code": "92",
     "created_at": "2026-04-22T19:43:07.211947Z",
@@ -267,10 +267,10 @@
     "razao_social": "MANACOR CONSULTORIA E GESTAO EMPRESARI",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.211947Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:94:seed-v1-03-2026",
     "cnpj": "29246882000151",
     "company_code": "94",
     "created_at": "2026-04-22T19:43:07.223429Z",
@@ -282,10 +282,10 @@
     "razao_social": "CD FERREIRA RESTAURANTE EIRELI",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.223429Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:99:seed-v1-04-2026",
     "cnpj": "29543457000124",
     "company_code": "99",
     "created_at": "2026-04-22T19:43:07.235253Z",
@@ -297,10 +297,10 @@
     "razao_social": "ROCHA & CARVALHO CENTRO M\u00c9DICO LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.235253Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:116:seed-v1-03-2026",
     "cnpj": "30714627000175",
     "company_code": "116",
     "created_at": "2026-04-22T19:43:07.247034Z",
@@ -312,10 +312,10 @@
     "razao_social": "FABIO SHINOMIA SOCIEDADE INDIVIDUAL DE",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.247034Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:123:seed-v1-03-2026",
     "cnpj": "31372146000191",
     "company_code": "123",
     "created_at": "2026-04-22T19:43:07.259111Z",
@@ -327,10 +327,10 @@
     "razao_social": "H. C. COUBE SOCIEDADE INDIVIDUAL DE AD",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.259111Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:127:seed-v1-03-2026",
     "cnpj": "30996796000145",
     "company_code": "127",
     "created_at": "2026-04-22T19:43:07.271368Z",
@@ -342,10 +342,10 @@
     "razao_social": "R A DAMIATI",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.271368Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:129:seed-v1-03-2026",
     "cnpj": "31489134000141",
     "company_code": "129",
     "created_at": "2026-04-22T19:43:07.283841Z",
@@ -357,10 +357,10 @@
     "razao_social": "BMS HARDWARE E SOFTWARE EIRELI",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.283841Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:131:seed-v1-03-2026",
     "cnpj": "74536616000118",
     "company_code": "131",
     "created_at": "2026-04-22T19:43:07.296349Z",
@@ -372,10 +372,10 @@
     "razao_social": "S.A. FERREIRA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.296349Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:134:seed-v1-03-2026",
     "cnpj": "31938450000153",
     "company_code": "134",
     "created_at": "2026-04-22T19:43:07.309035Z",
@@ -387,10 +387,10 @@
     "razao_social": "GLBOSO REPRESENTACAO E COMERCIO HOSPIT",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.309035Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:136:seed-v1-04-2026",
     "cnpj": "17286723000100",
     "company_code": "136",
     "created_at": "2026-04-22T19:43:07.321994Z",
@@ -402,10 +402,10 @@
     "razao_social": "ZANATELI E SAKAI CAFETERIA LTDA ME",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.321994Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:143:seed-v1-03-2026",
     "cnpj": "44452076000123",
     "company_code": "143",
     "created_at": "2026-04-22T19:43:07.335419Z",
@@ -417,10 +417,10 @@
     "razao_social": "DELAFINA ASSES.DE VENDAS EMPR. LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.335419Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:147:seed-v1-03-2026",
     "cnpj": "18468176000138",
     "company_code": "147",
     "created_at": "2026-04-22T19:43:07.348472Z",
@@ -432,10 +432,10 @@
     "razao_social": "L.A.SOARES DA COSTA EIRELI",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.348472Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:148:seed-v1-03-2026",
     "cnpj": "32849287000115",
     "company_code": "148",
     "created_at": "2026-04-22T19:43:07.362095Z",
@@ -447,10 +447,10 @@
     "razao_social": "RESTAURANTE BANZAI EIRELI",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.362095Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:149:seed-v1-03-2026",
     "cnpj": "32657886000137",
     "company_code": "149",
     "created_at": "2026-04-22T19:43:07.375827Z",
@@ -462,10 +462,10 @@
     "razao_social": "ZOLEZZI & SOUZA ENGENHARIA LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.375827Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:150:seed-v1-03-2026",
     "cnpj": "32657912000127",
     "company_code": "150",
     "created_at": "2026-04-22T19:43:07.389695Z",
@@ -477,10 +477,10 @@
     "razao_social": "MOCHIZUKE & MOCHIZUKE ENGENHARIA LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.389695Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:152:seed-v1-03-2026",
     "cnpj": "02569701000171",
     "company_code": "152",
     "created_at": "2026-04-22T19:43:07.403382Z",
@@ -492,10 +492,10 @@
     "razao_social": "RAUL VIEIRA CUNHA RUDGE ASSE",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.403382Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:156:seed-v1-03-2026",
     "cnpj": "33448154000108",
     "company_code": "156",
     "created_at": "2026-04-22T19:43:07.418314Z",
@@ -507,10 +507,10 @@
     "razao_social": "FIGUEIREDO & SOUZA ARQUITETURA LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.418314Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:160:seed-v1-03-2026",
     "cnpj": "45023959000180",
     "company_code": "160",
     "created_at": "2026-04-22T19:43:07.432754Z",
@@ -522,10 +522,10 @@
     "razao_social": "DESPACHANTE DOCUMENT VICENTINI LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.432754Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:164:seed-v1-03-2026",
     "cnpj": "02873934000163",
     "company_code": "164",
     "created_at": "2026-04-22T19:43:07.448779Z",
@@ -537,10 +537,10 @@
     "razao_social": "ACJ COMERCIO DE SUCATAS LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.448779Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:165:seed-v1-04-2026",
     "cnpj": "37117918000125",
     "company_code": "165",
     "created_at": "2026-04-22T19:43:07.463515Z",
@@ -552,10 +552,10 @@
     "razao_social": "ASSOCIACAO BRAS CRIAD CAV RA\u00c7A PAINT",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.463515Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:167:seed-v1-03-2026",
     "cnpj": "03222292000103",
     "company_code": "167",
     "created_at": "2026-04-22T19:43:07.478486Z",
@@ -567,10 +567,10 @@
     "razao_social": "CONSTRUFIC CONSTRUTORA LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.478486Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:170:seed-v1-03-2026",
     "cnpj": "03474906000136",
     "company_code": "170",
     "created_at": "2026-04-22T19:43:07.493569Z",
@@ -582,10 +582,10 @@
     "razao_social": "VITAFISIO LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.493569Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:173:seed-v1-04-2026",
     "cnpj": "03810790000169",
     "company_code": "173",
     "created_at": "2026-04-22T19:43:07.511650Z",
@@ -597,10 +597,10 @@
     "razao_social": "TIETE ENGENHARIA E MONTAGENS LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.511650Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:183:seed-v1-03-2026",
     "cnpj": "04229772000150",
     "company_code": "183",
     "created_at": "2026-04-22T19:43:07.527142Z",
@@ -612,10 +612,10 @@
     "razao_social": "MIRACY DA SILVA MELO BAURU ME",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.527142Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:197:seed-v1-03-2026",
     "cnpj": "45018611000103",
     "company_code": "197",
     "created_at": "2026-04-22T19:43:07.543162Z",
@@ -627,10 +627,10 @@
     "razao_social": "CERIMAR COM E IMPORT DE ROLAMENTOS LTD",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.543162Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:202:seed-v1-03-2026",
     "cnpj": "06002720000172",
     "company_code": "202",
     "created_at": "2026-04-22T19:43:07.558853Z",
@@ -642,10 +642,10 @@
     "razao_social": "CLINICA ODONTOLOGICA SAINT MARTIN LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.558853Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:244:seed-v1-03-2026",
     "cnpj": "07891239000148",
     "company_code": "244",
     "created_at": "2026-04-22T19:43:07.574943Z",
@@ -657,10 +657,10 @@
     "razao_social": "CINCOESSES LOCACAO DE MAQUINAS LTDA ME",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.574943Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:245:seed-v1-03-2026",
     "cnpj": "07879008000119",
     "company_code": "245",
     "created_at": "2026-04-22T19:43:07.591163Z",
@@ -672,10 +672,10 @@
     "razao_social": "G H STERN EIRELI",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.591163Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:249:seed-v1-04-2026",
     "cnpj": "07962637000108",
     "company_code": "249",
     "created_at": "2026-04-22T19:43:07.607488Z",
@@ -687,10 +687,10 @@
     "razao_social": "EMPORIUM COMERCIO DE ACRILICOS LTDA EP",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.607488Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:283:seed-v1-03-2026",
     "cnpj": "08810322000108",
     "company_code": "283",
     "created_at": "2026-04-22T19:43:07.623368Z",
@@ -702,10 +702,10 @@
     "razao_social": "VIOTTO COMERCIO E REPRESENTACOES DE CA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.623368Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:305:seed-v1-03-2026",
     "cnpj": "10203274000131",
     "company_code": "305",
     "created_at": "2026-04-22T19:43:07.639994Z",
@@ -717,10 +717,10 @@
     "razao_social": "MEDCONTROL COM DE MAT HOSP EIRELI",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.639994Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:311:seed-v1-03-2026",
     "cnpj": "08828114000136",
     "company_code": "311",
     "created_at": "2026-04-22T19:43:07.656917Z",
@@ -732,10 +732,10 @@
     "razao_social": "ML DO PRADO E CIA SERVICOS ADMINISTRAT",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.656917Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:312:seed-v1-03-2026",
     "cnpj": "56960339000194",
     "company_code": "312",
     "created_at": "2026-04-22T19:43:07.673657Z",
@@ -747,10 +747,10 @@
     "razao_social": "MOREIRA PESSUTTO EIRELI",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.673657Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:328:seed-v1-03-2026",
     "cnpj": "10260007000104",
     "company_code": "328",
     "created_at": "2026-04-22T19:43:07.691361Z",
@@ -762,10 +762,10 @@
     "razao_social": "TOLEDO E MESQUITA SOCIEDADE DE ADVOGADOS",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.691361Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:331:seed-v1-04-2026",
     "cnpj": "68878677000160",
     "company_code": "331",
     "created_at": "2026-04-22T19:43:07.708293Z",
@@ -777,10 +777,10 @@
     "razao_social": "RECICLAR COM MAT RECUPERAVEIS LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.708293Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:337:seed-v1-03-2026",
     "cnpj": "10789546000127",
     "company_code": "337",
     "created_at": "2026-04-22T19:43:07.726520Z",
@@ -792,10 +792,10 @@
     "razao_social": "DAMIATI SERVICOS CADASTRAIS LTDA ME",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.726520Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:342:seed-v1-03-2026",
     "cnpj": "11056667000122",
     "company_code": "342",
     "created_at": "2026-04-22T19:43:07.743884Z",
@@ -807,10 +807,10 @@
     "razao_social": "TOSSI E MAMBELLI LTDA ME",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.743884Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:366:seed-v1-04-2026",
     "cnpj": "11426622000100",
     "company_code": "366",
     "created_at": "2026-04-22T19:43:07.761440Z",
@@ -822,10 +822,10 @@
     "razao_social": "ALLFISIO LTDA ME",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.761440Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:367:seed-v1-03-2026",
     "cnpj": "11802623000102",
     "company_code": "367",
     "created_at": "2026-04-22T19:43:07.779570Z",
@@ -837,10 +837,10 @@
     "razao_social": "SIMAO CONTABILIDADE EIRELI ME",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.779570Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:376:seed-v1-03-2026",
     "cnpj": "11192821000193",
     "company_code": "376",
     "created_at": "2026-04-22T19:43:07.797377Z",
@@ -852,10 +852,10 @@
     "razao_social": "BORGES E BORGES COMBUSTIVEIS LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.797377Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:388:seed-v1-03-2026",
     "cnpj": "12127713000108",
     "company_code": "388",
     "created_at": "2026-04-22T19:43:07.815574Z",
@@ -867,10 +867,10 @@
     "razao_social": "BOZZINI EVENTOS EIRELI",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.815574Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:395:seed-v1-03-2026",
     "cnpj": "13619319000141",
     "company_code": "395",
     "created_at": "2026-04-22T19:43:07.833902Z",
@@ -882,10 +882,10 @@
     "razao_social": "BASE PROMO COMERCIAL LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.833902Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:403:seed-v1-03-2026",
     "cnpj": "13794406000135",
     "company_code": "403",
     "created_at": "2026-04-22T19:43:07.852570Z",
@@ -897,10 +897,10 @@
     "razao_social": "LOPRETO LOPRETO ESTETICA LTDA ME",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.852570Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:413:seed-v1-03-2026",
     "cnpj": "14128421000107",
     "company_code": "413",
     "created_at": "2026-04-22T19:43:07.871402Z",
@@ -912,10 +912,10 @@
     "razao_social": "APG COMERCIO DE COLCHOES LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.871402Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:419:seed-v1-03-2026",
     "cnpj": "13481219000100",
     "company_code": "419",
     "created_at": "2026-04-22T19:43:07.889932Z",
@@ -927,10 +927,10 @@
     "razao_social": "RICARDO SIM\u00c3O SOCIEDADE DE ADVOGADOS",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.889932Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:428:seed-v1-03-2026",
     "cnpj": "15098622000171",
     "company_code": "428",
     "created_at": "2026-04-22T19:43:07.910326Z",
@@ -942,10 +942,10 @@
     "razao_social": "FM MEDINA ME",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.910326Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:434:seed-v1-03-2026",
     "cnpj": "15664810000110",
     "company_code": "434",
     "created_at": "2026-04-22T19:43:07.930189Z",
@@ -957,10 +957,10 @@
     "razao_social": "CENTRO TERAPEUTICO CORPO E ALMA LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.930189Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:436:seed-v1-04-2026",
     "cnpj": "04961144000165",
     "company_code": "436",
     "created_at": "2026-04-22T19:43:07.950385Z",
@@ -972,10 +972,10 @@
     "razao_social": "LOPES CASA E CONSTRUCOES EIRELI",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.950385Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:437:seed-v1-03-2026",
     "cnpj": "04961144000246",
     "company_code": "437",
     "created_at": "2026-04-22T19:43:07.969789Z",
@@ -987,10 +987,10 @@
     "razao_social": "LOPES CASA E CONTRUCOES EIRELI",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.969789Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:439:seed-v1-03-2026",
     "cnpj": "67708255000184",
     "company_code": "439",
     "created_at": "2026-04-22T19:43:07.989317Z",
@@ -1002,10 +1002,10 @@
     "razao_social": "H DURAN COMERCIO DE METAIS SANITARIOS",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:07.989317Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:446:seed-v1-03-2026",
     "cnpj": "16883524000108",
     "company_code": "446",
     "created_at": "2026-04-22T19:43:08.008595Z",
@@ -1017,10 +1017,10 @@
     "razao_social": "FM DANIEL E CIA REPRESENTACOES LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.008595Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:448:seed-v1-04-2026",
     "cnpj": "17071361000121",
     "company_code": "448",
     "created_at": "2026-04-22T19:43:08.028938Z",
@@ -1032,10 +1032,10 @@
     "razao_social": "SAAD E TOSSI LTDA ME",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.028938Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:458:seed-v1-04-2026",
     "cnpj": "68060854000105",
     "company_code": "458",
     "created_at": "2026-04-22T19:43:08.048970Z",
@@ -1047,10 +1047,10 @@
     "razao_social": "SORAYA GIMENEZ ROCHA ME",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.048970Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:470:seed-v1-03-2026",
     "cnpj": "19054825000117",
     "company_code": "470",
     "created_at": "2026-04-22T19:43:08.069485Z",
@@ -1062,10 +1062,10 @@
     "razao_social": "TCZ PARTICIPACOES EIRELI",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.069485Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:476:seed-v1-03-2026",
     "cnpj": "51503472000106",
     "company_code": "476",
     "created_at": "2026-04-22T19:43:08.089654Z",
@@ -1077,10 +1077,10 @@
     "razao_social": "ESCRITORIO TECNICO T KAJINO SC LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.089654Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:502:seed-v1-03-2026",
     "cnpj": "21083532000100",
     "company_code": "502",
     "created_at": "2026-04-22T19:43:08.109891Z",
@@ -1092,10 +1092,10 @@
     "razao_social": "VIVIANE S DE OLIVEIRA COMERCIO DE VES",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.109891Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:503:seed-v1-03-2026",
     "cnpj": "21195942000142",
     "company_code": "503",
     "created_at": "2026-04-22T19:43:08.130911Z",
@@ -1107,10 +1107,10 @@
     "razao_social": "GONFIANTINI MAIA VENDRAMINI E CIA FI",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.130911Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:504:seed-v1-03-2026",
     "cnpj": "21045487000107",
     "company_code": "504",
     "created_at": "2026-04-22T19:43:08.152075Z",
@@ -1122,10 +1122,10 @@
     "razao_social": "AGULHARI E LINO ENGENHARIA LTDA ME",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.152075Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:505:seed-v1-03-2026",
     "cnpj": "12136577000104",
     "company_code": "505",
     "created_at": "2026-04-22T19:43:08.172708Z",
@@ -1137,10 +1137,10 @@
     "razao_social": "PALMA CA\u00c7AMBAS LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.172708Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:506:seed-v1-03-2026",
     "cnpj": "02618782000233",
     "company_code": "506",
     "created_at": "2026-04-22T19:43:08.197738Z",
@@ -1152,10 +1152,10 @@
     "razao_social": "DELA MORE COMERCIO E CONFECCOES FILIAL",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.197738Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:508:seed-v1-03-2026",
     "cnpj": "21324420000101",
     "company_code": "508",
     "created_at": "2026-04-22T19:43:08.218948Z",
@@ -1167,10 +1167,10 @@
     "razao_social": "H P LOPRETO PAISAGISMO ME",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.218948Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:525:seed-v1-03-2026",
     "cnpj": "00006802000109",
     "company_code": "525",
     "created_at": "2026-04-22T19:43:08.240285Z",
@@ -1182,10 +1182,10 @@
     "razao_social": "MARIA CLEONICE DE ARRUDA CONFECCOES EI",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.240285Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:528:seed-v1-04-2026",
     "cnpj": "23078166000126",
     "company_code": "528",
     "created_at": "2026-04-22T19:43:08.262061Z",
@@ -1197,10 +1197,10 @@
     "razao_social": "FRIED FISH VILAREJO RESTAURANTE BAURU",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.262061Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:543:seed-v1-03-2026",
     "cnpj": "23726387000163",
     "company_code": "543",
     "created_at": "2026-04-22T19:43:08.283285Z",
@@ -1212,10 +1212,10 @@
     "razao_social": "UNIREVEST MATERIAIS DE CONSTRUCAO EIRE",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.283285Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:546:seed-v1-03-2026",
     "cnpj": "63316758000153",
     "company_code": "546",
     "created_at": "2026-04-22T19:43:08.304902Z",
@@ -1227,10 +1227,10 @@
     "razao_social": "W H DA SILVA REPRESENTACAO LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.304902Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:549:seed-v1-03-2026",
     "cnpj": "24020692000106",
     "company_code": "549",
     "created_at": "2026-04-22T19:43:08.326412Z",
@@ -1242,10 +1242,10 @@
     "razao_social": "FUTURO CARANI COUBE E FILHOS PARTICIPA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.326412Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:552:seed-v1-03-2026",
     "cnpj": "03035153000162",
     "company_code": "552",
     "created_at": "2026-04-22T19:43:08.348281Z",
@@ -1257,10 +1257,10 @@
     "razao_social": "SIMIMED SERVICOS MEDICOS LTDA EPP",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.348281Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:554:seed-v1-03-2026",
     "cnpj": "24125988000183",
     "company_code": "554",
     "created_at": "2026-04-22T19:43:08.370643Z",
@@ -1272,10 +1272,10 @@
     "razao_social": "A L G PEREIRA CONSERVATORIO ME",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.370643Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:605:seed-v1-03-2026",
     "cnpj": "13210439000190",
     "company_code": "605",
     "created_at": "2026-04-22T19:43:08.392767Z",
@@ -1287,10 +1287,10 @@
     "razao_social": "CL FREITAS ODONTOLOGIA LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.392767Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:707:seed-v1-03-2026",
     "cnpj": "49142284000140",
     "company_code": "707",
     "created_at": "2026-04-22T19:43:08.418751Z",
@@ -1302,10 +1302,10 @@
     "razao_social": "IMOBILIARIA H2 LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.418751Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:726:seed-v1-03-2026",
     "cnpj": "33598338000146",
     "company_code": "726",
     "created_at": "2026-04-22T19:43:08.442412Z",
@@ -1317,10 +1317,10 @@
     "razao_social": "BAVUSO & MARRI ASSESSORIA EM EQUINOS LTD",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.442412Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:729:seed-v1-03-2026",
     "cnpj": "02864805000109",
     "company_code": "729",
     "created_at": "2026-04-22T19:43:08.465340Z",
@@ -1332,10 +1332,10 @@
     "razao_social": "BRUNA-PAINEIS ELETRONICOS LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.465340Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:730:seed-v1-04-2026",
     "cnpj": "45008695000196",
     "company_code": "730",
     "created_at": "2026-04-22T19:43:08.488749Z",
@@ -1347,10 +1347,10 @@
     "razao_social": "BAURU TENIS CLUBE",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.488749Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:733:seed-v1-03-2026",
     "cnpj": "34443623000150",
     "company_code": "733",
     "created_at": "2026-04-22T19:43:08.512155Z",
@@ -1362,10 +1362,10 @@
     "razao_social": "CAIO LORENZO ACIALDI SOCIEDADE INDIVIDUA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.512155Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:736:seed-v1-03-2026",
     "cnpj": "34751334000119",
     "company_code": "736",
     "created_at": "2026-04-22T19:43:08.536510Z",
@@ -1377,10 +1377,10 @@
     "razao_social": "R.F.CACERE SERVICOS MEDICOS LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.536510Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:737:seed-v1-03-2026",
     "cnpj": "35018426000157",
     "company_code": "737",
     "created_at": "2026-04-22T19:43:08.560444Z",
@@ -1392,10 +1392,10 @@
     "razao_social": "COSTA & SOARES CULTIVOS DE FRUTAS LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.560444Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:739:seed-v1-03-2026",
     "cnpj": "35118625000137",
     "company_code": "739",
     "created_at": "2026-04-22T19:43:08.585320Z",
@@ -1407,10 +1407,10 @@
     "razao_social": "STUCHI, URSOLINI & CIA LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.585320Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:742:seed-v1-03-2026",
     "cnpj": "35461845000169",
     "company_code": "742",
     "created_at": "2026-04-22T19:43:08.612131Z",
@@ -1422,10 +1422,10 @@
     "razao_social": "TAB SERVICOS DE PINTURA EIRELI",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.612131Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:744:seed-v1-03-2026",
     "cnpj": "26388050000181",
     "company_code": "744",
     "created_at": "2026-04-22T19:43:08.638555Z",
@@ -1437,10 +1437,10 @@
     "razao_social": "J F C COPPOLA VESTUARIOS LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.638555Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:746:seed-v1-03-2026",
     "cnpj": "35569304000159",
     "company_code": "746",
     "created_at": "2026-04-22T19:43:08.663517Z",
@@ -1452,10 +1452,10 @@
     "razao_social": "LEC EMPORIO PRIME EIRELI",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.663517Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:752:seed-v1-03-2026",
     "cnpj": "36164276000152",
     "company_code": "752",
     "created_at": "2026-04-22T19:43:08.688747Z",
@@ -1467,10 +1467,10 @@
     "razao_social": "MARMO & ALMEIDA COMBUTIVEIS LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.688747Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:755:seed-v1-04-2026",
     "cnpj": "36936345000107",
     "company_code": "755",
     "created_at": "2026-04-22T19:43:08.714538Z",
@@ -1482,10 +1482,10 @@
     "razao_social": "GUSTAVO LOPES LACERDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.714538Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:756:seed-v1-03-2026",
     "cnpj": "32973535000135",
     "company_code": "756",
     "created_at": "2026-04-22T19:43:08.742225Z",
@@ -1497,10 +1497,10 @@
     "razao_social": "EVANDRO NOGUEIRA PEGORARO EIRELI",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.742225Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:784:seed-v1-03-2026",
     "cnpj": "37022538000107",
     "company_code": "784",
     "created_at": "2026-04-22T19:43:08.770977Z",
@@ -1512,10 +1512,10 @@
     "razao_social": "ANSIC BRASIL IMPORTACAO E EXPORTACAO LTD",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.770977Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:786:seed-v1-03-2026",
     "cnpj": "33370513000143",
     "company_code": "786",
     "created_at": "2026-04-22T19:43:08.796775Z",
@@ -1527,10 +1527,10 @@
     "razao_social": "BRUNO PIOLA MORALES 39413715840",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.796775Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:789:seed-v1-03-2026",
     "cnpj": "37598524000136",
     "company_code": "789",
     "created_at": "2026-04-22T19:43:08.823024Z",
@@ -1542,10 +1542,10 @@
     "razao_social": "STUDIO ALVES DE ODONTOLOGIA EIRELI",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.823024Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:790:seed-v1-03-2026",
     "cnpj": "24077626000164",
     "company_code": "790",
     "created_at": "2026-04-22T19:43:08.851073Z",
@@ -1557,10 +1557,10 @@
     "razao_social": "ERCY NASCIMENTO",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.851073Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:793:seed-v1-03-2026",
     "cnpj": "37893663000192",
     "company_code": "793",
     "created_at": "2026-04-22T19:43:08.879823Z",
@@ -1572,10 +1572,10 @@
     "razao_social": "MORAIS & MORAIS SERVICOS CADASTRAIS LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.879823Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:802:seed-v1-03-2026",
     "cnpj": "19722548000173",
     "company_code": "802",
     "created_at": "2026-04-22T19:43:08.909355Z",
@@ -1587,10 +1587,10 @@
     "razao_social": "PRESTES COCO 2 IRM\u00c3OS LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.909355Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:804:seed-v1-03-2026",
     "cnpj": "35711292000155",
     "company_code": "804",
     "created_at": "2026-04-22T19:43:08.937111Z",
@@ -1602,10 +1602,10 @@
     "razao_social": "IVAN MORALES PISCINAS LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.937111Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:812:seed-v1-03-2026",
     "cnpj": "40525231000133",
     "company_code": "812",
     "created_at": "2026-04-22T19:43:08.965371Z",
@@ -1617,10 +1617,10 @@
     "razao_social": "CORREA & SANCHES SERVICOS DE ARQUITETURA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.965371Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:814:seed-v1-03-2026",
     "cnpj": "40736058000112",
     "company_code": "814",
     "created_at": "2026-04-22T19:43:08.993954Z",
@@ -1632,10 +1632,10 @@
     "razao_social": "L.F.S.HADBA CORRETAGENS LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:08.993954Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:817:seed-v1-03-2026",
     "cnpj": "09198259000163",
     "company_code": "817",
     "created_at": "2026-04-22T19:43:09.022406Z",
@@ -1647,10 +1647,10 @@
     "razao_social": "FALCAO & FALCAO FABRICACAO DE MOVEIS LTD",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:09.022406Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:821:seed-v1-03-2026",
     "cnpj": "41221574000177",
     "company_code": "821",
     "created_at": "2026-04-22T19:43:09.053226Z",
@@ -1662,10 +1662,10 @@
     "razao_social": "FIDALGO & MOREIRA ELETRONICOS LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:09.053226Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:823:seed-v1-03-2026",
     "cnpj": "41316446000107",
     "company_code": "823",
     "created_at": "2026-04-22T19:43:09.084684Z",
@@ -1677,10 +1677,10 @@
     "razao_social": "ARAUJO & REHDER ASSESSORIA EM PESQUISA E",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:09.084684Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:824:seed-v1-03-2026",
     "cnpj": "41273476000183",
     "company_code": "824",
     "created_at": "2026-04-22T19:43:09.117498Z",
@@ -1692,10 +1692,10 @@
     "razao_social": "CONTI & CASTRO ASSESSORIA EM PESQUISA E",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:09.117498Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:825:seed-v1-03-2026",
     "cnpj": "40768237000131",
     "company_code": "825",
     "created_at": "2026-04-22T19:43:09.147772Z",
@@ -1707,10 +1707,10 @@
     "razao_social": "DGWX SOLUCOES PESSOAIS E EMPRESARIAIS LT",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:09.147772Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:830:seed-v1-03-2026",
     "cnpj": "31884172000107",
     "company_code": "830",
     "created_at": "2026-04-22T19:43:09.178880Z",
@@ -1722,10 +1722,10 @@
     "razao_social": "FERREIRA DISTRIBUIDORA DE PRODUTOS PET L",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:09.178880Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:833:seed-v1-03-2026",
     "cnpj": "41570055000114",
     "company_code": "833",
     "created_at": "2026-04-22T19:43:09.209300Z",
@@ -1737,10 +1737,10 @@
     "razao_social": "A B S REPRESENTACOES LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:09.209300Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:835:seed-v1-03-2026",
     "cnpj": "41596046000100",
     "company_code": "835",
     "created_at": "2026-04-22T19:43:09.240159Z",
@@ -1752,10 +1752,10 @@
     "razao_social": "S.N.R.M SERVICOS DE SEGURANCA LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:09.240159Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:837:seed-v1-03-2026",
     "cnpj": "41775303000163",
     "company_code": "837",
     "created_at": "2026-04-22T19:43:09.274583Z",
@@ -1767,10 +1767,10 @@
     "razao_social": "M N CORRETAGEM EIRELI",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:09.274583Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:838:seed-v1-03-2026",
     "cnpj": "41661667000112",
     "company_code": "838",
     "created_at": "2026-04-22T19:43:09.306543Z",
@@ -1782,10 +1782,10 @@
     "razao_social": "S.AMADOR COMERCIO DE EMBALAGENS EIRELI",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:09.306543Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:839:seed-v1-03-2026",
     "cnpj": "41677370000145",
     "company_code": "839",
     "created_at": "2026-04-22T19:43:09.337807Z",
@@ -1797,10 +1797,10 @@
     "razao_social": "C A G R ENGENHARIA LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:09.337807Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:841:seed-v1-03-2026",
     "cnpj": "41828327000133",
     "company_code": "841",
     "created_at": "2026-04-22T19:43:09.372235Z",
@@ -1812,10 +1812,10 @@
     "razao_social": "VIAN & ALMEIDA DISTRIBUIDORA DE GAS LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:09.372235Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:847:seed-v1-03-2026",
     "cnpj": "42153732000161",
     "company_code": "847",
     "created_at": "2026-04-22T19:43:09.410403Z",
@@ -1827,10 +1827,10 @@
     "razao_social": "FF CARVALHO ENGENHARIA LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:09.410403Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:850:seed-v1-03-2026",
     "cnpj": "08309787000180",
     "company_code": "850",
     "created_at": "2026-04-22T19:43:09.445519Z",
@@ -1842,10 +1842,10 @@
     "razao_social": "MADRI - PRESTACAO DE SERVICOS DE SUPORTE",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:09.445519Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:854:seed-v1-03-2026",
     "cnpj": "24698397000103",
     "company_code": "854",
     "created_at": "2026-04-22T19:43:09.477288Z",
@@ -1857,10 +1857,10 @@
     "razao_social": "HUB 18 SOLUCOES DE VENDAS ONLINE EIRELI",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:09.477288Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:855:seed-v1-03-2026",
     "cnpj": "15387841000170",
     "company_code": "855",
     "created_at": "2026-04-22T19:43:09.508844Z",
@@ -1872,10 +1872,10 @@
     "razao_social": "P S S CARDOSO O",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:09.508844Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:856:seed-v1-03-2026",
     "cnpj": "24351257000156",
     "company_code": "856",
     "created_at": "2026-04-22T19:43:09.540269Z",
@@ -1887,10 +1887,10 @@
     "razao_social": "LARISSA PACK INDUSTRIA E COMERCIO DE EMB",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:09.540269Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:857:seed-v1-03-2026",
     "cnpj": "42536487000171",
     "company_code": "857",
     "created_at": "2026-04-22T19:43:09.573223Z",
@@ -1902,10 +1902,10 @@
     "razao_social": "WINECONTAINER IMPORTACAO E EXPORTACAO LT",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:09.573223Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:872:seed-v1-03-2026",
     "cnpj": "15666730000101",
     "company_code": "872",
     "created_at": "2026-04-22T19:43:09.612649Z",
@@ -1917,10 +1917,10 @@
     "razao_social": "DS TECNOLOGIA EM SEGURANCA ELETRONICA E",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:09.612649Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:876:seed-v1-03-2026",
     "cnpj": "44340201000103",
     "company_code": "876",
     "created_at": "2026-04-22T19:43:09.656078Z",
@@ -1932,10 +1932,10 @@
     "razao_social": "BUDIDO PARTICIPACOES LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:09.656078Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:878:seed-v1-03-2026",
     "cnpj": "38239874000179",
     "company_code": "878",
     "created_at": "2026-04-22T19:43:09.695994Z",
@@ -1947,10 +1947,10 @@
     "razao_social": "M A LEME RESTAURANTE",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:09.695994Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:879:seed-v1-03-2026",
     "cnpj": "17256077000120",
     "company_code": "879",
     "created_at": "2026-04-22T19:43:09.732329Z",
@@ -1962,10 +1962,10 @@
     "razao_social": "ERICA NASCIMENTO",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:09.732329Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:885:seed-v1-03-2026",
     "cnpj": "02618782000403",
     "company_code": "885",
     "created_at": "2026-04-22T19:43:09.768948Z",
@@ -1977,10 +1977,10 @@
     "razao_social": "DELA MORE COMERCIO E CONFECCOES FILIAL",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:09.768948Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:887:seed-v1-03-2026",
     "cnpj": "44871615000169",
     "company_code": "887",
     "created_at": "2026-04-22T19:43:09.804353Z",
@@ -1992,10 +1992,10 @@
     "razao_social": "BERBELLA LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:09.804353Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:889:seed-v1-03-2026",
     "cnpj": "44690624000153",
     "company_code": "889",
     "created_at": "2026-04-22T19:43:09.838578Z",
@@ -2007,10 +2007,10 @@
     "razao_social": "FONOAUDIOLOGIA ALVES SIMAO LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:09.838578Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:895:seed-v1-03-2026",
     "cnpj": "45907610000101",
     "company_code": "895",
     "created_at": "2026-04-22T19:43:09.872054Z",
@@ -2022,10 +2022,10 @@
     "razao_social": "ZENI & OLIVEIRA ADMINISTRACAO DE CONVENI",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:09.872054Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:901:seed-v1-03-2026",
     "cnpj": "46267438000131",
     "company_code": "901",
     "created_at": "2026-04-22T19:43:09.912362Z",
@@ -2037,10 +2037,10 @@
     "razao_social": "ALEJANDRA D VZ SERVICOS MEDICOS LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:09.912362Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:903:seed-v1-03-2026",
     "cnpj": "21143173000139",
     "company_code": "903",
     "created_at": "2026-04-22T19:43:09.948568Z",
@@ -2052,10 +2052,10 @@
     "razao_social": "FATIM INDUSTRIA E COMERCIO DE COSMETICOS",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:09.948568Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:907:seed-v1-03-2026",
     "cnpj": "37531882000121",
     "company_code": "907",
     "created_at": "2026-04-22T19:43:09.982491Z",
@@ -2067,10 +2067,10 @@
     "razao_social": "VALERIA C. C. COPPOLA ADMINISTRADORA E C",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:09.982491Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:910:seed-v1-03-2026",
     "cnpj": "22658079000185",
     "company_code": "910",
     "created_at": "2026-04-22T19:43:10.015824Z",
@@ -2082,10 +2082,10 @@
     "razao_social": "R. CORREA RAMOS",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:10.015824Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:913:seed-v1-03-2026",
     "cnpj": "14128421000379",
     "company_code": "913",
     "created_at": "2026-04-22T19:43:10.049536Z",
@@ -2097,10 +2097,10 @@
     "razao_social": "APG COMERCIO DE ALIMENTOS E COLCHOES LTD",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:10.049536Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:916:seed-v1-03-2026",
     "cnpj": "43662962000119",
     "company_code": "916",
     "created_at": "2026-04-22T19:43:10.092374Z",
@@ -2112,10 +2112,10 @@
     "razao_social": "RAFAEL MAIA ZILIOLI 33004831821",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:10.092374Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:917:seed-v1-03-2026",
     "cnpj": "47876935000108",
     "company_code": "917",
     "created_at": "2026-04-22T19:43:10.137302Z",
@@ -2127,10 +2127,10 @@
     "razao_social": "FRAGA & ALMEIDA PECA RARA LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:10.137302Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:919:seed-v1-03-2026",
     "cnpj": "41896071000100",
     "company_code": "919",
     "created_at": "2026-04-22T19:43:10.178919Z",
@@ -2142,10 +2142,10 @@
     "razao_social": "EURO GOURMET DISTRIBUIDORA IMPORTACAO E",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:10.178919Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:923:seed-v1-04-2026",
     "cnpj": "02618782000586",
     "company_code": "923",
     "created_at": "2026-04-22T19:43:10.220148Z",
@@ -2157,10 +2157,10 @@
     "razao_social": "DELA MORE COMERCIO E CONFECCOES FILIAL",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:10.220148Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:926:seed-v1-03-2026",
     "cnpj": "35665896000102",
     "company_code": "926",
     "created_at": "2026-04-22T19:43:10.257042Z",
@@ -2172,10 +2172,10 @@
     "razao_social": "ALESSANDRA PRADO",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:10.257042Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:927:seed-v1-03-2026",
     "cnpj": "49122730000154",
     "company_code": "927",
     "created_at": "2026-04-22T19:43:10.296227Z",
@@ -2187,10 +2187,10 @@
     "razao_social": "FERREIRA PARTICIPACOES LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:10.296227Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:931:seed-v1-03-2026",
     "cnpj": "45662289000142",
     "company_code": "931",
     "created_at": "2026-04-22T19:43:10.332273Z",
@@ -2202,10 +2202,10 @@
     "razao_social": "PAULO WILLIAM FAVINHA 05852769860",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:10.332273Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:935:seed-v1-03-2026",
     "cnpj": "49868190000152",
     "company_code": "935",
     "created_at": "2026-04-22T19:43:10.369109Z",
@@ -2217,10 +2217,10 @@
     "razao_social": "LORENZO ACIALDI CONSULTORIA LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:10.369109Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:940:seed-v1-03-2026",
     "cnpj": "53428965000146",
     "company_code": "940",
     "created_at": "2026-04-22T19:43:10.408512Z",
@@ -2232,10 +2232,10 @@
     "razao_social": "ANTONELO TEXTIL IMPORTACAO E EXPORTACAO",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:10.408512Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:941:seed-v1-03-2026",
     "cnpj": "49695936000173",
     "company_code": "941",
     "created_at": "2026-04-22T19:43:10.449628Z",
@@ -2247,10 +2247,10 @@
     "razao_social": "ORALLE BAURU ODONTOLOGIA LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:10.449628Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:943:seed-v1-03-2026",
     "cnpj": "50157244000150",
     "company_code": "943",
     "created_at": "2026-04-22T19:43:10.485406Z",
@@ -2262,10 +2262,10 @@
     "razao_social": "E P I D FONOAUDIOLOGIA LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:10.485406Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:944:seed-v1-03-2026",
     "cnpj": "50133938000158",
     "company_code": "944",
     "created_at": "2026-04-22T19:43:10.520583Z",
@@ -2277,10 +2277,10 @@
     "razao_social": "R A C SERVICOS MEDICOS LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:10.520583Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:947:seed-v1-03-2026",
     "cnpj": "36557425000143",
     "company_code": "947",
     "created_at": "2026-04-22T19:43:10.557109Z",
@@ -2292,10 +2292,10 @@
     "razao_social": "REINADO DA BELEZA LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:10.557109Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:948:seed-v1-03-2026",
     "cnpj": "44415623000109",
     "company_code": "948",
     "created_at": "2026-04-22T19:43:10.594648Z",
@@ -2307,10 +2307,10 @@
     "razao_social": "L MAIA ZILIOLI LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:10.594648Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:959:seed-v1-03-2026",
     "cnpj": "52014128000108",
     "company_code": "959",
     "created_at": "2026-04-22T19:43:10.645865Z",
@@ -2322,10 +2322,10 @@
     "razao_social": "BFS COMERCIO LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:10.645865Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:963:seed-v1-02-2026",
     "cnpj": "11948284000169",
     "company_code": "963",
     "created_at": "2026-04-22T19:43:10.689632Z",
@@ -2337,10 +2337,10 @@
     "razao_social": "HELIO ALVES DOS SANTOS",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:10.689632Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:964:seed-v1-03-2026",
     "cnpj": "47228573000130",
     "company_code": "964",
     "created_at": "2026-04-22T19:43:10.733458Z",
@@ -2352,10 +2352,10 @@
     "razao_social": "BAURU ARMAZEN PRODUTOS ALIMENTICIOS LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:10.733458Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:969:seed-v1-03-2026",
     "cnpj": "00893090000197",
     "company_code": "969",
     "created_at": "2026-04-22T19:43:10.774454Z",
@@ -2367,10 +2367,10 @@
     "razao_social": "FABIO VECCHI FIDALGO",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:10.774454Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:970:seed-v1-03-2026",
     "cnpj": "50288461000180",
     "company_code": "970",
     "created_at": "2026-04-22T19:43:10.815277Z",
@@ -2382,10 +2382,10 @@
     "razao_social": "MARCUS PAULO BERTONI",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:10.815277Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:972:seed-v1-04-2026",
     "cnpj": "58953795000132",
     "company_code": "972",
     "created_at": "2026-04-22T19:43:10.853811Z",
@@ -2397,10 +2397,10 @@
     "razao_social": "FORTEBOX EMBALAGENS E MAQUINAS LTDA 810",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:10.853811Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:973:seed-v1-04-2026",
     "cnpj": "06289293000155",
     "company_code": "973",
     "created_at": "2026-04-22T19:43:10.891663Z",
@@ -2412,10 +2412,10 @@
     "razao_social": "M A C PATRICIO EMBALAGENS",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:10.891663Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:976:seed-v1-03-2026",
     "cnpj": "42590292000100",
     "company_code": "976",
     "created_at": "2026-04-22T19:43:10.929930Z",
@@ -2427,10 +2427,10 @@
     "razao_social": "ESTRELA DO SUL COMERCIO DE BEBIDAS LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:10.929930Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:978:seed-v1-03-2026",
     "cnpj": "51171028000122",
     "company_code": "978",
     "created_at": "2026-04-22T19:43:10.969573Z",
@@ -2442,10 +2442,10 @@
     "razao_social": "MDA GESTAO COMERCIAL E EMPRESARIAL LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:10.969573Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:983:seed-v1-03-2026",
     "cnpj": "74624412000139",
     "company_code": "983",
     "created_at": "2026-04-22T19:43:11.008001Z",
@@ -2457,10 +2457,10 @@
     "razao_social": "LUIZ CARLOS DE OLIVEIRA PANIFICADORA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:11.008001Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:987:seed-v1-03-2026",
     "cnpj": "50452448000114",
     "company_code": "987",
     "created_at": "2026-04-22T19:43:11.048184Z",
@@ -2472,10 +2472,10 @@
     "razao_social": "FERREIRA & PAIVA FRANCHISING - COMERCIO",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:11.048184Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:989:seed-v1-04-2026",
     "cnpj": "52076397000107",
     "company_code": "989",
     "created_at": "2026-04-22T19:43:11.091318Z",
@@ -2487,10 +2487,10 @@
     "razao_social": "L V OLIVEIRA PANIFICADORA LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:11.091318Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:990:seed-v1-03-2026",
     "cnpj": "41828327000214",
     "company_code": "990",
     "created_at": "2026-04-22T19:43:11.130634Z",
@@ -2502,10 +2502,10 @@
     "razao_social": "VIAN & ALMEIDA DISTRIBUIDORA DE GAS LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:11.130634Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:991:seed-v1-03-2026",
     "cnpj": "54666968000180",
     "company_code": "991",
     "created_at": "2026-04-22T19:43:11.171887Z",
@@ -2517,10 +2517,10 @@
     "razao_social": "RICARDO MONTEBUGNOLI SOLUCOES IMOBILIARI",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:11.171887Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:992:seed-v1-03-2026",
     "cnpj": "55315249000188",
     "company_code": "992",
     "created_at": "2026-04-22T19:43:11.212779Z",
@@ -2532,10 +2532,10 @@
     "razao_social": "RICARDO A S DE TOLEDO MOTA LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:11.212779Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:993:seed-v1-03-2026",
     "cnpj": "55145073000163",
     "company_code": "993",
     "created_at": "2026-04-22T19:43:11.255566Z",
@@ -2547,10 +2547,10 @@
     "razao_social": "TOQUE DO CAMPO AGROPECUARIA LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:11.255566Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:994:seed-v1-03-2026",
     "cnpj": "55231414000113",
     "company_code": "994",
     "created_at": "2026-04-22T19:43:11.296653Z",
@@ -2562,10 +2562,10 @@
     "razao_social": "MAURO SA SERVICOS DE GESTAO EMPRESARIAL",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:11.296653Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:995:seed-v1-03-2026",
     "cnpj": "32758363000187",
     "company_code": "995",
     "created_at": "2026-04-22T19:43:11.339328Z",
@@ -2577,10 +2577,10 @@
     "razao_social": "EMANUEL DOS SANTOS SOARES DE LIMA IMOVEI",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:11.339328Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:996:seed-v1-03-2026",
     "cnpj": "53997803000129",
     "company_code": "996",
     "created_at": "2026-04-22T19:43:11.383652Z",
@@ -2592,10 +2592,10 @@
     "razao_social": "VM MAGALHAES MEDICINA LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:11.383652Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:999:seed-v1-03-2026",
     "cnpj": "53870442000155",
     "company_code": "999",
     "created_at": "2026-04-22T19:43:11.428670Z",
@@ -2607,10 +2607,10 @@
     "razao_social": "H HUANG & HUANG LOJA DE PRESENTES LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:11.428670Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1000:seed-v1-03-2026",
     "cnpj": "23522452000139",
     "company_code": "1000",
     "created_at": "2026-04-22T19:43:11.470811Z",
@@ -2622,10 +2622,10 @@
     "razao_social": "JULIO CESAR VIEGAS SANTOS",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:11.470811Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1001:seed-v1-03-2026",
     "cnpj": "57566385000176",
     "company_code": "1001",
     "created_at": "2026-04-22T19:43:11.511205Z",
@@ -2637,10 +2637,10 @@
     "razao_social": "HUANG & HUANG PRESENTES LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:11.511205Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1002:seed-v1-03-2026",
     "cnpj": "37329920000168",
     "company_code": "1002",
     "created_at": "2026-04-22T19:43:11.563068Z",
@@ -2652,10 +2652,10 @@
     "razao_social": "B H S CAMARGO TRANSPORTES LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:11.563068Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1003:seed-v1-03-2026",
     "cnpj": "41682122000192",
     "company_code": "1003",
     "created_at": "2026-04-22T19:43:11.612477Z",
@@ -2667,10 +2667,10 @@
     "razao_social": "GABRIELA SIMON ARQUITETURA E DESIGN LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:11.612477Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1006:seed-v1-03-2026",
     "cnpj": "58070123000189",
     "company_code": "1006",
     "created_at": "2026-04-22T19:43:11.660579Z",
@@ -2682,10 +2682,10 @@
     "razao_social": "DIGLACE SORVETE ARTESANAL & NATURAL E CO",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:11.660579Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1007:seed-v1-03-2026",
     "cnpj": "58052815000102",
     "company_code": "1007",
     "created_at": "2026-04-22T19:43:11.705513Z",
@@ -2697,10 +2697,10 @@
     "razao_social": "F R M SAYAO LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:11.705513Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1008:seed-v1-02-2026",
     "cnpj": "58150107000104",
     "company_code": "1008",
     "created_at": "2026-04-22T19:43:11.746563Z",
@@ -2712,10 +2712,10 @@
     "razao_social": "APG TOP 20 LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:11.746563Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1010:seed-v1-03-2026",
     "cnpj": "18939427000115",
     "company_code": "1010",
     "created_at": "2026-04-22T19:43:11.789817Z",
@@ -2727,10 +2727,10 @@
     "razao_social": "ESTACAO FORMA ACADEMIA LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:11.789817Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1014:seed-v1-03-2026",
     "cnpj": "50687275000113",
     "company_code": "1014",
     "created_at": "2026-04-22T19:43:11.833074Z",
@@ -2742,10 +2742,10 @@
     "razao_social": "JEFFERSON ORTIZ DE SOUZA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:11.833074Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1015:seed-v1-03-2026",
     "cnpj": "56340004000173",
     "company_code": "1015",
     "created_at": "2026-04-22T19:43:11.876536Z",
@@ -2757,10 +2757,10 @@
     "razao_social": "H INVESTIMENTOS IMOBILIARIOS LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:11.876536Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1016:seed-v1-04-2026",
     "cnpj": "47317828000131",
     "company_code": "1016",
     "created_at": "2026-04-22T19:43:11.922353Z",
@@ -2772,10 +2772,10 @@
     "razao_social": "MAIS QUE BOLO DOCES E SALGADOS LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:11.922353Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1017:seed-v1-02-2026",
     "cnpj": "42867626000140",
     "company_code": "1017",
     "created_at": "2026-04-22T19:43:11.968972Z",
@@ -2787,10 +2787,10 @@
     "razao_social": "VITOR FINATO 42500822885",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:11.968972Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1019:seed-v1-03-2026",
     "cnpj": "60338749000175",
     "company_code": "1019",
     "created_at": "2026-04-22T19:43:12.013628Z",
@@ -2802,10 +2802,10 @@
     "razao_social": "L DARICO MACHADO SOLUCOES EM INVESTIMENT",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:12.013628Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1020:seed-v1-03-2026",
     "cnpj": "60013864000170",
     "company_code": "1020",
     "created_at": "2026-04-22T19:43:12.055833Z",
@@ -2817,10 +2817,10 @@
     "razao_social": "J.JR ASSESSORIA E PROJETOS LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:12.055833Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1021:seed-v1-03-2026",
     "cnpj": "60208763000154",
     "company_code": "1021",
     "created_at": "2026-04-22T19:43:12.097643Z",
@@ -2832,10 +2832,10 @@
     "razao_social": "STERILOW ESTERILIZACAO TOTAL LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:12.097643Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1023:seed-v1-03-2026",
     "cnpj": "60808186000131",
     "company_code": "1023",
     "created_at": "2026-04-22T19:43:12.139884Z",
@@ -2847,10 +2847,10 @@
     "razao_social": "JG APARAS DE PAPEL E PLASTICO LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:12.139884Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1025:seed-v1-02-2026",
     "cnpj": "61256631000160",
     "company_code": "1025",
     "created_at": "2026-04-22T19:43:12.184632Z",
@@ -2862,10 +2862,10 @@
     "razao_social": "HAS CONSTRUCOES LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:12.184632Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1026:seed-v1-03-2026",
     "cnpj": "47201047000187",
     "company_code": "1026",
     "created_at": "2026-04-22T19:43:12.228602Z",
@@ -2877,10 +2877,10 @@
     "razao_social": "PRIME GO DISTRIBUICOES LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:12.228602Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1027:seed-v1-03-2026",
     "cnpj": "30435611000123",
     "company_code": "1027",
     "created_at": "2026-04-22T19:43:12.271066Z",
@@ -2892,10 +2892,10 @@
     "razao_social": "TS TECHNOLOGY LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:12.271066Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1028:seed-v1-03-2026",
     "cnpj": "49619496000175",
     "company_code": "1028",
     "created_at": "2026-04-22T19:43:12.313826Z",
@@ -2907,10 +2907,10 @@
     "razao_social": "R A DE OLIVEIRA COMERCIO E MERCEARIA LTD",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:12.313826Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1029:seed-v1-03-2026",
     "cnpj": "61594533000133",
     "company_code": "1029",
     "created_at": "2026-04-22T19:43:12.356772Z",
@@ -2922,10 +2922,10 @@
     "razao_social": "R P ALVES REPRESENTACOES LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:12.356772Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1030:seed-v1-03-2026",
     "cnpj": "36237484000134",
     "company_code": "1030",
     "created_at": "2026-04-22T19:43:12.404708Z",
@@ -2937,10 +2937,10 @@
     "razao_social": "MARINETE LOPES DA SILVA DERNEY",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:12.404708Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1032:seed-v1-03-2026",
     "cnpj": "60844778000109",
     "company_code": "1032",
     "created_at": "2026-04-22T19:43:12.453567Z",
@@ -2952,10 +2952,10 @@
     "razao_social": "KADU TOP 20 LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:12.453567Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1035:seed-v1-03-2026",
     "cnpj": "44193443000111",
     "company_code": "1035",
     "created_at": "2026-04-22T19:43:12.500760Z",
@@ -2967,10 +2967,10 @@
     "razao_social": "QUEVEDO CONSULTORIA LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:12.500760Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1037:seed-v1-03-2026",
     "cnpj": "42531105000117",
     "company_code": "1037",
     "created_at": "2026-04-22T19:43:12.548000Z",
@@ -2982,10 +2982,10 @@
     "razao_social": "HP LABORATORIO DE PROTESE DENTARIA LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:12.548000Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1039:seed-v1-03-2026",
     "cnpj": "07188135000171",
     "company_code": "1039",
     "created_at": "2026-04-22T19:43:12.594181Z",
@@ -2997,10 +2997,10 @@
     "razao_social": "SUPERMERCADO LATANZIO & SILVA LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:12.594181Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1040:seed-v1-03-2026",
     "cnpj": "48873976000103",
     "company_code": "1040",
     "created_at": "2026-04-22T19:43:12.645031Z",
@@ -3012,10 +3012,10 @@
     "razao_social": "MINHA COMPRINHA LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:12.645031Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1041:seed-v1-03-2026",
     "cnpj": "43290816000100",
     "company_code": "1041",
     "created_at": "2026-04-22T19:43:12.695679Z",
@@ -3027,10 +3027,10 @@
     "razao_social": "FEDERACAO AQUATICA PAULISTA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:12.695679Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1042:seed-v1-03-2026",
     "cnpj": "62963591000150",
     "company_code": "1042",
     "created_at": "2026-04-22T19:43:12.744222Z",
@@ -3042,10 +3042,10 @@
     "razao_social": "ALESSANDRA PRADO TRADUCOES E CONSULTORIA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:12.744222Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1043:seed-v1-03-2026",
     "cnpj": "63206880000177",
     "company_code": "1043",
     "created_at": "2026-04-22T19:43:12.791935Z",
@@ -3057,10 +3057,10 @@
     "razao_social": "G. DUARTE DA SILVA MOVEIS LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:12.791935Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1044:seed-v1-03-2026",
     "cnpj": "31615197000105",
     "company_code": "1044",
     "created_at": "2026-04-22T19:43:12.844616Z",
@@ -3072,10 +3072,10 @@
     "razao_social": "JULIANO GONCALVES RUIZ",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:12.844616Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1045:seed-v1-03-2026",
     "cnpj": "38478831000146",
     "company_code": "1045",
     "created_at": "2026-04-22T19:43:12.900116Z",
@@ -3087,10 +3087,10 @@
     "razao_social": "BGC SOLUCOES EMPRESARIAIS LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:12.900116Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1047:seed-v1-03-2026",
     "cnpj": "35175113000102",
     "company_code": "1047",
     "created_at": "2026-04-22T19:43:12.962228Z",
@@ -3102,10 +3102,10 @@
     "razao_social": "CAMILA SILVA SIECOLA COUBE",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:12.962228Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1048:seed-v1-03-2026",
     "cnpj": "58554897000185",
     "company_code": "1048",
     "created_at": "2026-04-22T19:43:13.011302Z",
@@ -3117,10 +3117,10 @@
     "razao_social": "DANIEL COUBE SCHAFRANSKI",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:13.011302Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1049:seed-v1-03-2026",
     "cnpj": "51489967000110",
     "company_code": "1049",
     "created_at": "2026-04-22T19:43:13.054486Z",
@@ -3132,10 +3132,10 @@
     "razao_social": "AUTOSYN IMPORTA\u00c7\u00c3O E COMERCIO LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:13.054486Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1050:seed-v1-03-2026",
     "cnpj": "62446088000127",
     "company_code": "1050",
     "created_at": "2026-04-22T19:43:13.098808Z",
@@ -3147,10 +3147,10 @@
     "razao_social": "R CORREA DA SILVA COMERCIO DE EQUIPAMENT",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:13.098808Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1054:seed-v1-03-2026",
     "cnpj": "55928028000185",
     "company_code": "1054",
     "created_at": "2026-04-22T19:43:13.144238Z",
@@ -3162,10 +3162,10 @@
     "razao_social": "F A F SOLUCOES EMPRESARIAIS LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:13.144238Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1055:seed-v1-03-2026",
     "cnpj": "29116461000106",
     "company_code": "1055",
     "created_at": "2026-04-22T19:43:13.192099Z",
@@ -3177,10 +3177,10 @@
     "razao_social": "NILSON BERTOLUCI JUNIOR",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:13.192099Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1056:seed-v1-04-2026",
     "cnpj": "32455179000168",
     "company_code": "1056",
     "created_at": "2026-04-22T19:43:13.237895Z",
@@ -3192,10 +3192,10 @@
     "razao_social": "JOAO PEDRO VIEIRA COLOMARE LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:13.237895Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1058:seed-v1-03-2026",
     "cnpj": "49330745000108",
     "company_code": "1058",
     "created_at": "2026-04-22T19:43:13.280988Z",
@@ -3207,10 +3207,10 @@
     "razao_social": "VINICIUS BESSA DE ANDRADE",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:13.280988Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1063:seed-v1-03-2026",
     "cnpj": "65038037000154",
     "company_code": "1063",
     "created_at": "2026-04-22T19:43:13.324460Z",
@@ -3222,10 +3222,10 @@
     "razao_social": "F RAMOS CEVADA SERVICOS EMPRESARIAIS LTD",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:13.324460Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1064:seed-v1-03-2026",
     "cnpj": "65224192000165",
     "company_code": "1064",
     "created_at": "2026-04-22T19:43:13.367871Z",
@@ -3237,10 +3237,10 @@
     "razao_social": "M A DOS SANTOS LTDA",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:13.367871Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1066:seed-v1-03-2026",
     "cnpj": "65262641000160",
     "company_code": "1066",
     "created_at": "2026-04-22T19:43:13.411772Z",
@@ -3252,10 +3252,10 @@
     "razao_social": "R FADUL NOGUEIRA SPINOSA SERVICOS MEDICO",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:13.411772Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   },
   {
-    "active_config_id": null,
+    "active_config_id": "config:company:1070:seed-v1-03-2026",
     "cnpj": "53649891000178",
     "company_code": "1070",
     "created_at": "2026-04-22T19:43:13.460797Z",
@@ -3267,6 +3267,6 @@
     "razao_social": "DALBETO BORBA CONSULTORIA E ASSESSORIA L",
     "source_import": "resumo_mensal",
     "status": "active",
-    "updated_at": "2026-04-22T19:43:13.460797Z"
+    "updated_at": "2026-04-22T20:08:21.210806Z"
   }
 ]

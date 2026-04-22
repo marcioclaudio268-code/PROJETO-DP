@@ -8,10 +8,12 @@ from openpyxl import Workbook
 
 from config import (
     CompanyConfig,
+    CompanyConfigIssue,
     CompanyConfigRecord,
     CompanyMasterDataStore,
     CompanyRegistryEntry,
     import_resumo_mensal_file,
+    seed_company_configs_from_missing_issues,
 )
 from dashboard import ConfigResolutionStatus, ConfigResolver
 
@@ -90,6 +92,36 @@ def _specific_config_payload(*, company_code: str, competence: str, version: str
         },
         "validation_flags": {},
     }
+
+
+def _seed_registry_entry(*, company_code: str, competence: str, cnpj: str) -> CompanyRegistryEntry:
+    return CompanyRegistryEntry(
+        id=f"company:{company_code}",
+        company_code=company_code,
+        cnpj=cnpj,
+        razao_social=f"Empresa {company_code}",
+        nome_fantasia=f"Empresa {company_code}",
+        status="active",
+        is_active=True,
+        default_template_id="planilha_padrao_folha_v1",
+        active_config_id=None,
+        last_competence_seen=competence,
+        source_import="resumo_mensal",
+        created_at=datetime(2026, 4, 1, tzinfo=timezone.utc),
+        updated_at=datetime(2026, 4, 1, tzinfo=timezone.utc),
+    )
+
+
+def _seed_missing_issue(*, company_code: str, competence: str) -> CompanyConfigIssue:
+    return CompanyConfigIssue(
+        id=f"issue:company:{company_code}:company_config_missing:{competence.replace('/', '-')}",
+        company_id=f"company:{company_code}",
+        issue_type="company_config_missing",
+        description=f"Nenhuma configuracao interna foi localizada para a empresa {company_code} na competencia {competence}.",
+        status="open",
+        created_at=datetime(2026, 4, 1, tzinfo=timezone.utc),
+        updated_at=datetime(2026, 4, 1, tzinfo=timezone.utc),
+    )
 
 
 def test_import_resumo_mensal_upserts_company_and_links_legacy_config(tmp_path: Path) -> None:
@@ -173,6 +205,61 @@ def test_import_resumo_mensal_records_issue_when_company_code_is_missing(tmp_pat
     assert result.issues_created == 1
     assert len(issues) == 1
     assert issues[0].issue_type == "company_identity_missing"
+
+
+def test_seed_company_configs_from_missing_issues_creates_batched_configs_and_links_active_config(tmp_path: Path) -> None:
+    master_root = tmp_path / "master"
+    store = CompanyMasterDataStore(master_root)
+    registry_entries = [
+        _seed_registry_entry(company_code="3", competence="03/2026", cnpj="00000000000101"),
+        _seed_registry_entry(company_code="24", competence="03/2026", cnpj="00000000000202"),
+        _seed_registry_entry(company_code="99", competence="04/2026", cnpj="00000000000303"),
+    ]
+    issues = [
+        _seed_missing_issue(company_code="3", competence="03/2026"),
+        _seed_missing_issue(company_code="24", competence="03/2026"),
+        _seed_missing_issue(company_code="99", competence="04/2026"),
+    ]
+    store.save_all(registry_entries=registry_entries, config_records=[], issues=issues)
+
+    result = seed_company_configs_from_missing_issues(store_root=master_root)
+
+    refreshed_store = CompanyMasterDataStore(master_root)
+    refreshed_companies = {entry.company_code: entry for entry in refreshed_store.load_registry_entries()}
+    refreshed_configs = refreshed_store.load_config_records()
+    refreshed_issues = refreshed_store.load_issues()
+
+    assert result.default_process == "11"
+    assert result.companies_targeted == 3
+    assert result.companies_seeded == 3
+    assert result.configs_created == 3
+    assert result.configs_updated == 0
+    assert result.active_config_links_updated == 3
+    assert result.issues_resolved == 3
+    assert result.remaining_open_company_config_missing == 0
+    assert result.exceptions == []
+    assert {group.competence for group in result.groups} == {"03/2026", "04/2026"}
+
+    group_032026 = next(group for group in result.groups if group.competence == "03/2026")
+    group_042026 = next(group for group in result.groups if group.competence == "04/2026")
+    assert group_032026.companies_seeded == 2
+    assert group_032026.configs_created == 2
+    assert group_032026.active_config_links_updated == 2
+    assert group_042026.companies_seeded == 1
+    assert group_042026.configs_created == 1
+    assert group_042026.active_config_links_updated == 1
+    assert group_032026.example_companies
+
+    assert refreshed_companies["3"].active_config_id == "config:company:3:seed-v1-03-2026"
+    assert refreshed_companies["24"].active_config_id == "config:company:24:seed-v1-03-2026"
+    assert refreshed_companies["99"].active_config_id == "config:company:99:seed-v1-04-2026"
+    assert len(refreshed_configs) == 3
+    assert all(issue.status == "resolved" for issue in refreshed_issues if issue.issue_type == "company_config_missing")
+
+    resolver = ConfigResolver(registry_root=master_root, legacy_root=tmp_path / "legacy")
+    resolved = resolver.resolve(company_code="3", competence="03/2026")
+    assert resolved.status == ConfigResolutionStatus.FOUND
+    assert resolved.config_source == "registry_company_competence"
 
 
 def test_config_resolver_prefers_registry_specific_config(tmp_path: Path) -> None:

@@ -185,6 +185,49 @@ class CompanyConfigIssue(StrictModel):
     updated_at: datetime = Field(default_factory=_utc_now)
 
 
+class CompanyConfigSeedException(StrictModel):
+    """Non-fatal problem encountered while seeding a company config batch."""
+
+    company_id: str | None = Field(default=None, description="Linked registry id")
+    company_code: str | None = Field(default=None, description="Company code when available")
+    competence: str | None = Field(default=None, description="Competence used for the attempted seed")
+    issue_type: str = Field(..., min_length=1, description="Issue code")
+    description: str = Field(..., min_length=1, description="Human readable description")
+
+
+class CompanyConfigSeedGroupResult(StrictModel):
+    """Batch-seed summary grouped by detected competence."""
+
+    competence: str = Field(..., min_length=1, description="Competence resolved for the group")
+    config_version: str = Field(..., min_length=1, description="Seed config version used by the group")
+    companies_seeded: int = Field(default=0, ge=0)
+    configs_created: int = Field(default=0, ge=0)
+    configs_updated: int = Field(default=0, ge=0)
+    active_config_links_updated: int = Field(default=0, ge=0)
+    issues_resolved: int = Field(default=0, ge=0)
+    example_companies: list[str] = Field(default_factory=list)
+
+
+class MasterDataSeedResult(StrictModel):
+    """Summary of a batch seed for company configs."""
+
+    source_root: str = Field(..., min_length=1, description="Master data root path")
+    default_process: str = Field(..., min_length=1, description="Default process code used by the seed")
+    companies_targeted: int = Field(default=0, ge=0)
+    companies_seeded: int = Field(default=0, ge=0)
+    configs_created: int = Field(default=0, ge=0)
+    configs_updated: int = Field(default=0, ge=0)
+    active_config_links_updated: int = Field(default=0, ge=0)
+    issues_resolved: int = Field(default=0, ge=0)
+    remaining_open_company_config_missing: int = Field(default=0, ge=0)
+    groups: list[CompanyConfigSeedGroupResult] = Field(default_factory=list)
+    exceptions: list[CompanyConfigSeedException] = Field(default_factory=list)
+    registry_path: str = Field(..., min_length=1, description="Registry JSON path")
+    configs_path: str = Field(..., min_length=1, description="Configs JSON path")
+    issues_path: str = Field(..., min_length=1, description="Issues JSON path")
+    message: str = Field(default="", description="Summary message")
+
+
 class MasterDataImportResult(StrictModel):
     """Summary of a Resumo Mensal import into the internal company master data."""
 

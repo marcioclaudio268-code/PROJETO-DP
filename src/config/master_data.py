@@ -17,9 +17,12 @@ from pydantic import ValidationError
 from .models import (
     CompanyConfig,
     CompanyConfigIssue,
+    CompanyConfigSeedException,
+    CompanyConfigSeedGroupResult,
     CompanyConfigRecord,
     CompanyRegistryEntry,
     MasterDataImportResult,
+    MasterDataSeedResult,
 )
 
 
@@ -30,6 +33,8 @@ REGISTRY_FILENAME = "companies_registry.json"
 CONFIGS_FILENAME = "company_configs.json"
 ISSUES_FILENAME = "company_config_issues.json"
 SUMMARY_IMPORT_SOURCE = "resumo_mensal"
+DEFAULT_SEED_DEFAULT_PROCESS = "11"
+DEFAULT_SEED_CONFIG_VERSION_PREFIX = "seed-v1"
 
 
 class MasterDataImportError(RuntimeError):
@@ -603,6 +608,243 @@ def resolve_registry_config_payload(
         return None, None, None, "A empresa existe no cadastro mestre, mas nao ha configuracao ativa vinculada para a competencia detectada."
 
     return None, None, None, None
+
+
+def seed_company_configs_from_missing_issues(
+    *,
+    store_root: str | Path | None = None,
+    default_process: str = DEFAULT_SEED_DEFAULT_PROCESS,
+    config_version_prefix: str = DEFAULT_SEED_CONFIG_VERSION_PREFIX,
+) -> MasterDataSeedResult:
+    """Seed internal company configs for the current open company_config_missing batch."""
+
+    store = CompanyMasterDataStore(store_root)
+    registry_entries = list(store.load_registry_entries())
+    config_records = list(store.load_config_records())
+    issues = list(store.load_issues())
+    now = _utc_now()
+
+    registry_index_by_id = {entry.id: index for index, entry in enumerate(registry_entries)}
+    config_index_by_id = {record.id: index for index, record in enumerate(config_records)}
+    issue_index_by_id = {issue.id: index for index, issue in enumerate(issues)}
+    issues_by_company_id: dict[str, list[CompanyConfigIssue]] = {}
+    for issue in issues:
+        if issue.issue_type == "company_config_missing" and issue.status == "open":
+            issues_by_company_id.setdefault(issue.company_id, []).append(issue)
+
+    target_company_ids = set(issues_by_company_id)
+    target_companies = [entry for entry in registry_entries if entry.id in target_company_ids]
+    target_companies.sort(
+        key=lambda entry: (
+            competence_sort_key(entry.last_competence_seen),
+            int(normalize_digits(entry.company_code) or 10**12),
+            entry.company_code,
+        )
+    )
+
+    grouped_companies: dict[str, list[CompanyRegistryEntry]] = {}
+    exceptions: list[CompanyConfigSeedException] = []
+    companies_seeded = 0
+    configs_created = 0
+    configs_updated = 0
+    active_config_links_updated = 0
+    issues_resolved = 0
+    group_results: list[CompanyConfigSeedGroupResult] = []
+
+    for company in target_companies:
+        registry_index = registry_index_by_id.get(company.id)
+        if registry_index is None:
+            exceptions.append(
+                CompanyConfigSeedException(
+                    company_id=company.id,
+                    company_code=company.company_code,
+                    competence=company.last_competence_seen,
+                    issue_type="company_config_seed_exception",
+                    description=(
+                        f"Empresa {company.company_code} nao foi encontrada no cadastro mestre "
+                        "durante o seed em lote."
+                    ),
+                )
+            )
+            continue
+
+        competence = normalize_competence(company.last_competence_seen)
+        if competence is None:
+            exceptions.append(
+                CompanyConfigSeedException(
+                    company_id=company.id,
+                    company_code=company.company_code,
+                    competence=None,
+                    issue_type="company_config_seed_exception",
+                    description=(
+                        "Empresa com company_config_missing nao informou last_competence_seen; "
+                        "seed em lote nao conseguiu agrupar a configuracao."
+                    ),
+                )
+            )
+            continue
+        grouped_companies.setdefault(competence, []).append(company)
+
+    for competence in sorted(grouped_companies, key=competence_sort_key):
+        group_companies = grouped_companies[competence]
+        config_version = _seed_config_version_for_competence(
+            competence,
+            prefix=config_version_prefix,
+        )
+        group_seeded_count = 0
+        group_created = 0
+        group_updated = 0
+        group_links_updated = 0
+        group_issues_resolved = 0
+        example_companies: list[str] = []
+
+        for company in group_companies:
+            try:
+                config_payload = CompanyConfig.model_validate(
+                    {
+                        "company_code": company.company_code,
+                        "company_name": _company_display_name(company),
+                        "default_process": default_process,
+                        "competence": competence,
+                        "config_version": config_version,
+                        "event_mappings": [],
+                        "employee_mappings": [],
+                        "notes": (
+                            "Seed em lote da Fase 3B. "
+                            f"default_process={default_process}. "
+                            f"competence={competence}."
+                        ),
+                    }
+                )
+            except ValidationError as exc:
+                exceptions.append(
+                    CompanyConfigSeedException(
+                        company_id=company.id,
+                        company_code=company.company_code,
+                        competence=competence,
+                        issue_type="company_config_seed_exception",
+                        description=(
+                            f"Configuracao base invalida para a empresa {company.company_code}: {exc}"
+                        ),
+                    )
+                )
+                continue
+
+            record_id = company_config_id(company.id, config_version)
+            record_payload = CompanyConfigRecord(
+                id=record_id,
+                company_id=company.id,
+                version=config_version,
+                competence_start=competence,
+                competence_end=competence,
+                status="active",
+                config_payload_internal=config_payload.model_dump(mode="json"),
+                validated_at=now,
+                created_at=now,
+                updated_at=now,
+            )
+
+            existing_config_index = config_index_by_id.get(record_id)
+            if existing_config_index is None:
+                config_records.append(record_payload)
+                config_index_by_id[record_id] = len(config_records) - 1
+                configs_created += 1
+                group_created += 1
+            else:
+                existing_record = config_records[existing_config_index]
+                config_records[existing_config_index] = record_payload.model_copy(
+                    update={
+                        "created_at": existing_record.created_at,
+                        "validated_at": existing_record.validated_at or now,
+                    }
+                )
+                configs_updated += 1
+                group_updated += 1
+
+            registry_index = registry_index_by_id[company.id]
+            registry_entry = registry_entries[registry_index]
+            if registry_entry.active_config_id != record_id:
+                registry_entries[registry_index] = registry_entry.model_copy(
+                    update={
+                        "active_config_id": record_id,
+                        "updated_at": now,
+                    }
+                )
+                active_config_links_updated += 1
+                group_links_updated += 1
+
+            for issue in issues_by_company_id.get(company.id, ()):
+                issue_index = issue_index_by_id.get(issue.id)
+                if issue_index is None:
+                    continue
+                if issues[issue_index].status != "resolved":
+                    issues[issue_index] = issues[issue_index].model_copy(
+                        update={
+                            "status": "resolved",
+                            "updated_at": now,
+                        }
+                    )
+                    issues_resolved += 1
+                    group_issues_resolved += 1
+
+            example_companies.append(f"{company.company_code} - {_company_display_name(company)}")
+            companies_seeded += 1
+            group_seeded_count += 1
+
+        group_results.append(
+            CompanyConfigSeedGroupResult(
+                competence=competence,
+                config_version=config_version,
+                companies_seeded=group_seeded_count,
+                configs_created=group_created,
+                configs_updated=group_updated,
+                active_config_links_updated=group_links_updated,
+                issues_resolved=group_issues_resolved,
+                example_companies=example_companies[:5],
+            )
+        )
+
+    store.save_all(
+        registry_entries=registry_entries,
+        config_records=config_records,
+        issues=issues,
+    )
+
+    remaining_open_company_config_missing = sum(
+        1 for issue in issues if issue.issue_type == "company_config_missing" and issue.status == "open"
+    )
+
+    return MasterDataSeedResult(
+        source_root=str(store.paths.root),
+        default_process=default_process,
+        companies_targeted=len(target_company_ids),
+        companies_seeded=companies_seeded,
+        configs_created=configs_created,
+        configs_updated=configs_updated,
+        active_config_links_updated=active_config_links_updated,
+        issues_resolved=issues_resolved,
+        remaining_open_company_config_missing=remaining_open_company_config_missing,
+        groups=group_results,
+        exceptions=exceptions,
+        registry_path=str(store.paths.registry_path),
+        configs_path=str(store.paths.configs_path),
+        issues_path=str(store.paths.issues_path),
+        message=(
+            "Seed em lote concluido para as pendencias company_config_missing; "
+            f"default_process={default_process}."
+        ),
+    )
+
+
+def _seed_config_version_for_competence(competence: str, *, prefix: str = DEFAULT_SEED_CONFIG_VERSION_PREFIX) -> str:
+    normalized = normalize_competence(competence)
+    if normalized is None:
+        raise ValueError("competence is required to build a seed config version")
+    return f"{prefix}-{normalized.replace('/', '-')}"
+
+
+def _company_display_name(company: CompanyRegistryEntry) -> str:
+    return company.razao_social or company.nome_fantasia or company.company_code
 
 
 def _read_spreadsheet(path: Path) -> dict[str, pd.DataFrame]:
