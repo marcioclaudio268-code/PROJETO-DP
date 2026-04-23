@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import importlib.util
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 from openpyxl import load_workbook
 
@@ -18,6 +20,91 @@ from dashboard import (
     upsert_event_mapping_override,
 )
 from ingestion import save_planilha_padrao_folha_v1
+
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+class _FakeStreamlit:
+    def __init__(self, *, uploaded_workbook=None, button_result: bool = False) -> None:
+        self.session_state: dict[str, object] = {}
+        self.errors: list[str] = []
+        self.uploaded_workbook = uploaded_workbook
+        self.button_result = button_result
+        self.rerun_called = False
+
+    def set_page_config(self, **kwargs) -> None:
+        return None
+
+    def title(self, *args, **kwargs) -> None:
+        return None
+
+    def caption(self, *args, **kwargs) -> None:
+        return None
+
+    def subheader(self, *args, **kwargs) -> None:
+        return None
+
+    def write(self, *args, **kwargs) -> None:
+        return None
+
+    def error(self, message: str) -> None:
+        self.errors.append(message)
+
+    def success(self, *args, **kwargs) -> None:
+        return None
+
+    def warning(self, *args, **kwargs) -> None:
+        return None
+
+    def info(self, *args, **kwargs) -> None:
+        return None
+
+    def markdown(self, *args, **kwargs) -> None:
+        return None
+
+    def table(self, *args, **kwargs) -> None:
+        return None
+
+    def metric(self, *args, **kwargs) -> None:
+        return None
+
+    def columns(self, count: int):
+        return [self for _ in range(count)]
+
+    def selectbox(self, *args, **kwargs):
+        return "Selecione um item"
+
+    def form(self, *args, **kwargs):
+        class _FormContext:
+            def __enter__(self_inner):
+                return self
+
+            def __exit__(self_inner, exc_type, exc, tb):
+                return False
+
+        return _FormContext()
+
+    def form_submit_button(self, *args, **kwargs):
+        return False
+
+    def file_uploader(self, *args, **kwargs):
+        return self.uploaded_workbook
+
+    def button(self, *args, **kwargs):
+        return self.button_result
+
+    def rerun(self):
+        self.rerun_called = True
+
+
+def _load_dashboard_v1_module():
+    module_path = REPO_ROOT / "app" / "dashboard_v1.py"
+    spec = importlib.util.spec_from_file_location("dashboard_v1_under_test", module_path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def _prepare_workbook_and_config(tmp_path: Path) -> tuple[Path, Path]:
@@ -255,6 +342,96 @@ def test_upsert_employee_mapping_override_updates_config(tmp_path: Path) -> None
     assert mapping["domain_registration"] == "456"
     assert mapping["source_employee_name"] == "Bruno Souza"
     assert mapping["active"] is True
+
+
+def test_dashboard_main_shows_last_error_before_run_root_guard(tmp_path: Path) -> None:
+    module = _load_dashboard_v1_module()
+    fake_st = _FakeStreamlit()
+    fake_st.session_state[module.ERROR_KEY] = "A analise nao conseguiu ser concluida: boom"
+    module.st = fake_st
+    module._render_upload_area = lambda: None
+
+    build_called = {"count": 0}
+
+    def _fail_build_dashboard_paths(*args, **kwargs):
+        build_called["count"] += 1
+        raise AssertionError("build_dashboard_paths nao deveria ser chamado sem run_root")
+
+    module.build_dashboard_paths = _fail_build_dashboard_paths
+
+    module.main()
+
+    assert fake_st.errors == ["A analise nao conseguiu ser concluida: boom"]
+    assert build_called["count"] == 0
+
+
+def test_render_upload_area_clears_previous_error_after_successful_analysis(tmp_path: Path) -> None:
+    module = _load_dashboard_v1_module()
+    fake_st = _FakeStreamlit(
+        uploaded_workbook=SimpleNamespace(name="entrada.xlsx", getvalue=lambda: b"conteudo"),
+        button_result=True,
+    )
+    fake_st.session_state[module.ERROR_KEY] = "erro antigo"
+    module.st = fake_st
+
+    calls: dict[str, object] = {}
+
+    def _create_dashboard_run_from_uploads(*, workbook_name: str, workbook_bytes: bytes):
+        calls["create"] = {
+            "workbook_name": workbook_name,
+            "workbook_bytes": workbook_bytes,
+        }
+        return SimpleNamespace(run_root=tmp_path / "runs" / "run-001")
+
+    def _run_dashboard_analysis(paths):
+        calls["run"] = paths
+
+    module.create_dashboard_run_from_uploads = _create_dashboard_run_from_uploads
+    module.run_dashboard_analysis = _run_dashboard_analysis
+
+    module._render_upload_area()
+
+    assert calls["create"] == {"workbook_name": "entrada.xlsx", "workbook_bytes": b"conteudo"}
+    assert calls["run"].run_root == tmp_path / "runs" / "run-001"
+    assert fake_st.session_state[module.RUN_ROOT_KEY] == str(tmp_path / "runs" / "run-001")
+    assert fake_st.session_state[module.ERROR_KEY] is None
+    assert fake_st.rerun_called is True
+
+
+def test_dashboard_main_continues_normal_flow_when_run_root_exists(tmp_path: Path) -> None:
+    module = _load_dashboard_v1_module()
+    fake_st = _FakeStreamlit()
+    module.st = fake_st
+    module._render_upload_area = lambda: None
+
+    state_path = tmp_path / "state.json"
+    state_path.write_text("{}", encoding="utf-8")
+    fake_paths = SimpleNamespace(state_path=state_path)
+    module.build_dashboard_paths = lambda run_root: fake_paths
+
+    called = {"load": 0, "summary": 0, "pendings": 0, "history": 0, "downloads": 0}
+
+    def _load_dashboard_run(paths):
+        called["load"] += 1
+        return SimpleNamespace(
+            summary=SimpleNamespace(),
+            pendings=[],
+            state=SimpleNamespace(actions=[]),
+            paths=paths,
+        )
+
+    module.load_dashboard_run = _load_dashboard_run
+    module._render_summary = lambda result: called.__setitem__("summary", called["summary"] + 1)
+    module._render_pendings = lambda result: called.__setitem__("pendings", called["pendings"] + 1)
+    module._render_actions_history = lambda result: called.__setitem__("history", called["history"] + 1)
+    module._render_downloads = lambda result: called.__setitem__("downloads", called["downloads"] + 1)
+
+    fake_st.session_state[module.RUN_ROOT_KEY] = str(tmp_path / "run-root")
+
+    module.main()
+
+    assert called == {"load": 1, "summary": 1, "pendings": 1, "history": 1, "downloads": 1}
+    assert fake_st.errors == []
 
 
 def test_config_resolver_prefers_specific_company_competence(tmp_path: Path) -> None:

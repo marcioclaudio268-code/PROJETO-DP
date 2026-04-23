@@ -30,6 +30,7 @@ def main() -> None:
     )
 
     _render_upload_area()
+    _render_last_error()
 
     run_root = st.session_state.get(RUN_ROOT_KEY)
     if not run_root:
@@ -45,14 +46,16 @@ def main() -> None:
         st.error(f"Nao foi possivel carregar a ultima analise: {exc}")
         return
 
-    last_error = st.session_state.get(ERROR_KEY)
-    if last_error:
-        st.error(last_error)
-
     _render_summary(result)
     _render_pendings(result)
     _render_actions_history(result)
     _render_downloads(result)
+
+
+def _render_last_error() -> None:
+    last_error = st.session_state.get(ERROR_KEY)
+    if last_error:
+        st.error(last_error)
 
 
 def _render_upload_area() -> None:
