@@ -24,11 +24,13 @@ def build_dashboard_paths(run_root: str | Path) -> DashboardPaths:
         inputs_dir=inputs_dir,
         artifacts_dir=artifacts_dir,
         state_path=root / "dashboard_state.json",
+        raw_workbook_path=inputs_dir / "input.raw.xlsx",
         editable_workbook_path=inputs_dir / "input.xlsx",
         editable_config_path=inputs_dir / "company_config.json",
         analyzed_workbook_path=artifacts_dir / "analyzed_workbook.xlsx",
         snapshot_path=artifacts_dir / "input.snapshot.json",
         manifest_path=artifacts_dir / "input.manifest.json",
+        normalization_path=artifacts_dir / "input.normalization.json",
         mapped_artifact_path=artifacts_dir / "input.mapped.json",
         txt_path=artifacts_dir / "input.txt",
         serialization_summary_path=artifacts_dir / "input.serialization.json",
@@ -46,7 +48,7 @@ def create_dashboard_run_from_paths(
     source_workbook = Path(workbook_path)
     target_paths = _prepare_run_root(runs_root=runs_root, run_id=run_id)
 
-    shutil.copy2(source_workbook, target_paths.editable_workbook_path)
+    shutil.copy2(source_workbook, target_paths.raw_workbook_path)
     source_config_name = None
     if config_path is not None:
         source_config = Path(config_path)
@@ -71,7 +73,7 @@ def create_dashboard_run_from_uploads(
 ) -> DashboardPaths:
     target_paths = _prepare_run_root(runs_root=runs_root, run_id=run_id)
 
-    target_paths.editable_workbook_path.write_bytes(workbook_bytes)
+    target_paths.raw_workbook_path.write_bytes(workbook_bytes)
 
     state = DashboardState(
         session_version=DASHBOARD_SESSION_VERSION,

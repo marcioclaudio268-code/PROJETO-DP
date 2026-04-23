@@ -25,7 +25,7 @@ Fluxo alvo:
 - Rescisao.
 - CNAB bancario.
 - Interface web remota, multiusuario ou separada do dashboard local.
-- Normalizador da planilha baguncada.
+- Normalizacao heuristica livre, sem contrato ou rastreabilidade.
 
 ## Principios
 
@@ -38,7 +38,7 @@ Fluxo alvo:
 ## Estrutura
 
 - `src/domain`: objetos puros e invariantes do dominio.
-- `src/ingestion`: loader da planilha humana V1, normalizacao, snapshot canonico, manifesto e persistencia operacional.
+- `src/ingestion`: detector de layout, normalizacao deterministica para workbook canonico V1, snapshot canonico, manifesto e persistencia operacional.
 - `src/mapping`: consumo do snapshot canonico, carga de configuracao versionada, resolucao deterministica de matricula e rubrica de saida, e persistencia do artefato mapeado.
 - `src/serialization`: contrato do layout fixed-width, consumo do artefato mapeado, geracao do TXT de 43 posicoes e persistencia do resumo operacional da serializacao.
 - `src/validation`: validacao estrutural do TXT, reconciliacao entre snapshot, artefato mapeado, resumo da serializacao e TXT final, e persistencia do artefato final de validacao.
@@ -156,6 +156,7 @@ streamlit run app/dashboard_v1.py
 - O operador envia apenas a planilha `.xlsx`; o backend detecta empresa e competencia e tenta resolver a configuracao interna pela ordem `empresa+competencia -> active.json -> pendencia interna`.
 - O `ConfigResolver` hoje consulta primeiro o cadastro mestre interno em `data/company_master` e depois cai para o fallback legado em `configs/companies/<empresa>/`.
 - A Fase 2 acrescenta um cadastro mestre interno em `data/company_master`, alimentado pela importacao do `Resumo Mensal.xls` e consultado antes do fallback legado.
+- A ingestao operacional agora aceita tanto o template V1 canonico quanto o layout mensal por abas, normalizando a entrada para o workbook canonico interno antes de seguir para mapping, serializer e validacao.
 - Correcoes guiadas e itens ignorados ficam registrados no estado local da execucao atual.
 - O dashboard so libera o botao de baixar TXT quando a validacao final estiver sem bloqueios e houver pelo menos uma linha serializada.
 - A configuracao por empresa continua obrigatoria para a etapa de mapping, mas agora e um ativo interno do sistema atras de um `ConfigResolver`.

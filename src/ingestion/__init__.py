@@ -5,7 +5,7 @@ The V1 human template generator, loader, snapshot persistence and ingestion
 pipeline live here.
 """
 
-from .errors import IngestionSnapshotError, NormalizationError, TemplateV1IngestionError
+from .errors import IngestionSnapshotError, InputLayoutNormalizationError, NormalizationError, TemplateV1IngestionError
 from .normalization import (
     is_empty_value,
     normalize_hours_hhmm,
@@ -13,6 +13,15 @@ from .normalization import (
     normalize_quantity,
     normalized_optional_text,
     validate_competence,
+)
+from .input_layout import (
+    CANONICAL_LAYOUT_ID,
+    MONTHLY_LAYOUT_ID,
+    InputLayoutDetection,
+    InputNormalizationResult,
+    build_canonical_v1_workbook,
+    detect_input_layout,
+    normalize_input_workbook,
 )
 from .pipeline import ingest_fill_and_persist_planilha_padrao_v1
 from .snapshot import (
@@ -49,13 +58,20 @@ __all__ = [
     "FATAL_ERROR_CATALOG",
     "FatalIngestionCode",
     "IngestionSnapshotError",
+    "InputLayoutDetection",
+    "InputLayoutNormalizationError",
+    "InputNormalizationResult",
     "NormalizationError",
     "PENDING_CATALOG",
     "PersistedIngestionArtifacts",
+    "CANONICAL_LAYOUT_ID",
     "TEMPLATE_V1_FILENAME",
     "TemplateV1IngestionError",
+    "MONTHLY_LAYOUT_ID",
     "build_ingestion_manifest",
+    "build_canonical_v1_workbook",
     "compute_file_sha256",
+    "detect_input_layout",
     "create_planilha_padrao_folha_v1",
     "deserialize_ingestion_result",
     "default_manifest_path",
@@ -71,6 +87,7 @@ __all__ = [
     "normalize_money_brl",
     "normalize_quantity",
     "normalized_optional_text",
+    "normalize_input_workbook",
     "render_ingestion_snapshot_json",
     "render_manifest_json",
     "save_planilha_padrao_folha_v1",

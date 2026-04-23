@@ -49,11 +49,13 @@ class DashboardPaths:
     inputs_dir: Path
     artifacts_dir: Path
     state_path: Path
+    raw_workbook_path: Path
     editable_workbook_path: Path
     editable_config_path: Path
     analyzed_workbook_path: Path
     snapshot_path: Path
     manifest_path: Path
+    normalization_path: Path
     mapped_artifact_path: Path
     txt_path: Path
     serialization_summary_path: Path

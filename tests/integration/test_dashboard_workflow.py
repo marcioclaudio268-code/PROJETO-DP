@@ -18,6 +18,7 @@ from ingestion import save_planilha_padrao_folha_v1
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+MONTHLY_FIXTURE = REPO_ROOT / "data" / "runs" / "dashboard_v1" / "run-15f4250f85" / "inputs" / "input.xlsx"
 
 
 def _write_internal_config(
@@ -266,3 +267,15 @@ def test_dashboard_returns_internal_pending_when_config_is_mismatch(tmp_path: Pa
     assert result.summary.txt_enabled is False
     assert result.summary.config_status == ConfigResolutionStatus.MISMATCH.value
     assert any(item.stage == "configuracao" for item in result.pendings)
+
+
+def test_dashboard_normalizes_monthly_layout_before_canonical_ingestion(tmp_path: Path) -> None:
+    paths = create_dashboard_run_from_paths(MONTHLY_FIXTURE, runs_root=tmp_path / "runs")
+
+    result = run_dashboard_analysis(paths)
+
+    assert result.summary.company_code == "528"
+    assert result.summary.competence == "03/2026"
+    assert result.summary.config_status == ConfigResolutionStatus.FOUND.value
+    assert paths.normalization_path.exists()
+    assert paths.editable_workbook_path.exists()

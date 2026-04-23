@@ -11,6 +11,7 @@ from mapping.pipeline import map_snapshot_with_company_config
 from serialization.pipeline import serialize_mapped_artifact_to_txt
 from validation.pipeline import validate_pipeline_v1
 
+from ingestion.input_layout import normalize_input_workbook
 from ingestion.pipeline import ingest_fill_and_persist_planilha_padrao_v1
 
 from .config_resolver import ConfigResolutionResult, ConfigResolutionStatus, ConfigResolver
@@ -41,6 +42,13 @@ def run_dashboard_analysis(
     config_resolver: ConfigResolver | None = None,
 ) -> DashboardRunResult:
     resolver = config_resolver or ConfigResolver()
+    source_workbook_path = _resolve_source_workbook_path(paths)
+    normalize_input_workbook(
+        source_workbook_path,
+        output_path=paths.editable_workbook_path,
+        report_path=paths.normalization_path,
+        registry_root=resolver.registry_root,
+    )
     ingest_fill_and_persist_planilha_padrao_v1(
         paths.editable_workbook_path,
         output_path=paths.analyzed_workbook_path,
@@ -488,6 +496,14 @@ def _cleanup_downstream_artifacts(paths: DashboardPaths) -> None:
         paths.validation_path,
     ):
         target.unlink(missing_ok=True)
+
+
+def _resolve_source_workbook_path(paths: DashboardPaths) -> Path:
+    if paths.editable_workbook_path.exists():
+        return paths.editable_workbook_path
+    if paths.raw_workbook_path.exists():
+        return paths.raw_workbook_path
+    raise FileNotFoundError("Nenhuma planilha enviada foi encontrada para esta execucao.")
 
 
 def _serialize_pending_item(item: DashboardPendingItem) -> dict:
