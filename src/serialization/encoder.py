@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from decimal import Decimal, InvalidOperation
 
-from validation.layout import validate_layout_43_line
-
 from .errors import SerializationEncodingError
 from .layout import LAYOUT_43_FIELDS
 from .models import (
@@ -111,6 +109,8 @@ def encode_mapped_movement_to_txt_line(movement: SerializableMappedMovement) -> 
         _encode_amount_field(movement),
     )
     line = "".join(field_values)
+    from validation.layout import validate_layout_43_line
+
     validate_layout_43_line(line)
     return line
 
