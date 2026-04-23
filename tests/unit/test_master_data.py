@@ -13,6 +13,7 @@ from config import (
     CompanyMasterDataStore,
     CompanyRegistryEntry,
     import_resumo_mensal_file,
+    seed_event_mappings_from_catalog,
     seed_company_configs_from_missing_issues,
 )
 from dashboard import ConfigResolutionStatus, ConfigResolver
@@ -94,7 +95,13 @@ def _specific_config_payload(*, company_code: str, competence: str, version: str
     }
 
 
-def _seed_registry_entry(*, company_code: str, competence: str, cnpj: str) -> CompanyRegistryEntry:
+def _seed_registry_entry(
+    *,
+    company_code: str,
+    competence: str,
+    cnpj: str,
+    active_config_id: str | None = None,
+) -> CompanyRegistryEntry:
     return CompanyRegistryEntry(
         id=f"company:{company_code}",
         company_code=company_code,
@@ -104,7 +111,7 @@ def _seed_registry_entry(*, company_code: str, competence: str, cnpj: str) -> Co
         status="active",
         is_active=True,
         default_template_id="planilha_padrao_folha_v1",
-        active_config_id=None,
+        active_config_id=active_config_id,
         last_competence_seen=competence,
         source_import="resumo_mensal",
         created_at=datetime(2026, 4, 1, tzinfo=timezone.utc),
@@ -119,6 +126,47 @@ def _seed_missing_issue(*, company_code: str, competence: str) -> CompanyConfigI
         issue_type="company_config_missing",
         description=f"Nenhuma configuracao interna foi localizada para a empresa {company_code} na competencia {competence}.",
         status="open",
+        created_at=datetime(2026, 4, 1, tzinfo=timezone.utc),
+        updated_at=datetime(2026, 4, 1, tzinfo=timezone.utc),
+    )
+
+
+def _seed_config_record(
+    *,
+    company_code: str,
+    competence: str,
+    config_version: str,
+    event_mappings: list[dict[str, str]] | None = None,
+) -> CompanyConfigRecord:
+    company_id = f"company:{company_code}"
+    payload = CompanyConfig.model_validate(
+        {
+            "company_code": company_code,
+            "company_name": f"Empresa {company_code}",
+            "default_process": "11",
+            "competence": competence,
+            "config_version": config_version,
+            "event_mappings": event_mappings or [],
+            "employee_mappings": [],
+            "pending_policy": {
+                "review_required_event_negocios": [],
+                "review_required_fields": [],
+                "block_on_ambiguous_observations": True,
+                "block_on_unmapped_employee": True,
+                "block_on_unmapped_event": True,
+            },
+            "validation_flags": {},
+        }
+    ).model_dump(mode="json")
+    return CompanyConfigRecord(
+        id=f"config:{company_id}:{config_version}",
+        company_id=company_id,
+        version=config_version,
+        competence_start=competence,
+        competence_end=competence,
+        status="active",
+        config_payload_internal=payload,
+        validated_at=datetime(2026, 4, 1, tzinfo=timezone.utc),
         created_at=datetime(2026, 4, 1, tzinfo=timezone.utc),
         updated_at=datetime(2026, 4, 1, tzinfo=timezone.utc),
     )
@@ -255,6 +303,128 @@ def test_seed_company_configs_from_missing_issues_creates_batched_configs_and_li
     assert refreshed_companies["99"].active_config_id == "config:company:99:seed-v1-04-2026"
     assert len(refreshed_configs) == 3
     assert all(issue.status == "resolved" for issue in refreshed_issues if issue.issue_type == "company_config_missing")
+
+    resolver = ConfigResolver(registry_root=master_root, legacy_root=tmp_path / "legacy")
+    resolved = resolver.resolve(company_code="3", competence="03/2026")
+    assert resolved.status == ConfigResolutionStatus.FOUND
+    assert resolved.config_source == "registry_company_competence"
+
+
+def test_seed_event_mappings_from_catalog_adds_standard_mappings_and_keeps_control_company_72_unchanged(tmp_path: Path) -> None:
+    master_root = tmp_path / "master"
+    store = CompanyMasterDataStore(master_root)
+    registry_entries = [
+        _seed_registry_entry(
+            company_code="3",
+            competence="03/2026",
+            cnpj="00000000000101",
+            active_config_id="config:company:3:seed-v1-03-2026",
+        ),
+        _seed_registry_entry(
+            company_code="24",
+            competence="03/2026",
+            cnpj="00000000000202",
+            active_config_id="config:company:24:seed-v1-03-2026",
+        ),
+        _seed_registry_entry(
+            company_code="99",
+            competence="04/2026",
+            cnpj="00000000000303",
+            active_config_id="config:company:99:seed-v1-04-2026",
+        ),
+        _seed_registry_entry(
+            company_code="72",
+            competence="03/2024",
+            cnpj="00000000000404",
+            active_config_id="config:company:72:cfg-v1",
+        ),
+    ]
+    config_records = [
+        _seed_config_record(company_code="3", competence="03/2026", config_version="seed-v1-03-2026"),
+        _seed_config_record(company_code="24", competence="03/2026", config_version="seed-v1-03-2026"),
+        _seed_config_record(company_code="99", competence="04/2026", config_version="seed-v1-04-2026"),
+        CompanyConfigRecord(
+            id="config:company:72:cfg-v1",
+            company_id="company:72",
+            version="cfg-v1",
+            competence_start="03/2024",
+            competence_end="03/2024",
+            status="active",
+            config_payload_internal=CompanyConfig.model_validate(
+                {
+                    "company_code": "72",
+                    "company_name": "Dela More",
+                    "default_process": "11",
+                    "competence": "03/2024",
+                    "config_version": "cfg-v1",
+                    "event_mappings": [
+                        {"event_negocio": "gratificacao", "rubrica_saida": "201"},
+                        {"event_negocio": "horas_extras_50", "rubrica_saida": "350"},
+                    ],
+                    "employee_mappings": [
+                        {"source_employee_key": "col-001", "source_employee_name": "Ana Lima", "domain_registration": "123"},
+                    ],
+                    "pending_policy": {
+                        "review_required_event_negocios": [],
+                        "review_required_fields": [],
+                        "block_on_ambiguous_observations": True,
+                        "block_on_unmapped_employee": True,
+                        "block_on_unmapped_event": True,
+                    },
+                    "validation_flags": {},
+                }
+            ).model_dump(mode="json"),
+            validated_at=datetime(2024, 3, 1, tzinfo=timezone.utc),
+            created_at=datetime(2024, 3, 1, tzinfo=timezone.utc),
+            updated_at=datetime(2024, 3, 1, tzinfo=timezone.utc),
+        ),
+    ]
+    store.save_all(registry_entries=registry_entries, config_records=config_records, issues=[])
+
+    result = seed_event_mappings_from_catalog(store_root=master_root)
+
+    refreshed_store = CompanyMasterDataStore(master_root)
+    refreshed_companies = {entry.company_code: entry for entry in refreshed_store.load_registry_entries()}
+    refreshed_configs = {record.id: record for record in refreshed_store.load_config_records()}
+
+    standard_mappings = [
+        ("gratificacao", "201"),
+        ("horas_extras_50", "350"),
+    ]
+
+    assert result.configs_targeted == 3
+    assert result.configs_updated == 3
+    assert result.event_mappings_written == 6
+    assert result.active_config_links_updated == 0
+    assert result.issues_created == 0
+    assert result.exceptions == []
+    assert {group.competence for group in result.groups} == {"03/2026", "04/2026"}
+
+    group_032026 = next(group for group in result.groups if group.competence == "03/2026")
+    group_042026 = next(group for group in result.groups if group.competence == "04/2026")
+    assert group_032026.configs_updated == 2
+    assert group_032026.event_mappings_written == 4
+    assert group_042026.configs_updated == 1
+    assert group_042026.event_mappings_written == 2
+
+    seeded_record_ids = {
+        "3": "config:company:3:seed-v1-03-2026",
+        "24": "config:company:24:seed-v1-03-2026",
+        "99": "config:company:99:seed-v1-04-2026",
+    }
+    for company_code, record_id in seeded_record_ids.items():
+        record = refreshed_configs[record_id]
+        config = CompanyConfig.model_validate(record.config_payload_internal)
+        assert [(item.event_negocio, item.rubrica_saida) for item in config.event_mappings] == standard_mappings
+        assert refreshed_companies[company_code].active_config_id == record.id
+
+    control_record = refreshed_configs["config:company:72:cfg-v1"]
+    control_config = CompanyConfig.model_validate(control_record.config_payload_internal)
+    assert [(item.event_negocio, item.rubrica_saida) for item in control_config.event_mappings] == [
+        ("gratificacao", "201"),
+        ("horas_extras_50", "350"),
+    ]
+    assert refreshed_companies["72"].active_config_id == "config:company:72:cfg-v1"
 
     resolver = ConfigResolver(registry_root=master_root, legacy_root=tmp_path / "legacy")
     resolved = resolver.resolve(company_code="3", competence="03/2026")

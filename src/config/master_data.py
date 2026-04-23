@@ -21,13 +21,21 @@ from .models import (
     CompanyConfigSeedGroupResult,
     CompanyConfigRecord,
     CompanyRegistryEntry,
+    EventMapping,
     MasterDataImportResult,
+    MasterDataEventMappingSeedGroupResult,
+    MasterDataEventMappingSeedResult,
     MasterDataSeedResult,
 )
 
 
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_MASTER_DATA_ROOT = Path(__file__).resolve().parents[2] / "data" / "company_master"
 DEFAULT_LEGACY_COMPANY_CONFIGS_ROOT = Path(__file__).resolve().parents[2] / "configs" / "companies"
+_STANDARD_EVENT_MAPPING_CATALOG_PATHS = (
+    PROJECT_ROOT / "data" / "golden" / "v1" / "happy_path" / "company_config.json",
+    PROJECT_ROOT / "configs" / "companies" / "72" / "active.json",
+)
 
 REGISTRY_FILENAME = "companies_registry.json"
 CONFIGS_FILENAME = "company_configs.json"
@@ -211,6 +219,47 @@ def load_legacy_company_config_payload(
         return _load_company_config_from_path(active_path), active_path
 
     return None, None
+
+
+def _load_standard_event_mapping_catalog() -> tuple[tuple[EventMapping, ...], Path]:
+    errors: list[str] = []
+    for path in _STANDARD_EVENT_MAPPING_CATALOG_PATHS:
+        if not path.exists():
+            continue
+        try:
+            config = CompanyConfig.model_validate_json(path.read_text(encoding="utf-8"))
+        except ValidationError as exc:
+            errors.append(f"{path}: {exc}")
+            continue
+        if config.event_mappings:
+            return tuple(config.event_mappings), path
+        errors.append(f"{path}: catalogo sem event_mappings.")
+    detail = "; ".join(errors) if errors else "nenhum arquivo de catalogo encontrado"
+    raise MasterDataImportError(f"Nao foi possivel carregar o catalogo padrao de event_mappings: {detail}")
+
+
+def _merge_standard_event_mappings(
+    existing: list[EventMapping],
+    standard: tuple[EventMapping, ...],
+) -> tuple[list[EventMapping], bool]:
+    merged = list(existing)
+    index_by_event_name = {mapping.event_negocio: index for index, mapping in enumerate(merged)}
+    changed = False
+
+    for standard_mapping in standard:
+        current_index = index_by_event_name.get(standard_mapping.event_negocio)
+        if current_index is None:
+            merged.append(standard_mapping)
+            index_by_event_name[standard_mapping.event_negocio] = len(merged) - 1
+            changed = True
+            continue
+
+        current_mapping = merged[current_index]
+        if current_mapping.model_dump(mode="json") != standard_mapping.model_dump(mode="json"):
+            merged[current_index] = standard_mapping
+            changed = True
+
+    return merged, changed
 
 
 class CompanyMasterDataStore:
@@ -832,6 +881,227 @@ def seed_company_configs_from_missing_issues(
         message=(
             "Seed em lote concluido para as pendencias company_config_missing; "
             f"default_process={default_process}."
+        ),
+    )
+
+
+def seed_event_mappings_from_catalog(
+    *,
+    store_root: str | Path | None = None,
+    config_version_prefix: str = DEFAULT_SEED_CONFIG_VERSION_PREFIX,
+) -> MasterDataEventMappingSeedResult:
+    """Seed standard event mappings into the current internal seed configs."""
+
+    store = CompanyMasterDataStore(store_root)
+    registry_entries = list(store.load_registry_entries())
+    config_records = list(store.load_config_records())
+    issues = list(store.load_issues())
+    now = _utc_now()
+
+    standard_event_mappings, catalog_source_path = _load_standard_event_mapping_catalog()
+    registry_index_by_id = {entry.id: index for index, entry in enumerate(registry_entries)}
+    config_index_by_id = {record.id: index for index, record in enumerate(config_records)}
+    issue_index_by_id = {issue.id: index for index, issue in enumerate(issues)}
+
+    target_records = [
+        record
+        for record in config_records
+        if record.status in {"active", "validated", "approved"}
+        and record.version.startswith(f"{config_version_prefix}-")
+    ]
+    target_records.sort(
+        key=lambda record: (
+            competence_sort_key(record.competence_start or record.competence_end),
+            int(
+                normalize_digits(
+                    registry_entries[registry_index_by_id[record.company_id]].company_code
+                    if record.company_id in registry_index_by_id
+                    else record.company_id
+                )
+                or 10**12
+            ),
+            record.id,
+        )
+    )
+
+    grouped_records: dict[str, list[CompanyConfigRecord]] = {}
+    exceptions: list[CompanyConfigSeedException] = []
+    configs_updated = 0
+    active_config_links_updated = 0
+    event_mappings_written = 0
+    issues_created = 0
+    group_results: list[MasterDataEventMappingSeedGroupResult] = []
+
+    for record in target_records:
+        registry_entry = registry_entries[registry_index_by_id[record.company_id]] if record.company_id in registry_index_by_id else None
+        if registry_entry is None:
+            exceptions.append(
+                CompanyConfigSeedException(
+                    company_id=record.company_id,
+                    company_code=None,
+                    competence=record.competence_start or record.competence_end,
+                    issue_type="event_mapping_seed_exception",
+                    description=(
+                        f"Configuracao {record.id} nao encontrou empresa correspondente no cadastro mestre."
+                    ),
+                )
+            )
+            issue = CompanyConfigIssue(
+                id=issue_id(record.company_id, "event_mapping_seed_exception", f"config={record.id}"),
+                company_id=record.company_id,
+                issue_type="event_mapping_seed_exception",
+                description=(
+                    f"Configuracao {record.id} nao encontrou empresa correspondente no cadastro mestre."
+                ),
+                status="open",
+                created_at=now,
+                updated_at=now,
+            )
+            if issue.id not in issue_index_by_id:
+                issues.append(issue)
+                issue_index_by_id[issue.id] = len(issues) - 1
+                issues_created += 1
+            continue
+
+        competence = normalize_competence(record.competence_start or record.competence_end or registry_entry.last_competence_seen)
+        if competence is None:
+            exceptions.append(
+                CompanyConfigSeedException(
+                    company_id=record.company_id,
+                    company_code=registry_entry.company_code,
+                    competence=None,
+                    issue_type="event_mapping_seed_exception",
+                    description=(
+                        f"Configuracao {record.id} nao informou competencia suficiente para agrupar o seed."
+                    ),
+                )
+            )
+            issue = CompanyConfigIssue(
+                id=issue_id(record.company_id, "event_mapping_seed_exception", f"config={record.id}|competence=missing"),
+                company_id=record.company_id,
+                issue_type="event_mapping_seed_exception",
+                description=(
+                    f"Configuracao {record.id} nao informou competencia suficiente para agrupar o seed."
+                ),
+                status="open",
+                created_at=now,
+                updated_at=now,
+            )
+            if issue.id not in issue_index_by_id:
+                issues.append(issue)
+                issue_index_by_id[issue.id] = len(issues) - 1
+                issues_created += 1
+            continue
+
+        grouped_records.setdefault(competence, []).append(record)
+
+    for competence in sorted(grouped_records, key=competence_sort_key):
+        group_records = grouped_records[competence]
+        config_version = _seed_config_version_for_competence(
+            competence,
+            prefix=config_version_prefix,
+        )
+        group_updated = 0
+        group_event_mappings_written = 0
+        example_companies: list[str] = []
+
+        for record in group_records:
+            registry_entry = registry_entries[registry_index_by_id[record.company_id]]
+            try:
+                config = CompanyConfig.model_validate(record.config_payload_internal)
+            except ValidationError as exc:
+                exceptions.append(
+                    CompanyConfigSeedException(
+                        company_id=record.company_id,
+                        company_code=registry_entry.company_code,
+                        competence=competence,
+                        issue_type="event_mapping_seed_exception",
+                        description=(
+                            f"Configuracao {record.id} invalida para aplicar o catalogo padrao: {exc}"
+                        ),
+                    )
+                )
+                issue = CompanyConfigIssue(
+                    id=issue_id(record.company_id, "event_mapping_seed_exception", f"config={record.id}|payload-invalid"),
+                    company_id=record.company_id,
+                    issue_type="event_mapping_seed_exception",
+                    description=(
+                        f"Configuracao {record.id} invalida para aplicar o catalogo padrao: {exc}"
+                    ),
+                    status="open",
+                    created_at=now,
+                    updated_at=now,
+                )
+                if issue.id not in issue_index_by_id:
+                    issues.append(issue)
+                    issue_index_by_id[issue.id] = len(issues) - 1
+                    issues_created += 1
+                continue
+
+            merged_event_mappings, changed = _merge_standard_event_mappings(
+                list(config.event_mappings),
+                standard_event_mappings,
+            )
+            if changed:
+                updated_config = config.model_copy(update={"event_mappings": merged_event_mappings})
+                updated_payload = updated_config.model_dump(mode="json")
+                config_record = config_records[config_index_by_id[record.id]]
+                config_records[config_index_by_id[record.id]] = config_record.model_copy(
+                    update={
+                        "config_payload_internal": updated_payload,
+                        "validated_at": now,
+                        "updated_at": now,
+                    }
+                )
+                configs_updated += 1
+                group_updated += 1
+                event_mappings_written += len(standard_event_mappings)
+                group_event_mappings_written += len(standard_event_mappings)
+
+            registry_index = registry_index_by_id[record.company_id]
+            if registry_entries[registry_index].active_config_id != record.id:
+                registry_entries[registry_index] = registry_entries[registry_index].model_copy(
+                    update={
+                        "active_config_id": record.id,
+                        "updated_at": now,
+                    }
+                )
+                active_config_links_updated += 1
+
+            example_companies.append(f"{registry_entry.company_code} - {_company_display_name(registry_entry)}")
+
+        group_results.append(
+            MasterDataEventMappingSeedGroupResult(
+                competence=competence,
+                config_version=config_version,
+                configs_updated=group_updated,
+                event_mappings_written=group_event_mappings_written,
+                example_companies=example_companies[:5],
+            )
+        )
+
+    store.save_all(
+        registry_entries=registry_entries,
+        config_records=config_records,
+        issues=issues,
+    )
+
+    return MasterDataEventMappingSeedResult(
+        source_root=str(store.paths.root),
+        catalog_source_path=str(catalog_source_path),
+        configs_targeted=len(target_records),
+        configs_updated=configs_updated,
+        event_mappings_written=event_mappings_written,
+        active_config_links_updated=active_config_links_updated,
+        issues_created=issues_created,
+        groups=group_results,
+        exceptions=exceptions,
+        registry_path=str(store.paths.registry_path),
+        configs_path=str(store.paths.configs_path),
+        issues_path=str(store.paths.issues_path),
+        message=(
+            "Seed em lote dos event_mappings padrao concluido; "
+            f"catalogo={catalog_source_path}."
         ),
     )
 

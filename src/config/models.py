@@ -228,6 +228,34 @@ class MasterDataSeedResult(StrictModel):
     message: str = Field(default="", description="Summary message")
 
 
+class MasterDataEventMappingSeedGroupResult(StrictModel):
+    """Batch-seed summary grouped by detected competence for event mappings."""
+
+    competence: str = Field(..., min_length=1, description="Competence resolved for the group")
+    config_version: str = Field(..., min_length=1, description="Seed config version used by the group")
+    configs_updated: int = Field(default=0, ge=0)
+    event_mappings_written: int = Field(default=0, ge=0)
+    example_companies: list[str] = Field(default_factory=list)
+
+
+class MasterDataEventMappingSeedResult(StrictModel):
+    """Summary of a batch seed for standard event mappings."""
+
+    source_root: str = Field(..., min_length=1, description="Master data root path")
+    catalog_source_path: str = Field(..., min_length=1, description="Source path used as standard catalog")
+    configs_targeted: int = Field(default=0, ge=0)
+    configs_updated: int = Field(default=0, ge=0)
+    event_mappings_written: int = Field(default=0, ge=0)
+    active_config_links_updated: int = Field(default=0, ge=0)
+    issues_created: int = Field(default=0, ge=0)
+    groups: list[MasterDataEventMappingSeedGroupResult] = Field(default_factory=list)
+    exceptions: list[CompanyConfigSeedException] = Field(default_factory=list)
+    registry_path: str = Field(..., min_length=1, description="Registry JSON path")
+    configs_path: str = Field(..., min_length=1, description="Configs JSON path")
+    issues_path: str = Field(..., min_length=1, description="Issues JSON path")
+    message: str = Field(default="", description="Summary message")
+
+
 class MasterDataImportResult(StrictModel):
     """Summary of a Resumo Mensal import into the internal company master data."""
 
