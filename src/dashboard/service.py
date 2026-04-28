@@ -38,6 +38,7 @@ from .models import (
     DashboardSummary,
 )
 from .overrides import describe_ignore_strategy
+from .profile_normalizer import normalize_workbook_with_column_profile
 from .storage import load_dashboard_state, write_dashboard_state
 
 
@@ -60,7 +61,7 @@ def run_dashboard_analysis(
     resolver = config_resolver or ConfigResolver()
     source_workbook_path = _resolve_source_workbook_path(paths)
     inspection = inspect_input_workbook(source_workbook_path, registry_root=resolver.registry_root)
-    profile_resolution = _resolve_column_mapping_profile(
+    profile_resolution, column_profile = _resolve_column_mapping_profile(
         inspection=inspection,
         source_workbook_path=source_workbook_path,
         profile_root=column_profile_root,
@@ -73,12 +74,21 @@ def run_dashboard_analysis(
             profile_resolution=profile_resolution,
         )
 
-    normalize_input_workbook(
-        source_workbook_path,
-        output_path=paths.editable_workbook_path,
-        report_path=paths.normalization_path,
-        registry_root=resolver.registry_root,
-    )
+    if column_profile is not None:
+        normalize_workbook_with_column_profile(
+            source_workbook_path,
+            inspection=inspection,
+            profile=column_profile,
+            output_path=paths.editable_workbook_path,
+            report_path=paths.normalization_path,
+        )
+    else:
+        normalize_input_workbook(
+            source_workbook_path,
+            output_path=paths.editable_workbook_path,
+            report_path=paths.normalization_path,
+            registry_root=resolver.registry_root,
+        )
     ingest_fill_and_persist_planilha_padrao_v1(
         paths.editable_workbook_path,
         output_path=paths.analyzed_workbook_path,
@@ -592,57 +602,69 @@ def _resolve_column_mapping_profile(
     inspection: InputWorkbookInspection,
     source_workbook_path: Path,
     profile_root: str | Path | None,
-) -> DashboardProfileResolution:
+) -> tuple[DashboardProfileResolution, CompanyColumnMappingProfile | None]:
     if inspection.layout_id == CANONICAL_LAYOUT_ID:
-        return DashboardProfileResolution(
-            status="not_required",
-            status_label="Perfil de colunas nao requerido",
-            message="Layout canonico V1 ja esta no contrato interno e nao exige perfil de colunas.",
-            company_code=inspection.company_code,
-            competence=inspection.competence,
-            layout_id=inspection.layout_id,
-            source_path=None,
+        return (
+            DashboardProfileResolution(
+                status="not_required",
+                status_label="Perfil de colunas nao requerido",
+                message="Layout canonico V1 ja esta no contrato interno e nao exige perfil de colunas.",
+                company_code=inspection.company_code,
+                competence=inspection.competence,
+                layout_id=inspection.layout_id,
+                source_path=None,
+            ),
+            None,
         )
 
     profile_path = column_mapping_profile_path(inspection.company_code, root=profile_root)
     try:
         profile = load_column_mapping_profile(inspection.company_code, root=profile_root)
     except ColumnMappingProfileError as exc:
-        return DashboardProfileResolution(
-            status="missing",
-            status_label="Perfil de mapeamento de colunas ausente",
-            message=(
-                "Perfil de mapeamento de colunas nao encontrado para a empresa "
-                f"{inspection.company_code}. Cadastre o perfil antes de processar este layout."
+        return (
+            DashboardProfileResolution(
+                status="missing",
+                status_label="Perfil de mapeamento de colunas ausente",
+                message=(
+                    "Perfil de mapeamento de colunas nao encontrado para a empresa "
+                    f"{inspection.company_code}. Cadastre o perfil antes de processar este layout."
+                ),
+                company_code=inspection.company_code,
+                competence=inspection.competence,
+                layout_id=inspection.layout_id,
+                source_path=exc.source or str(profile_path),
             ),
-            company_code=inspection.company_code,
-            competence=inspection.competence,
-            layout_id=inspection.layout_id,
-            source_path=exc.source or str(profile_path),
+            None,
         )
     except (ValidationError, ValueError) as exc:
-        return DashboardProfileResolution(
-            status="invalid",
-            status_label="Perfil de mapeamento de colunas invalido",
-            message=f"Perfil de mapeamento de colunas invalido para a empresa {inspection.company_code}: {exc}",
-            company_code=inspection.company_code,
-            competence=inspection.competence,
-            layout_id=inspection.layout_id,
-            source_path=str(profile_path),
+        return (
+            DashboardProfileResolution(
+                status="invalid",
+                status_label="Perfil de mapeamento de colunas invalido",
+                message=f"Perfil de mapeamento de colunas invalido para a empresa {inspection.company_code}: {exc}",
+                company_code=inspection.company_code,
+                competence=inspection.competence,
+                layout_id=inspection.layout_id,
+                source_path=str(profile_path),
+            ),
+            None,
         )
 
     if profile.company_code != inspection.company_code:
-        return DashboardProfileResolution(
-            status="invalid",
-            status_label="Perfil de mapeamento de colunas invalido",
-            message=(
-                "Perfil de mapeamento de colunas pertence a outra empresa. "
-                f"Esperado={inspection.company_code}; recebido={profile.company_code}."
+        return (
+            DashboardProfileResolution(
+                status="invalid",
+                status_label="Perfil de mapeamento de colunas invalido",
+                message=(
+                    "Perfil de mapeamento de colunas pertence a outra empresa. "
+                    f"Esperado={inspection.company_code}; recebido={profile.company_code}."
+                ),
+                company_code=inspection.company_code,
+                competence=inspection.competence,
+                layout_id=inspection.layout_id,
+                source_path=str(profile_path),
             ),
-            company_code=inspection.company_code,
-            competence=inspection.competence,
-            layout_id=inspection.layout_id,
-            source_path=str(profile_path),
+            None,
         )
 
     relevant_columns = _relevant_profile_columns(
@@ -652,31 +674,37 @@ def _resolve_column_mapping_profile(
     missing_columns = _missing_profile_columns(profile, relevant_columns)
     if missing_columns:
         first_missing = missing_columns[0]
-        return DashboardProfileResolution(
-            status="incomplete",
-            status_label="Perfil de mapeamento de colunas incompleto",
+        return (
+            DashboardProfileResolution(
+                status="incomplete",
+                status_label="Perfil de mapeamento de colunas incompleto",
+                message=(
+                    "Perfil de mapeamento de colunas incompleto para a empresa "
+                    f"{inspection.company_code}. Coluna sem mapping: {first_missing}."
+                ),
+                company_code=inspection.company_code,
+                competence=inspection.competence,
+                layout_id=inspection.layout_id,
+                source_path=str(profile_path),
+                missing_columns=missing_columns,
+            ),
+            None,
+        )
+
+    return (
+        DashboardProfileResolution(
+            status="found",
+            status_label="Perfil de mapeamento de colunas encontrado",
             message=(
-                "Perfil de mapeamento de colunas incompleto para a empresa "
-                f"{inspection.company_code}. Coluna sem mapping: {first_missing}."
+                f"Perfil de mapeamento de colunas encontrado para a empresa {inspection.company_code} "
+                f"com cobertura das colunas relevantes."
             ),
             company_code=inspection.company_code,
             competence=inspection.competence,
             layout_id=inspection.layout_id,
             source_path=str(profile_path),
-            missing_columns=missing_columns,
-        )
-
-    return DashboardProfileResolution(
-        status="found",
-        status_label="Perfil de mapeamento de colunas encontrado",
-        message=(
-            f"Perfil de mapeamento de colunas encontrado para a empresa {inspection.company_code} "
-            f"com cobertura das colunas relevantes."
         ),
-        company_code=inspection.company_code,
-        competence=inspection.competence,
-        layout_id=inspection.layout_id,
-        source_path=str(profile_path),
+        profile,
     )
 
 

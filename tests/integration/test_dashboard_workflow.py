@@ -328,6 +328,10 @@ def test_dashboard_normalizes_monthly_layout_before_canonical_ingestion(tmp_path
     assert paths.normalization_path.exists()
     assert paths.editable_workbook_path.exists()
 
+    normalization_payload = json.loads(paths.normalization_path.read_text(encoding="utf-8"))
+    assert normalization_payload["manifest"]["normalizer"] == "profile_column_mapping"
+    assert normalization_payload["manifest"]["counts"]["source_cells_converted"] > 0
+
 
 def test_dashboard_blocks_monthly_layout_when_column_profile_is_missing(tmp_path: Path) -> None:
     paths = create_dashboard_run_from_paths(MONTHLY_FIXTURE, runs_root=tmp_path / "runs")
