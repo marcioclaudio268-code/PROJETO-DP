@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from openpyxl import load_workbook
+from openpyxl.utils import get_column_letter
 from openpyxl.workbook import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
@@ -139,6 +140,50 @@ class InputLayoutDetection:
 
 
 @dataclass(frozen=True, slots=True)
+class InputColumnMetadata:
+    column_index: int
+    column_letter: str
+    column_name: str
+    normalized_column_name: str
+    header_row: int
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "column_index": self.column_index,
+            "column_letter": self.column_letter,
+            "column_name": self.column_name,
+            "normalized_column_name": self.normalized_column_name,
+            "header_row": self.header_row,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class InputWorkbookInspection:
+    layout_id: str
+    company_code: str
+    company_name: str
+    competence: str
+    selected_sheet_name: str
+    source_sheet_names: tuple[str, ...]
+    columns: tuple[InputColumnMetadata, ...]
+    warnings: tuple[str, ...]
+    detection: InputLayoutDetection
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "layout_id": self.layout_id,
+            "company_code": self.company_code,
+            "company_name": self.company_name,
+            "competence": self.competence,
+            "selected_sheet_name": self.selected_sheet_name,
+            "source_sheet_names": list(self.source_sheet_names),
+            "columns": [column.as_dict() for column in self.columns],
+            "warnings": list(self.warnings),
+            "detection": self.detection.as_dict(),
+        }
+
+
+@dataclass(frozen=True, slots=True)
 class InputNormalizationResult:
     source_path: Path
     workbook_path: Path
@@ -184,6 +229,25 @@ def detect_input_layout(
         "Nao foi possivel reconhecer com seguranca o layout do workbook enviado.",
         details={"sheetnames": list(workbook.sheetnames)},
     )
+
+
+def inspect_input_workbook(
+    input_path: str | Path,
+    *,
+    registry_root: str | Path | None = None,
+) -> InputWorkbookInspection:
+    source_path = Path(input_path)
+    workbook = load_workbook(source_path, data_only=False)
+    return inspect_loaded_input_workbook(workbook, registry_root=registry_root)
+
+
+def inspect_loaded_input_workbook(
+    workbook: Workbook,
+    *,
+    registry_root: str | Path | None = None,
+) -> InputWorkbookInspection:
+    detection = detect_input_layout(workbook, registry_root=registry_root)
+    return _build_input_workbook_inspection(workbook, detection)
 
 
 def build_canonical_v1_workbook(
@@ -356,7 +420,8 @@ def normalize_input_workbook(
 ) -> InputNormalizationResult:
     source_path = Path(input_path)
     workbook = load_workbook(source_path)
-    detection = detect_input_layout(workbook, registry_root=registry_root)
+    inspection = inspect_loaded_input_workbook(workbook, registry_root=registry_root)
+    detection = inspection.detection
 
     target_path = Path(output_path) if output_path is not None else source_path
     normalized_workbook, manifest = build_canonical_v1_workbook(
@@ -401,6 +466,61 @@ def normalize_input_workbook(
         orphan_note_rows=int(manifest.get("counts", {}).get("orphan_note_rows", 0)),
         manifest=manifest,
     )
+
+
+def _build_input_workbook_inspection(
+    workbook: Workbook,
+    detection: InputLayoutDetection,
+) -> InputWorkbookInspection:
+    if detection.selected_sheet_name not in workbook.sheetnames:
+        raise InputLayoutNormalizationError(
+            "aba_detectada_ausente",
+            f"A aba detectada '{detection.selected_sheet_name}' nao existe no workbook.",
+            source=detection.selected_sheet_name,
+        )
+
+    worksheet = workbook[detection.selected_sheet_name]
+    header_row = _header_row_for_detection(detection)
+    return InputWorkbookInspection(
+        layout_id=detection.layout_id,
+        company_code=detection.company_code,
+        company_name=detection.company_name,
+        competence=detection.competence,
+        selected_sheet_name=detection.selected_sheet_name,
+        source_sheet_names=detection.source_sheet_names,
+        columns=_collect_input_columns(worksheet, header_row=header_row),
+        warnings=detection.warnings,
+        detection=detection,
+    )
+
+
+def _header_row_for_detection(detection: InputLayoutDetection) -> int:
+    if detection.layout_id == MONTHLY_LAYOUT_ID:
+        return 4
+    return 1
+
+
+def _collect_input_columns(
+    worksheet: Worksheet,
+    *,
+    header_row: int,
+) -> tuple[InputColumnMetadata, ...]:
+    columns: list[InputColumnMetadata] = []
+    for column_index in range(1, worksheet.max_column + 1):
+        raw_header = worksheet.cell(row=header_row, column=column_index).value
+        column_name = normalized_optional_text(raw_header)
+        if column_name is None:
+            continue
+        columns.append(
+            InputColumnMetadata(
+                column_index=column_index,
+                column_letter=get_column_letter(column_index),
+                column_name=column_name,
+                normalized_column_name=_normalize_text_for_match(column_name),
+                header_row=header_row,
+            )
+        )
+    return tuple(columns)
 
 
 def _detect_canonical_v1_layout(workbook: Workbook) -> InputLayoutDetection | None:
