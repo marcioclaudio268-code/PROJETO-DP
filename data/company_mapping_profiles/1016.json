@@ -1,0 +1,96 @@
+{
+  "company_code": "1016",
+  "company_name": "MAIS QUE BOLO DOCES E SALGADOS LTDA",
+  "default_process": "11",
+  "mappings": [
+    {
+      "column_key": null,
+      "column_name": "GRAT.",
+      "enabled": true,
+      "generation_mode": "single_line",
+      "ignore_text": true,
+      "ignore_zero": true,
+      "notes": null,
+      "rubrica_target": "20",
+      "rubricas_target": [],
+      "value_kind": "monetario"
+    },
+    {
+      "column_key": null,
+      "column_name": "EXTRA 70%",
+      "enabled": true,
+      "generation_mode": "single_line",
+      "ignore_text": true,
+      "ignore_zero": true,
+      "notes": null,
+      "rubrica_target": "201",
+      "rubricas_target": [],
+      "value_kind": "horas"
+    },
+    {
+      "column_key": null,
+      "column_name": "EXTRA 100%",
+      "enabled": true,
+      "generation_mode": "single_line",
+      "ignore_text": true,
+      "ignore_zero": true,
+      "notes": null,
+      "rubrica_target": "200",
+      "rubricas_target": [],
+      "value_kind": "horas"
+    },
+    {
+      "column_key": null,
+      "column_name": "HORA EXTRA NOTURNA",
+      "enabled": true,
+      "generation_mode": "single_line",
+      "ignore_text": true,
+      "ignore_zero": true,
+      "notes": null,
+      "rubrica_target": "25",
+      "rubricas_target": [],
+      "value_kind": "horas"
+    },
+    {
+      "column_key": null,
+      "column_name": "ATRASO",
+      "enabled": true,
+      "generation_mode": "single_line",
+      "ignore_text": true,
+      "ignore_zero": true,
+      "notes": null,
+      "rubrica_target": "8069",
+      "rubricas_target": [],
+      "value_kind": "horas"
+    },
+    {
+      "column_key": null,
+      "column_name": "FALTA",
+      "enabled": true,
+      "generation_mode": "multi_line",
+      "ignore_text": true,
+      "ignore_zero": true,
+      "notes": null,
+      "rubrica_target": null,
+      "rubricas_target": [
+        "8792",
+        "8794"
+      ],
+      "value_kind": "quantidade"
+    },
+    {
+      "column_key": null,
+      "column_name": "DESPESAS",
+      "enabled": true,
+      "generation_mode": "single_line",
+      "ignore_text": true,
+      "ignore_zero": true,
+      "notes": null,
+      "rubrica_target": "202",
+      "rubricas_target": [],
+      "value_kind": "monetario"
+    }
+  ],
+  "notes": "Perfil minimo real consolidado na Rodada 6.",
+  "profile_version": "column-mapping-v1"
+}

@@ -3,8 +3,9 @@
 Este diretorio guarda perfis JSON por empresa para converter colunas reais de uma
 planilha enviada em regras de conversao antes da planilha canonica interna.
 
-Nesta rodada, o perfil ainda nao esta integrado ao `run_dashboard_analysis`.
-Ele define apenas o contrato persistivel para a proxima etapa.
+O dashboard usa estes perfis para layouts nao canonicos: se o perfil da empresa
+nao existir ou nao cobrir as colunas relevantes, a analise bloqueia com pendencia
+interna clara antes de gerar o workbook canonico.
 
 Arquivo padrao:
 
@@ -34,3 +35,12 @@ Exemplos de contrato:
 - `ATRASO` -> `8069`, `single_line`, `horas`.
 - `FALTA` -> `8792` e `8794`, `multi_line`, `quantidade`.
 - `ADIANT. QUINZ` -> `ignore`.
+
+Perfis reais materializados:
+
+- `887.json`: BERBELLA LTDA.
+- `1016.json`: MAIS QUE BOLO DOCES E SALGADOS LTDA.
+- `448.json`: SAAD E TOSSI LTDA ME.
+
+A empresa `72` permanece como baseline homologada do layout canonico V1 e nao
+exige perfil de colunas para o fluxo antigo.

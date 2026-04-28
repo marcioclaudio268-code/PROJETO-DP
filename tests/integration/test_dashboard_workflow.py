@@ -188,6 +188,7 @@ def test_dashboard_happy_path_enables_txt(tmp_path: Path) -> None:
     assert result.summary.serialized_line_count == 2
     assert result.summary.pending_count == 0
     assert result.summary.config_status == ConfigResolutionStatus.FOUND.value
+    assert result.profile_resolution.status == "not_required"
     assert persisted.summary.txt_enabled is True
     assert persisted.summary.serialized_line_count == 2
 
@@ -202,6 +203,7 @@ def test_dashboard_default_master_data_allows_xlsx_only_flow(tmp_path: Path) -> 
     assert result.summary.config_status == ConfigResolutionStatus.FOUND.value
     assert result.summary.config_source == "registry_company_active"
     assert result.summary.config_version == "cfg-v1"
+    assert result.profile_resolution.status == "not_required"
 
 
 def test_dashboard_can_fix_missing_registration_and_reprocess(tmp_path: Path) -> None:
