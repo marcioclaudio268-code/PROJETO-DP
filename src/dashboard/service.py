@@ -3,22 +3,37 @@
 from __future__ import annotations
 
 import json
+import unicodedata
 from pathlib import Path
 
 from openpyxl import load_workbook
+from pydantic import ValidationError
 
 from mapping.pipeline import map_snapshot_with_company_config
 from serialization.pipeline import serialize_mapped_artifact_to_txt
 from validation.pipeline import validate_pipeline_v1
 
-from ingestion.input_layout import normalize_input_workbook
+from ingestion.input_layout import (
+    CANONICAL_LAYOUT_ID,
+    InputColumnMetadata,
+    InputWorkbookInspection,
+    inspect_input_workbook,
+    normalize_input_workbook,
+)
 from ingestion.pipeline import ingest_fill_and_persist_planilha_padrao_v1
 
+from .column_mapping_profiles import (
+    ColumnMappingProfileError,
+    CompanyColumnMappingProfile,
+    column_mapping_profile_path,
+    load_column_mapping_profile,
+)
 from .config_resolver import ConfigResolutionResult, ConfigResolutionStatus, ConfigResolver
 from .models import (
     DashboardConfigResolution,
     DashboardPaths,
     DashboardPendingItem,
+    DashboardProfileResolution,
     DashboardRunResult,
     DashboardSummary,
 )
@@ -40,9 +55,24 @@ def run_dashboard_analysis(
     paths: DashboardPaths,
     *,
     config_resolver: ConfigResolver | None = None,
+    column_profile_root: str | Path | None = None,
 ) -> DashboardRunResult:
     resolver = config_resolver or ConfigResolver()
     source_workbook_path = _resolve_source_workbook_path(paths)
+    inspection = inspect_input_workbook(source_workbook_path, registry_root=resolver.registry_root)
+    profile_resolution = _resolve_column_mapping_profile(
+        inspection=inspection,
+        source_workbook_path=source_workbook_path,
+        profile_root=column_profile_root,
+    )
+    if profile_resolution.status != "found" and profile_resolution.status != "not_required":
+        return _build_blocked_run_without_profile(
+            paths=paths,
+            state=load_dashboard_state(paths.state_path),
+            inspection=inspection,
+            profile_resolution=profile_resolution,
+        )
+
     normalize_input_workbook(
         source_workbook_path,
         output_path=paths.editable_workbook_path,
@@ -69,6 +99,7 @@ def run_dashboard_analysis(
             state=state,
             snapshot_payload=snapshot_payload,
             resolution=resolution,
+            profile_resolution=profile_resolution,
         )
 
     resolver.write_resolved_config(resolution, target_path=paths.editable_config_path)
@@ -116,6 +147,7 @@ def run_dashboard_analysis(
             "last_analysis": {
                 "summary": _serialize_summary(summary),
                 "config_resolution": _serialize_config_resolution(config_resolution),
+                "profile_resolution": _serialize_profile_resolution(profile_resolution),
                 "pendings": [_serialize_pending_item(item) for item in pendings],
             }
         }
@@ -127,6 +159,7 @@ def run_dashboard_analysis(
         state=updated_state,
         summary=summary,
         config_resolution=config_resolution,
+        profile_resolution=profile_resolution,
         pendings=pendings,
         snapshot_payload=snapshot_payload,
         mapped_payload=mapped_payload,
@@ -159,6 +192,9 @@ def load_dashboard_run(paths: DashboardPaths) -> DashboardRunResult:
     )
     summary = _deserialize_summary(state.last_analysis["summary"])
     config_resolution = _deserialize_config_resolution(state.last_analysis["config_resolution"])
+    profile_resolution = _deserialize_profile_resolution(
+        state.last_analysis.get("profile_resolution")
+    )
     pendings = tuple(_deserialize_pending_item(item) for item in state.last_analysis["pendings"])
 
     return DashboardRunResult(
@@ -166,6 +202,7 @@ def load_dashboard_run(paths: DashboardPaths) -> DashboardRunResult:
         state=state,
         summary=summary,
         config_resolution=config_resolution,
+        profile_resolution=profile_resolution,
         pendings=pendings,
         snapshot_payload=snapshot_payload,
         mapped_payload=mapped_payload,
@@ -268,6 +305,7 @@ def _build_blocked_run_without_config(
     state,
     snapshot_payload: dict,
     resolution: ConfigResolutionResult,
+    profile_resolution: DashboardProfileResolution,
 ) -> DashboardRunResult:
     _cleanup_downstream_artifacts(paths)
     config_resolution = _resolution_to_dashboard_config(resolution)
@@ -304,6 +342,7 @@ def _build_blocked_run_without_config(
             "last_analysis": {
                 "summary": _serialize_summary(summary),
                 "config_resolution": _serialize_config_resolution(config_resolution),
+                "profile_resolution": _serialize_profile_resolution(profile_resolution),
                 "pendings": [_serialize_pending_item(item) for item in pendings],
             },
         }
@@ -314,7 +353,68 @@ def _build_blocked_run_without_config(
         state=updated_state,
         summary=summary,
         config_resolution=config_resolution,
+        profile_resolution=profile_resolution,
         pendings=tuple(pendings),
+        snapshot_payload=snapshot_payload,
+        mapped_payload={},
+        serialization_payload=serialization_payload,
+        validation_payload=validation_payload,
+    )
+
+
+def _build_blocked_run_without_profile(
+    *,
+    paths: DashboardPaths,
+    state,
+    inspection: InputWorkbookInspection,
+    profile_resolution: DashboardProfileResolution,
+) -> DashboardRunResult:
+    _cleanup_profile_block_artifacts(paths)
+    snapshot_payload = _inspection_to_snapshot_payload(inspection)
+    config_resolution = _profile_block_config_resolution(inspection, profile_resolution)
+    internal_pending = _build_profile_resolution_pending(inspection, profile_resolution)
+    pendings = (internal_pending,)
+    serialization_payload = {
+        "counts": {
+            "serialized": 0,
+            "non_serialized": 0,
+            "blocked_or_non_serialized": 0,
+            "total_mapped_movements": 0,
+        }
+    }
+    validation_payload = {
+        "execution": {"status": "blocked"},
+        "fatal_errors": [],
+        "inconsistencies": [],
+        "recommendation": profile_resolution.message,
+    }
+    summary = build_dashboard_summary(
+        state=state,
+        snapshot_payload=snapshot_payload,
+        serialization_payload=serialization_payload,
+        validation_payload=validation_payload,
+        pending_count=len(pendings),
+        config_resolution=config_resolution,
+    )
+    updated_state = state.model_copy(
+        update={
+            "source_config_name": None,
+            "last_analysis": {
+                "summary": _serialize_summary(summary),
+                "config_resolution": _serialize_config_resolution(config_resolution),
+                "profile_resolution": _serialize_profile_resolution(profile_resolution),
+                "pendings": [_serialize_pending_item(item) for item in pendings],
+            },
+        }
+    )
+    write_dashboard_state(paths.state_path, updated_state)
+    return DashboardRunResult(
+        paths=paths,
+        state=updated_state,
+        summary=summary,
+        config_resolution=config_resolution,
+        profile_resolution=profile_resolution,
+        pendings=pendings,
         snapshot_payload=snapshot_payload,
         mapped_payload={},
         serialization_payload=serialization_payload,
@@ -487,9 +587,256 @@ def _build_config_resolution_pending(
     )
 
 
+def _resolve_column_mapping_profile(
+    *,
+    inspection: InputWorkbookInspection,
+    source_workbook_path: Path,
+    profile_root: str | Path | None,
+) -> DashboardProfileResolution:
+    if inspection.layout_id == CANONICAL_LAYOUT_ID:
+        return DashboardProfileResolution(
+            status="not_required",
+            status_label="Perfil de colunas nao requerido",
+            message="Layout canonico V1 ja esta no contrato interno e nao exige perfil de colunas.",
+            company_code=inspection.company_code,
+            competence=inspection.competence,
+            layout_id=inspection.layout_id,
+            source_path=None,
+        )
+
+    profile_path = column_mapping_profile_path(inspection.company_code, root=profile_root)
+    try:
+        profile = load_column_mapping_profile(inspection.company_code, root=profile_root)
+    except ColumnMappingProfileError as exc:
+        return DashboardProfileResolution(
+            status="missing",
+            status_label="Perfil de mapeamento de colunas ausente",
+            message=(
+                "Perfil de mapeamento de colunas nao encontrado para a empresa "
+                f"{inspection.company_code}. Cadastre o perfil antes de processar este layout."
+            ),
+            company_code=inspection.company_code,
+            competence=inspection.competence,
+            layout_id=inspection.layout_id,
+            source_path=exc.source or str(profile_path),
+        )
+    except (ValidationError, ValueError) as exc:
+        return DashboardProfileResolution(
+            status="invalid",
+            status_label="Perfil de mapeamento de colunas invalido",
+            message=f"Perfil de mapeamento de colunas invalido para a empresa {inspection.company_code}: {exc}",
+            company_code=inspection.company_code,
+            competence=inspection.competence,
+            layout_id=inspection.layout_id,
+            source_path=str(profile_path),
+        )
+
+    if profile.company_code != inspection.company_code:
+        return DashboardProfileResolution(
+            status="invalid",
+            status_label="Perfil de mapeamento de colunas invalido",
+            message=(
+                "Perfil de mapeamento de colunas pertence a outra empresa. "
+                f"Esperado={inspection.company_code}; recebido={profile.company_code}."
+            ),
+            company_code=inspection.company_code,
+            competence=inspection.competence,
+            layout_id=inspection.layout_id,
+            source_path=str(profile_path),
+        )
+
+    relevant_columns = _relevant_profile_columns(
+        inspection=inspection,
+        source_workbook_path=source_workbook_path,
+    )
+    missing_columns = _missing_profile_columns(profile, relevant_columns)
+    if missing_columns:
+        first_missing = missing_columns[0]
+        return DashboardProfileResolution(
+            status="incomplete",
+            status_label="Perfil de mapeamento de colunas incompleto",
+            message=(
+                "Perfil de mapeamento de colunas incompleto para a empresa "
+                f"{inspection.company_code}. Coluna sem mapping: {first_missing}."
+            ),
+            company_code=inspection.company_code,
+            competence=inspection.competence,
+            layout_id=inspection.layout_id,
+            source_path=str(profile_path),
+            missing_columns=missing_columns,
+        )
+
+    return DashboardProfileResolution(
+        status="found",
+        status_label="Perfil de mapeamento de colunas encontrado",
+        message=(
+            f"Perfil de mapeamento de colunas encontrado para a empresa {inspection.company_code} "
+            f"com cobertura das colunas relevantes."
+        ),
+        company_code=inspection.company_code,
+        competence=inspection.competence,
+        layout_id=inspection.layout_id,
+        source_path=str(profile_path),
+    )
+
+
+def _relevant_profile_columns(
+    *,
+    inspection: InputWorkbookInspection,
+    source_workbook_path: Path,
+) -> tuple[InputColumnMetadata, ...]:
+    workbook = load_workbook(source_workbook_path, data_only=False)
+    worksheet = workbook[inspection.selected_sheet_name]
+    relevant: list[InputColumnMetadata] = []
+    for column in inspection.columns:
+        if column.column_index <= 2:
+            continue
+        if _column_has_any_data(worksheet, column):
+            relevant.append(column)
+    return tuple(relevant)
+
+
+def _column_has_any_data(worksheet, column: InputColumnMetadata) -> bool:
+    for row_number in range(column.header_row + 1, worksheet.max_row + 1):
+        value = worksheet.cell(row=row_number, column=column.column_index).value
+        if value is None:
+            continue
+        if isinstance(value, str) and not value.strip():
+            continue
+        return True
+    return False
+
+
+def _missing_profile_columns(
+    profile: CompanyColumnMappingProfile,
+    columns: tuple[InputColumnMetadata, ...],
+) -> tuple[str, ...]:
+    missing = [
+        column.column_name
+        for column in columns
+        if not _profile_covers_column(profile, column)
+    ]
+    return tuple(missing)
+
+
+def _profile_covers_column(
+    profile: CompanyColumnMappingProfile,
+    column: InputColumnMetadata,
+) -> bool:
+    column_tokens = {
+        _normalize_profile_token(column.column_name),
+        column.normalized_column_name,
+        _normalize_profile_token(column.column_letter),
+        _normalize_profile_token(str(column.column_index)),
+    }
+    for mapping in profile.mappings:
+        mapping_tokens = {
+            _normalize_profile_token(token)
+            for token in (mapping.column_key, mapping.column_name)
+            if token
+        }
+        if column_tokens.intersection(mapping_tokens):
+            return True
+    return False
+
+
+def _normalize_profile_token(value: str) -> str:
+    text = unicodedata.normalize("NFKD", str(value)).strip().lower()
+    text = "".join(character for character in text if not unicodedata.combining(character))
+    return " ".join(text.split())
+
+
+def _inspection_to_snapshot_payload(inspection: InputWorkbookInspection) -> dict:
+    return {
+        "parameters": {
+            "company_code": inspection.company_code,
+            "company_name": inspection.company_name,
+            "competence": inspection.competence,
+            "payroll_type": "mensal",
+            "default_process": "",
+            "layout_version": inspection.layout_id,
+        },
+        "counts": {
+            "employees": 0,
+            "movements": 0,
+            "pendings": 1,
+        },
+        "pendings": [],
+    }
+
+
+def _profile_block_config_resolution(
+    inspection: InputWorkbookInspection,
+    profile_resolution: DashboardProfileResolution,
+) -> DashboardConfigResolution:
+    return DashboardConfigResolution(
+        status="not_run",
+        status_label="Configuracao interna nao avaliada",
+        message=(
+            "ConfigResolver nao foi executado porque a etapa de perfil de colunas "
+            f"bloqueou a analise: {profile_resolution.message}"
+        ),
+        company_code=inspection.company_code,
+        competence=inspection.competence,
+        config_source=None,
+        config_version=None,
+        source_path=None,
+    )
+
+
+def _build_profile_resolution_pending(
+    inspection: InputWorkbookInspection,
+    profile_resolution: DashboardProfileResolution,
+) -> DashboardPendingItem:
+    found_value = f"empresa={inspection.company_code} | competencia={inspection.competence}"
+    if profile_resolution.missing_columns:
+        found_value = f"{found_value} | coluna={profile_resolution.missing_columns[0]}"
+
+    return DashboardPendingItem(
+        uid=f"perfil_colunas:{profile_resolution.status}",
+        stage="perfil_colunas",
+        pending_id=f"profile-{profile_resolution.status}",
+        code=f"column_mapping_profile_{profile_resolution.status}",
+        severity="bloqueante",
+        employee_name=None,
+        employee_key=None,
+        event_name=None,
+        field_label="perfil de mapeamento de colunas",
+        found_value=found_value,
+        problem=profile_resolution.message,
+        recommended_action=(
+            "Cadastrar ou corrigir o perfil de mapeamento de colunas da empresa antes de repetir a analise."
+        ),
+        source_sheet=inspection.selected_sheet_name,
+        source_cell=None,
+        source_row=None,
+        source_column_name=(profile_resolution.missing_columns[0] if profile_resolution.missing_columns else None),
+        can_edit_workbook=False,
+        can_edit_employee_mapping=False,
+        can_edit_event_mapping=False,
+        can_ignore=False,
+    )
+
+
 def _cleanup_downstream_artifacts(paths: DashboardPaths) -> None:
     for target in (
         paths.editable_config_path,
+        paths.mapped_artifact_path,
+        paths.txt_path,
+        paths.serialization_summary_path,
+        paths.validation_path,
+    ):
+        target.unlink(missing_ok=True)
+
+
+def _cleanup_profile_block_artifacts(paths: DashboardPaths) -> None:
+    for target in (
+        paths.editable_workbook_path,
+        paths.editable_config_path,
+        paths.analyzed_workbook_path,
+        paths.snapshot_path,
+        paths.manifest_path,
+        paths.normalization_path,
         paths.mapped_artifact_path,
         paths.txt_path,
         paths.serialization_summary_path,
@@ -578,6 +925,42 @@ def _serialize_config_resolution(config_resolution: DashboardConfigResolution) -
 
 def _deserialize_config_resolution(payload: dict) -> DashboardConfigResolution:
     return DashboardConfigResolution(**payload)
+
+
+def _serialize_profile_resolution(profile_resolution: DashboardProfileResolution) -> dict:
+    return {
+        "status": profile_resolution.status,
+        "status_label": profile_resolution.status_label,
+        "message": profile_resolution.message,
+        "company_code": profile_resolution.company_code,
+        "competence": profile_resolution.competence,
+        "layout_id": profile_resolution.layout_id,
+        "source_path": profile_resolution.source_path,
+        "missing_columns": list(profile_resolution.missing_columns),
+    }
+
+
+def _deserialize_profile_resolution(payload: dict | None) -> DashboardProfileResolution:
+    if payload is None:
+        return DashboardProfileResolution(
+            status="unknown",
+            status_label="Perfil de colunas nao registrado",
+            message="Analise anterior nao registrou resolucao de perfil de colunas.",
+            company_code="",
+            competence="",
+            layout_id="",
+            source_path=None,
+        )
+    return DashboardProfileResolution(
+        status=str(payload["status"]),
+        status_label=str(payload["status_label"]),
+        message=str(payload["message"]),
+        company_code=str(payload["company_code"]),
+        competence=str(payload["competence"]),
+        layout_id=str(payload["layout_id"]),
+        source_path=payload.get("source_path"),
+        missing_columns=tuple(payload.get("missing_columns", ())),
+    )
 
 
 def _load_json(path: str | Path) -> dict:

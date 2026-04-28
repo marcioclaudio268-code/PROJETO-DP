@@ -146,11 +146,24 @@ class DashboardConfigResolution:
 
 
 @dataclass(frozen=True, slots=True)
+class DashboardProfileResolution:
+    status: str
+    status_label: str
+    message: str
+    company_code: str
+    competence: str
+    layout_id: str
+    source_path: str | None
+    missing_columns: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
 class DashboardRunResult:
     paths: DashboardPaths
     state: DashboardState
     summary: DashboardSummary
     config_resolution: DashboardConfigResolution
+    profile_resolution: DashboardProfileResolution
     pendings: tuple[DashboardPendingItem, ...]
     snapshot_payload: dict[str, Any]
     mapped_payload: dict[str, Any]

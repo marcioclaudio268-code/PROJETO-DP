@@ -6,6 +6,10 @@ from pathlib import Path
 from openpyxl import load_workbook
 
 from dashboard import (
+    ColumnGenerationMode,
+    ColumnMappingRule,
+    ColumnValueKind,
+    CompanyColumnMappingProfile,
     ConfigResolutionStatus,
     ConfigResolver,
     apply_workbook_cell_correction,
@@ -13,6 +17,7 @@ from dashboard import (
     ignore_pending_for_import,
     load_dashboard_run,
     run_dashboard_analysis,
+    save_column_mapping_profile,
 )
 from ingestion import save_planilha_padrao_folha_v1
 
@@ -73,6 +78,46 @@ def _write_internal_config(
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, ensure_ascii=True, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return path
+
+
+def _write_monthly_column_profile(
+    root: Path,
+    *,
+    company_code: str = "528",
+    omit_column: str | None = None,
+) -> Path:
+    raw_mappings = [
+        ("H. EXTRA 50% COD.150", True, "150", None, ColumnValueKind.HOURS, ColumnGenerationMode.SINGLE_LINE),
+        ("H. EXTRA 100% COD.200  FERIADO", True, "200", None, ColumnValueKind.HOURS, ColumnGenerationMode.SINGLE_LINE),
+        ("ADIANTAMENTO COD. 981", False, None, None, ColumnValueKind.MONETARY, ColumnGenerationMode.IGNORE),
+        ("ATRASOS       COD. 8069", True, "8069", None, ColumnValueKind.HOURS, ColumnGenerationMode.SINGLE_LINE),
+        ("CONSUMO              COD. 266", True, "266", None, ColumnValueKind.MONETARY, ColumnGenerationMode.SINGLE_LINE),
+        ("VALE TRANSPORTE COD. 48", False, None, None, ColumnValueKind.MONETARY, ColumnGenerationMode.IGNORE),
+    ]
+    mappings = []
+    for column_name, enabled, rubrica_target, rubricas_target, value_kind, generation_mode in raw_mappings:
+        if column_name == omit_column:
+            continue
+        mappings.append(
+            ColumnMappingRule(
+                column_name=column_name,
+                enabled=enabled,
+                rubrica_target=rubrica_target,
+                rubricas_target=rubricas_target or [],
+                value_kind=value_kind,
+                generation_mode=generation_mode,
+                ignore_zero=True,
+                ignore_text=True,
+            )
+        )
+
+    profile = CompanyColumnMappingProfile(
+        company_code=company_code,
+        company_name="FRIED FISH VILAREJO",
+        default_process="11",
+        mappings=mappings,
+    )
+    return save_column_mapping_profile(profile, root=root)
 
 
 def _prepare_single_row_workbook(tmp_path: Path) -> Path:
@@ -270,12 +315,44 @@ def test_dashboard_returns_internal_pending_when_config_is_mismatch(tmp_path: Pa
 
 
 def test_dashboard_normalizes_monthly_layout_before_canonical_ingestion(tmp_path: Path) -> None:
+    profile_root = tmp_path / "profiles"
+    _write_monthly_column_profile(profile_root)
     paths = create_dashboard_run_from_paths(MONTHLY_FIXTURE, runs_root=tmp_path / "runs")
 
-    result = run_dashboard_analysis(paths)
+    result = run_dashboard_analysis(paths, column_profile_root=profile_root)
 
     assert result.summary.company_code == "528"
     assert result.summary.competence == "03/2026"
+    assert result.profile_resolution.status == "found"
     assert result.summary.config_status == ConfigResolutionStatus.FOUND.value
     assert paths.normalization_path.exists()
     assert paths.editable_workbook_path.exists()
+
+
+def test_dashboard_blocks_monthly_layout_when_column_profile_is_missing(tmp_path: Path) -> None:
+    paths = create_dashboard_run_from_paths(MONTHLY_FIXTURE, runs_root=tmp_path / "runs")
+
+    result = run_dashboard_analysis(paths, column_profile_root=tmp_path / "profiles")
+
+    assert result.summary.txt_enabled is False
+    assert result.profile_resolution.status == "missing"
+    assert result.summary.company_code == "528"
+    assert result.summary.competence == "03/2026"
+    assert any(item.code == "column_mapping_profile_missing" for item in result.pendings)
+    assert not paths.editable_workbook_path.exists()
+    assert not paths.normalization_path.exists()
+
+
+def test_dashboard_blocks_monthly_layout_when_column_profile_is_incomplete(tmp_path: Path) -> None:
+    profile_root = tmp_path / "profiles"
+    _write_monthly_column_profile(profile_root, omit_column="CONSUMO              COD. 266")
+    paths = create_dashboard_run_from_paths(MONTHLY_FIXTURE, runs_root=tmp_path / "runs")
+
+    result = run_dashboard_analysis(paths, column_profile_root=profile_root)
+
+    assert result.summary.txt_enabled is False
+    assert result.profile_resolution.status == "incomplete"
+    assert "CONSUMO              COD. 266" in result.profile_resolution.missing_columns
+    pending = next(item for item in result.pendings if item.code == "column_mapping_profile_incomplete")
+    assert pending.source_column_name == "CONSUMO              COD. 266"
+    assert not paths.editable_workbook_path.exists()

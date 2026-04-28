@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import shutil
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -215,6 +216,10 @@ def _write_internal_config(
     return path
 
 
+def _materialize_editable_workbook(paths) -> None:
+    shutil.copy2(paths.raw_workbook_path, paths.editable_workbook_path)
+
+
 def test_txt_download_enabled_requires_success_and_serialized_lines() -> None:
     validation_payload = {
         "execution": {"status": "success_with_warnings"},
@@ -245,6 +250,7 @@ def test_txt_download_enabled_requires_success_and_serialized_lines() -> None:
 def test_apply_workbook_cell_correction_updates_workbook_and_records_action(tmp_path: Path) -> None:
     workbook_path, config_path = _prepare_workbook_and_config(tmp_path)
     paths = create_dashboard_run_from_paths(workbook_path, config_path, runs_root=tmp_path / "runs")
+    _materialize_editable_workbook(paths)
 
     action = apply_workbook_cell_correction(
         paths,
@@ -265,6 +271,7 @@ def test_apply_workbook_cell_correction_updates_workbook_and_records_action(tmp_
 def test_ignore_pending_clears_source_cell_and_records_action(tmp_path: Path) -> None:
     workbook_path, config_path = _prepare_workbook_and_config(tmp_path)
     paths = create_dashboard_run_from_paths(workbook_path, config_path, runs_root=tmp_path / "runs")
+    _materialize_editable_workbook(paths)
 
     workbook = load_workbook(paths.editable_workbook_path)
     workbook["LANCAMENTOS_FACEIS"]["N2"] = "revisar"
