@@ -37,7 +37,7 @@ from .models import (
     DashboardRunResult,
     DashboardSummary,
 )
-from .overrides import describe_ignore_strategy
+from .overrides import describe_ignore_strategy, replay_dashboard_action_overrides
 from .profile_normalizer import is_profile_identity_column, normalize_workbook_with_column_profile
 from .storage import load_dashboard_state, write_dashboard_state
 
@@ -113,6 +113,7 @@ def run_dashboard_analysis(
         )
 
     resolver.write_resolved_config(resolution, target_path=paths.editable_config_path)
+    replay_dashboard_action_overrides(paths, state)
     map_snapshot_with_company_config(
         paths.snapshot_path,
         paths.editable_config_path,

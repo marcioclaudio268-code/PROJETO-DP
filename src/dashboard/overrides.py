@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any, Mapping
 from uuid import uuid4
 
 from openpyxl import load_workbook
@@ -12,7 +13,13 @@ from config import CompanyConfig
 from ingestion.template_v1_loader import EVENT_SPECS
 
 from .errors import DashboardOperationError
-from .models import DashboardActionRecord, DashboardActionType, DashboardPaths, DashboardPendingItem
+from .models import (
+    DashboardActionRecord,
+    DashboardActionType,
+    DashboardPaths,
+    DashboardPendingItem,
+    DashboardState,
+)
 from .storage import load_dashboard_state, write_dashboard_state
 
 
@@ -37,6 +44,47 @@ IGNORABLE_LINE_CODES = {
     "mapeamento_matricula_divergente_config",
     "mapeamento_matricula_ambiguo",
 }
+
+
+def apply_dashboard_action(
+    paths: DashboardPaths,
+    *,
+    action_type: DashboardActionType | str,
+    pending_uid: str,
+    payload: Mapping[str, Any] | None = None,
+) -> DashboardActionRecord:
+    """Validate and apply one guided action against a persisted dashboard pending."""
+
+    try:
+        normalized_action_type = DashboardActionType(action_type)
+    except ValueError as exc:
+        raise DashboardOperationError(
+            "acao_manual_invalida",
+            f"Tipo de acao manual nao suportado: {action_type}.",
+            source=str(action_type),
+        ) from exc
+
+    pending_uid = _required_text("pending_uid", pending_uid)
+    action_payload = dict(payload or {})
+    pending_item = _load_pending_from_state(paths, pending_uid)
+
+    if normalized_action_type == DashboardActionType.EMPLOYEE_MAPPING_UPDATE:
+        return _apply_employee_mapping_action(paths, pending_item, action_payload)
+
+    if normalized_action_type == DashboardActionType.EVENT_MAPPING_UPDATE:
+        return _apply_event_mapping_action(paths, pending_item, action_payload)
+
+    if normalized_action_type == DashboardActionType.IGNORE_PENDING:
+        return _apply_ignore_action(paths, pending_item)
+
+    if normalized_action_type == DashboardActionType.WORKBOOK_CELL_UPDATE:
+        return _apply_workbook_cell_action(paths, pending_item, action_payload)
+
+    raise DashboardOperationError(
+        "acao_manual_sem_aplicador",
+        f"A acao manual {normalized_action_type.value} ainda nao possui aplicador backend.",
+        source=pending_item.uid,
+    )
 
 
 def apply_workbook_cell_correction(
@@ -67,6 +115,7 @@ def apply_workbook_cell_correction(
         pending_uid=pending_uid,
         description=description or f"Correcao aplicada em {sheet_name}!{cell}.",
         payload={
+            "scope": "current_run_editable_workbook",
             "sheet_name": sheet_name,
             "cell": cell,
             "original_value": _stringify(original_value),
@@ -86,31 +135,12 @@ def upsert_employee_mapping_override(
     pending_uid: str | None = None,
 ) -> DashboardActionRecord:
     payload = _load_company_config_payload(paths.editable_config_path)
-    mappings = list(payload.get("employee_mappings", []))
-
-    updated = False
-    for item in mappings:
-        if item.get("source_employee_key") == employee_key:
-            item["domain_registration"] = domain_registration
-            if employee_name:
-                item["source_employee_name"] = employee_name
-            item["active"] = True
-            updated = True
-            break
-
-    if not updated:
-        mappings.append(
-            {
-                "source_employee_key": employee_key,
-                "source_employee_name": employee_name,
-                "domain_registration": domain_registration,
-                "active": True,
-                "aliases": [],
-                "notes": None,
-            }
-        )
-
-    payload["employee_mappings"] = mappings
+    _upsert_employee_mapping_payload(
+        payload,
+        employee_key=employee_key,
+        domain_registration=domain_registration,
+        employee_name=employee_name,
+    )
     _write_validated_company_config(paths.editable_config_path, payload)
 
     action = DashboardActionRecord(
@@ -119,6 +149,7 @@ def upsert_employee_mapping_override(
         pending_uid=pending_uid,
         description=f"Correcao de matricula aplicada para a chave '{employee_key}'.",
         payload={
+            "scope": "current_run_editable_config",
             "employee_key": employee_key,
             "domain_registration": domain_registration,
             "employee_name": employee_name,
@@ -136,27 +167,11 @@ def upsert_event_mapping_override(
     pending_uid: str | None = None,
 ) -> DashboardActionRecord:
     payload = _load_company_config_payload(paths.editable_config_path)
-    mappings = list(payload.get("event_mappings", []))
-
-    updated = False
-    for item in mappings:
-        if item.get("event_negocio") == event_name:
-            item["rubrica_saida"] = output_rubric
-            item["active"] = True
-            updated = True
-            break
-
-    if not updated:
-        mappings.append(
-            {
-                "event_negocio": event_name,
-                "rubrica_saida": output_rubric,
-                "active": True,
-                "notes": None,
-            }
-        )
-
-    payload["event_mappings"] = mappings
+    _upsert_event_mapping_payload(
+        payload,
+        event_name=event_name,
+        output_rubric=output_rubric,
+    )
     _write_validated_company_config(paths.editable_config_path, payload)
 
     action = DashboardActionRecord(
@@ -165,12 +180,50 @@ def upsert_event_mapping_override(
         pending_uid=pending_uid,
         description=f"Correcao de rubrica aplicada para o evento '{event_name}'.",
         payload={
+            "scope": "current_run_editable_config",
             "event_name": event_name,
             "output_rubric": output_rubric,
         },
     )
     _append_action(paths, action)
     return action
+
+
+def replay_dashboard_action_overrides(paths: DashboardPaths, state: DashboardState) -> None:
+    """Reapply persisted config overrides after ConfigResolver rematerializes the run config."""
+
+    if not state.actions:
+        return
+
+    if not paths.editable_config_path.exists():
+        return
+
+    payload = _load_company_config_payload(paths.editable_config_path)
+    changed = False
+    for action in state.actions:
+        if action.action_type == DashboardActionType.EMPLOYEE_MAPPING_UPDATE:
+            employee_key = _required_text_from_payload(action.payload, "employee_key")
+            domain_registration = _required_text_from_payload(action.payload, "domain_registration")
+            employee_name = _stringify(action.payload.get("employee_name"))
+            _upsert_employee_mapping_payload(
+                payload,
+                employee_key=employee_key,
+                domain_registration=domain_registration,
+                employee_name=employee_name,
+            )
+            changed = True
+        elif action.action_type == DashboardActionType.EVENT_MAPPING_UPDATE:
+            event_name = _required_text_from_payload(action.payload, "event_name")
+            output_rubric = _required_text_from_payload(action.payload, "output_rubric")
+            _upsert_event_mapping_payload(
+                payload,
+                event_name=event_name,
+                output_rubric=output_rubric,
+            )
+            changed = True
+
+    if changed:
+        _write_validated_company_config(paths.editable_config_path, payload)
 
 
 def ignore_pending_for_import(
@@ -228,6 +281,7 @@ def ignore_pending_for_import(
         pending_uid=pending_item.uid,
         description=pending_item.ignore_label or "Item ignorado nesta importacao.",
         payload={
+            "scope": "current_import_only",
             "ignore_mode": pending_item.ignore_mode,
             "cleared_cells": [cell for cell in cells_to_clear if cell is not None],
             "original_values": original_values,
@@ -259,6 +313,111 @@ def describe_ignore_strategy(
         return True, "linha", "Ignorar esta linha nesta importacao"
 
     return False, None, None
+
+
+def _apply_employee_mapping_action(
+    paths: DashboardPaths,
+    pending_item: DashboardPendingItem,
+    payload: dict[str, Any],
+) -> DashboardActionRecord:
+    if not pending_item.can_edit_employee_mapping:
+        raise DashboardOperationError(
+            "acao_incompativel_com_pendencia",
+            "Esta pendencia nao permite correcao de matricula.",
+            source=pending_item.uid,
+        )
+
+    if not pending_item.employee_key:
+        raise DashboardOperationError(
+            "pendencia_sem_funcionario",
+            "A pendencia nao possui chave de funcionario suficiente para corrigir matricula.",
+            source=pending_item.uid,
+        )
+
+    _require_editable_company_config(paths)
+    domain_registration = _required_text_from_payload(
+        payload,
+        "domain_registration",
+        aliases=("matricula_dominio", "registration"),
+    )
+
+    return upsert_employee_mapping_override(
+        paths,
+        employee_key=pending_item.employee_key,
+        employee_name=_stringify(payload.get("employee_name")) or pending_item.employee_name,
+        domain_registration=domain_registration,
+        pending_uid=pending_item.uid,
+    )
+
+
+def _apply_event_mapping_action(
+    paths: DashboardPaths,
+    pending_item: DashboardPendingItem,
+    payload: dict[str, Any],
+) -> DashboardActionRecord:
+    if not pending_item.can_edit_event_mapping:
+        raise DashboardOperationError(
+            "acao_incompativel_com_pendencia",
+            "Esta pendencia nao permite correcao de rubrica.",
+            source=pending_item.uid,
+        )
+
+    if not pending_item.event_name:
+        raise DashboardOperationError(
+            "pendencia_sem_evento",
+            "A pendencia nao possui evento suficiente para corrigir rubrica.",
+            source=pending_item.uid,
+        )
+
+    _require_editable_company_config(paths)
+    output_rubric = _required_text_from_payload(
+        payload,
+        "output_rubric",
+        aliases=("rubrica_saida", "rubrica"),
+    )
+
+    return upsert_event_mapping_override(
+        paths,
+        event_name=pending_item.event_name,
+        output_rubric=output_rubric,
+        pending_uid=pending_item.uid,
+    )
+
+
+def _apply_ignore_action(
+    paths: DashboardPaths,
+    pending_item: DashboardPendingItem,
+) -> DashboardActionRecord:
+    return ignore_pending_for_import(paths, pending_item)
+
+
+def _apply_workbook_cell_action(
+    paths: DashboardPaths,
+    pending_item: DashboardPendingItem,
+    payload: dict[str, Any],
+) -> DashboardActionRecord:
+    if not pending_item.can_edit_workbook:
+        raise DashboardOperationError(
+            "acao_incompativel_com_pendencia",
+            "Esta pendencia nao permite correcao direta de celula.",
+            source=pending_item.uid,
+        )
+
+    if not pending_item.source_sheet or not pending_item.source_cell:
+        raise DashboardOperationError(
+            "pendencia_sem_celula",
+            "A pendencia nao possui celula de origem suficiente para correcao.",
+            source=pending_item.uid,
+        )
+
+    new_value = payload.get("new_value")
+    return apply_workbook_cell_correction(
+        paths,
+        sheet_name=pending_item.source_sheet,
+        cell=pending_item.source_cell,
+        new_value=None if new_value is None else str(new_value),
+        pending_uid=pending_item.uid,
+    )
 
 
 def _event_cells_for_row(worksheet, row_number: int) -> tuple[str | None, ...]:
@@ -293,9 +452,116 @@ def _append_action(paths: DashboardPaths, action: DashboardActionRecord) -> None
     write_dashboard_state(paths.state_path, updated_state)
 
 
+def _upsert_employee_mapping_payload(
+    payload: dict,
+    *,
+    employee_key: str,
+    domain_registration: str,
+    employee_name: str | None,
+) -> None:
+    mappings = list(payload.get("employee_mappings", []))
+
+    updated = False
+    for item in mappings:
+        if item.get("source_employee_key") == employee_key:
+            item["domain_registration"] = domain_registration
+            if employee_name:
+                item["source_employee_name"] = employee_name
+            item["active"] = True
+            updated = True
+            break
+
+    if not updated:
+        mappings.append(
+            {
+                "source_employee_key": employee_key,
+                "source_employee_name": employee_name,
+                "domain_registration": domain_registration,
+                "active": True,
+                "aliases": [],
+                "notes": None,
+            }
+        )
+
+    payload["employee_mappings"] = mappings
+
+
+def _upsert_event_mapping_payload(
+    payload: dict,
+    *,
+    event_name: str,
+    output_rubric: str,
+) -> None:
+    mappings = list(payload.get("event_mappings", []))
+
+    updated = False
+    for item in mappings:
+        if item.get("event_negocio") == event_name:
+            item["rubrica_saida"] = output_rubric
+            item["active"] = True
+            updated = True
+            break
+
+    if not updated:
+        mappings.append(
+            {
+                "event_negocio": event_name,
+                "rubrica_saida": output_rubric,
+                "active": True,
+                "notes": None,
+            }
+        )
+
+    payload["event_mappings"] = mappings
+
+
+def _load_pending_from_state(paths: DashboardPaths, pending_uid: str) -> DashboardPendingItem:
+    state = load_dashboard_state(paths.state_path)
+    if state.last_analysis is None:
+        raise DashboardOperationError(
+            "analise_ausente_para_acao",
+            "Nao ha analise anterior com pendencias para aplicar esta acao.",
+            source=str(paths.state_path),
+        )
+
+    for item in state.last_analysis.get("pendings", ()):
+        if item.get("uid") == pending_uid:
+            return DashboardPendingItem(**item)
+
+    raise DashboardOperationError(
+        "pendencia_nao_encontrada",
+        "Pendencia nao encontrada no estado atual do dashboard.",
+        source=pending_uid,
+    )
+
+
+def _require_editable_company_config(paths: DashboardPaths) -> dict:
+    if not paths.editable_config_path.exists():
+        raise DashboardOperationError(
+            "config_empresa_ausente_para_correcao",
+            "A configuracao editavel da empresa nao esta materializada neste run.",
+            source=str(paths.editable_config_path),
+        )
+
+    payload = _load_company_config_payload(paths.editable_config_path)
+    if not _stringify(payload.get("company_code")):
+        raise DashboardOperationError(
+            "config_empresa_sem_codigo",
+            "A configuracao editavel nao possui codigo de empresa.",
+            source=str(paths.editable_config_path),
+        )
+    return payload
+
+
 def _load_company_config_payload(path: Path) -> dict:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise DashboardOperationError(
+            "config_empresa_ausente_para_correcao",
+            "A configuracao editavel da empresa nao foi encontrada para edicao guiada.",
+            source=str(path),
+        ) from exc
     except json.JSONDecodeError as exc:
         raise DashboardOperationError(
             "config_empresa_invalida_no_dashboard",
@@ -316,3 +582,31 @@ def _stringify(value) -> str | None:
     if value is None:
         return None
     return str(value)
+
+
+def _required_text_from_payload(
+    payload: Mapping[str, Any],
+    field_name: str,
+    *,
+    aliases: tuple[str, ...] = (),
+) -> str:
+    for key in (field_name, *aliases):
+        if key in payload:
+            return _required_text(field_name, payload[key])
+
+    raise DashboardOperationError(
+        "campo_obrigatorio_ausente",
+        f"Campo obrigatorio ausente para acao manual: {field_name}.",
+        source=field_name,
+    )
+
+
+def _required_text(field_name: str, value: Any) -> str:
+    text = "" if value is None else str(value).strip()
+    if not text:
+        raise DashboardOperationError(
+            "campo_obrigatorio_ausente",
+            f"Campo obrigatorio ausente para acao manual: {field_name}.",
+            source=field_name,
+        )
+    return text

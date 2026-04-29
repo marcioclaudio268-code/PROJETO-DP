@@ -6,12 +6,14 @@ from pathlib import Path
 from openpyxl import load_workbook
 
 from dashboard import (
+    DashboardActionType,
     ColumnGenerationMode,
     ColumnMappingRule,
     ColumnValueKind,
     CompanyColumnMappingProfile,
     ConfigResolutionStatus,
     ConfigResolver,
+    apply_dashboard_action,
     apply_workbook_cell_correction,
     create_dashboard_run_from_paths,
     ignore_pending_for_import,
@@ -261,6 +263,52 @@ def test_dashboard_can_ignore_non_automatizable_event_and_reprocess(tmp_path: Pa
     assert updated.summary.txt_enabled is True
     workbook = load_workbook(paths.editable_workbook_path)
     assert workbook["LANCAMENTOS_FACEIS"]["N2"].value is None
+
+
+def test_dashboard_can_apply_event_mapping_action_and_reprocess(tmp_path: Path) -> None:
+    workbook_path = _prepare_single_row_workbook(tmp_path)
+    workbook = load_workbook(workbook_path)
+    workbook["LANCAMENTOS_FACEIS"]["D2"] = "999"
+    workbook.save(workbook_path)
+
+    configs_root = tmp_path / "configs"
+    _write_internal_config(
+        configs_root,
+        company_code="72",
+        file_name="03-2024.json",
+        competence="03/2024",
+        payload_override={"event_mappings": []},
+    )
+    paths = create_dashboard_run_from_paths(workbook_path, runs_root=tmp_path / "runs")
+
+    initial = run_dashboard_analysis(
+        paths,
+        config_resolver=ConfigResolver(registry_root=tmp_path / "master", legacy_root=configs_root),
+    )
+    pending = next(item for item in initial.pendings if item.code == "mapeamento_evento_ausente")
+
+    apply_dashboard_action(
+        paths,
+        action_type=DashboardActionType.EVENT_MAPPING_UPDATE,
+        pending_uid=pending.uid,
+        payload={"output_rubric": "201"},
+    )
+    updated = run_dashboard_analysis(
+        paths,
+        config_resolver=ConfigResolver(registry_root=tmp_path / "master", legacy_root=configs_root),
+    )
+
+    assert updated.summary.txt_enabled is True
+    assert updated.summary.serialized_line_count == 1
+    assert not any(item.code == "mapeamento_evento_ausente" for item in updated.pendings)
+    assert json.loads(paths.editable_config_path.read_text(encoding="utf-8"))["event_mappings"] == [
+        {
+            "active": True,
+            "event_negocio": "gratificacao",
+            "notes": None,
+            "rubrica_saida": "201",
+        }
+    ]
 
 
 def test_dashboard_returns_internal_pending_when_config_is_missing(tmp_path: Path) -> None:

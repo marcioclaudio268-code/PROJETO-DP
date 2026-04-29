@@ -3,15 +3,20 @@ from __future__ import annotations
 import importlib.util
 import json
 import shutil
+from dataclasses import asdict
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
 from openpyxl import load_workbook
 
 from dashboard import (
     ConfigResolutionStatus,
     ConfigResolver,
+    DashboardActionType,
+    DashboardOperationError,
     DashboardPendingItem,
+    apply_dashboard_action,
     apply_workbook_cell_correction,
     create_dashboard_run_from_paths,
     ignore_pending_for_import,
@@ -19,6 +24,7 @@ from dashboard import (
     load_dashboard_state,
     upsert_employee_mapping_override,
     upsert_event_mapping_override,
+    write_dashboard_state,
 )
 from ingestion import save_planilha_padrao_folha_v1
 
@@ -220,6 +226,64 @@ def _materialize_editable_workbook(paths) -> None:
     shutil.copy2(paths.raw_workbook_path, paths.editable_workbook_path)
 
 
+def _persist_pending_for_action(paths, pending: DashboardPendingItem) -> None:
+    state = load_dashboard_state(paths.state_path)
+    updated_state = state.model_copy(update={"last_analysis": {"pendings": [asdict(pending)]}})
+    write_dashboard_state(paths.state_path, updated_state)
+
+
+def _employee_mapping_pending() -> DashboardPendingItem:
+    return DashboardPendingItem(
+        uid="mapeamento:pend-employee",
+        stage="mapeamento",
+        pending_id="pend-employee",
+        code="mapeamento_matricula_ausente",
+        severity="bloqueante",
+        employee_name="Bruno Souza",
+        employee_key="col-002",
+        event_name=None,
+        field_label="matricula do cadastro da empresa",
+        found_value="sem cadastro",
+        problem="Matricula nao encontrada no cadastro da empresa.",
+        recommended_action="Informar a matricula Dominio do funcionario.",
+        source_sheet=None,
+        source_cell=None,
+        source_row=None,
+        source_column_name=None,
+        can_edit_workbook=False,
+        can_edit_employee_mapping=True,
+        can_edit_event_mapping=False,
+        can_ignore=False,
+    )
+
+
+def _event_mapping_pending() -> DashboardPendingItem:
+    return DashboardPendingItem(
+        uid="mapeamento:pend-event",
+        stage="mapeamento",
+        pending_id="pend-event",
+        code="mapeamento_evento_ausente",
+        severity="bloqueante",
+        employee_name="Ana Lima",
+        employee_key="col-001",
+        event_name="horas_extras_50",
+        field_label="rubrica de saida",
+        found_value="sem rubrica",
+        problem="Evento sem rubrica de saida.",
+        recommended_action="Informar a rubrica de saida.",
+        source_sheet="LANCAMENTOS_FACEIS",
+        source_cell="G2",
+        source_row=2,
+        source_column_name="horas_extras_50",
+        can_edit_workbook=False,
+        can_edit_employee_mapping=False,
+        can_edit_event_mapping=True,
+        can_ignore=True,
+        ignore_mode="evento",
+        ignore_label="Ignorar este evento nesta importacao",
+    )
+
+
 def test_txt_download_enabled_requires_success_and_serialized_lines() -> None:
     validation_payload = {
         "execution": {"status": "success_with_warnings"},
@@ -349,6 +413,118 @@ def test_upsert_employee_mapping_override_updates_config(tmp_path: Path) -> None
     assert mapping["domain_registration"] == "456"
     assert mapping["source_employee_name"] == "Bruno Souza"
     assert mapping["active"] is True
+
+
+def test_apply_dashboard_action_registers_employee_mapping_correction(tmp_path: Path) -> None:
+    workbook_path, config_path = _prepare_workbook_and_config(tmp_path)
+    paths = create_dashboard_run_from_paths(workbook_path, config_path, runs_root=tmp_path / "runs")
+    pending = _employee_mapping_pending()
+    _persist_pending_for_action(paths, pending)
+
+    action = apply_dashboard_action(
+        paths,
+        action_type=DashboardActionType.EMPLOYEE_MAPPING_UPDATE,
+        pending_uid=pending.uid,
+        payload={"domain_registration": "456"},
+    )
+
+    payload = json.loads(paths.editable_config_path.read_text(encoding="utf-8"))
+    mapping = next(
+        item for item in payload["employee_mappings"] if item["source_employee_key"] == "col-002"
+    )
+    assert mapping["domain_registration"] == "456"
+    assert mapping["source_employee_name"] == "Bruno Souza"
+    assert action.action_type == DashboardActionType.EMPLOYEE_MAPPING_UPDATE
+    assert action.payload["scope"] == "current_run_editable_config"
+
+    state = load_dashboard_state(paths.state_path)
+    assert state.actions[-1].action_id == action.action_id
+
+
+def test_apply_dashboard_action_registers_event_mapping_correction(tmp_path: Path) -> None:
+    workbook_path, config_path = _prepare_workbook_and_config(tmp_path)
+    paths = create_dashboard_run_from_paths(workbook_path, config_path, runs_root=tmp_path / "runs")
+    pending = _event_mapping_pending()
+    _persist_pending_for_action(paths, pending)
+
+    action = apply_dashboard_action(
+        paths,
+        action_type=DashboardActionType.EVENT_MAPPING_UPDATE,
+        pending_uid=pending.uid,
+        payload={"output_rubric": "350"},
+    )
+
+    payload = json.loads(paths.editable_config_path.read_text(encoding="utf-8"))
+    mapping = next(
+        item for item in payload["event_mappings"] if item["event_negocio"] == "horas_extras_50"
+    )
+    assert mapping["rubrica_saida"] == "350"
+    assert action.action_type == DashboardActionType.EVENT_MAPPING_UPDATE
+    assert action.payload["scope"] == "current_run_editable_config"
+
+    state = load_dashboard_state(paths.state_path)
+    assert state.actions[-1].action_id == action.action_id
+
+
+def test_apply_dashboard_action_registers_ignore_for_current_import(tmp_path: Path) -> None:
+    workbook_path, config_path = _prepare_workbook_and_config(tmp_path)
+    paths = create_dashboard_run_from_paths(workbook_path, config_path, runs_root=tmp_path / "runs")
+    _materialize_editable_workbook(paths)
+
+    workbook = load_workbook(paths.editable_workbook_path)
+    workbook["LANCAMENTOS_FACEIS"]["G2"] = 2
+    workbook.save(paths.editable_workbook_path)
+
+    pending = _event_mapping_pending()
+    _persist_pending_for_action(paths, pending)
+
+    action = apply_dashboard_action(
+        paths,
+        action_type=DashboardActionType.IGNORE_PENDING,
+        pending_uid=pending.uid,
+    )
+
+    workbook = load_workbook(paths.editable_workbook_path)
+    assert workbook["LANCAMENTOS_FACEIS"]["G2"].value is None
+    assert action.action_type == DashboardActionType.IGNORE_PENDING
+    assert action.payload["scope"] == "current_import_only"
+
+    state = load_dashboard_state(paths.state_path)
+    assert state.actions[-1].action_id == action.action_id
+
+
+def test_apply_dashboard_action_rejects_invalid_payload(tmp_path: Path) -> None:
+    workbook_path, config_path = _prepare_workbook_and_config(tmp_path)
+    paths = create_dashboard_run_from_paths(workbook_path, config_path, runs_root=tmp_path / "runs")
+    pending = _event_mapping_pending()
+    _persist_pending_for_action(paths, pending)
+
+    with pytest.raises(DashboardOperationError) as exc_info:
+        apply_dashboard_action(
+            paths,
+            action_type=DashboardActionType.EVENT_MAPPING_UPDATE,
+            pending_uid=pending.uid,
+            payload={"output_rubric": "  "},
+        )
+
+    assert exc_info.value.code == "campo_obrigatorio_ausente"
+
+
+def test_apply_dashboard_action_rejects_incompatible_pending(tmp_path: Path) -> None:
+    workbook_path, config_path = _prepare_workbook_and_config(tmp_path)
+    paths = create_dashboard_run_from_paths(workbook_path, config_path, runs_root=tmp_path / "runs")
+    pending = _employee_mapping_pending()
+    _persist_pending_for_action(paths, pending)
+
+    with pytest.raises(DashboardOperationError) as exc_info:
+        apply_dashboard_action(
+            paths,
+            action_type=DashboardActionType.EVENT_MAPPING_UPDATE,
+            pending_uid=pending.uid,
+            payload={"output_rubric": "350"},
+        )
+
+    assert exc_info.value.code == "acao_incompativel_com_pendencia"
 
 
 def test_dashboard_main_shows_last_error_before_run_root_guard(tmp_path: Path) -> None:

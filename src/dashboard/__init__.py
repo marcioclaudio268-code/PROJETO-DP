@@ -30,6 +30,7 @@ from .models import (
     DashboardSummary,
 )
 from .overrides import (
+    apply_dashboard_action,
     apply_workbook_cell_correction,
     describe_ignore_strategy,
     ignore_pending_for_import,
@@ -76,6 +77,7 @@ __all__ = [
     "DashboardRunResult",
     "DashboardState",
     "DashboardSummary",
+    "apply_dashboard_action",
     "apply_workbook_cell_correction",
     "build_dashboard_paths",
     "build_dashboard_summary",
