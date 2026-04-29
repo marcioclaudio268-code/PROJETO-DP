@@ -21,6 +21,7 @@ from dashboard import (
     create_dashboard_run_from_paths,
     ignore_pending_for_import,
     is_txt_download_enabled,
+    load_company_employee_registry,
     load_dashboard_state,
     upsert_employee_mapping_override,
     upsert_event_mapping_override,
@@ -439,6 +440,33 @@ def test_apply_dashboard_action_registers_employee_mapping_correction(tmp_path: 
 
     state = load_dashboard_state(paths.state_path)
     assert state.actions[-1].action_id == action.action_id
+
+
+def test_apply_dashboard_action_persists_employee_mapping_when_explicit(tmp_path: Path) -> None:
+    workbook_path, config_path = _prepare_workbook_and_config(tmp_path)
+    paths = create_dashboard_run_from_paths(workbook_path, config_path, runs_root=tmp_path / "runs")
+    pending = _employee_mapping_pending()
+    _persist_pending_for_action(paths, pending)
+
+    action = apply_dashboard_action(
+        paths,
+        action_type=DashboardActionType.EMPLOYEE_MAPPING_UPDATE,
+        pending_uid=pending.uid,
+        payload={
+            "domain_registration": "456",
+            "persist_to_employee_registry": True,
+            "aliases": ["BRUNO"],
+        },
+        employee_registry_root=tmp_path / "employee_registries",
+    )
+
+    registry = load_company_employee_registry("72", root=tmp_path / "employee_registries")
+    assert registry.employees[0].employee_key == "col-002"
+    assert registry.employees[0].employee_name == "Bruno Souza"
+    assert registry.employees[0].domain_registration == "456"
+    assert registry.employees[0].aliases == ["BRUNO"]
+    assert action.payload["persist_to_employee_registry"] is True
+    assert action.payload["scopes"] == ["current_run_editable_config", "company_employee_registry"]
 
 
 def test_apply_dashboard_action_registers_event_mapping_correction(tmp_path: Path) -> None:

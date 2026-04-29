@@ -12,6 +12,12 @@ from openpyxl import load_workbook
 from config import CompanyConfig
 from ingestion.template_v1_loader import EVENT_SPECS
 
+from .company_employee_registry import (
+    CompanyEmployeeRecord,
+    load_company_employee_registry,
+    save_company_employee_registry,
+    upsert_employee_record,
+)
 from .errors import DashboardOperationError
 from .models import (
     DashboardActionRecord,
@@ -52,6 +58,7 @@ def apply_dashboard_action(
     action_type: DashboardActionType | str,
     pending_uid: str,
     payload: Mapping[str, Any] | None = None,
+    employee_registry_root: str | Path | None = None,
 ) -> DashboardActionRecord:
     """Validate and apply one guided action against a persisted dashboard pending."""
 
@@ -69,7 +76,12 @@ def apply_dashboard_action(
     pending_item = _load_pending_from_state(paths, pending_uid)
 
     if normalized_action_type == DashboardActionType.EMPLOYEE_MAPPING_UPDATE:
-        return _apply_employee_mapping_action(paths, pending_item, action_payload)
+        return _apply_employee_mapping_action(
+            paths,
+            pending_item,
+            action_payload,
+            employee_registry_root=employee_registry_root,
+        )
 
     if normalized_action_type == DashboardActionType.EVENT_MAPPING_UPDATE:
         return _apply_event_mapping_action(paths, pending_item, action_payload)
@@ -133,6 +145,8 @@ def upsert_employee_mapping_override(
     domain_registration: str,
     employee_name: str | None = None,
     pending_uid: str | None = None,
+    scope: str = "current_run_editable_config",
+    extra_payload: Mapping[str, Any] | None = None,
 ) -> DashboardActionRecord:
     payload = _load_company_config_payload(paths.editable_config_path)
     _upsert_employee_mapping_payload(
@@ -149,10 +163,11 @@ def upsert_employee_mapping_override(
         pending_uid=pending_uid,
         description=f"Correcao de matricula aplicada para a chave '{employee_key}'.",
         payload={
-            "scope": "current_run_editable_config",
+            "scope": scope,
             "employee_key": employee_key,
             "domain_registration": domain_registration,
             "employee_name": employee_name,
+            **dict(extra_payload or {}),
         },
     )
     _append_action(paths, action)
@@ -319,6 +334,8 @@ def _apply_employee_mapping_action(
     paths: DashboardPaths,
     pending_item: DashboardPendingItem,
     payload: dict[str, Any],
+    *,
+    employee_registry_root: str | Path | None,
 ) -> DashboardActionRecord:
     if not pending_item.can_edit_employee_mapping:
         raise DashboardOperationError(
@@ -334,19 +351,44 @@ def _apply_employee_mapping_action(
             source=pending_item.uid,
         )
 
-    _require_editable_company_config(paths)
+    config_payload = _require_editable_company_config(paths)
     domain_registration = _required_text_from_payload(
         payload,
         "domain_registration",
         aliases=("matricula_dominio", "registration"),
     )
+    employee_name = _stringify(payload.get("employee_name")) or pending_item.employee_name
+    action_extra_payload: dict[str, Any] = {}
+    scope = "current_run_editable_config"
+    if _as_bool(payload.get("persist_to_employee_registry")):
+        registry_path = _persist_employee_mapping_to_registry(
+            company_code=_required_text("company_code", config_payload.get("company_code")),
+            company_name=_stringify(config_payload.get("company_name")),
+            employee_key=pending_item.employee_key,
+            employee_name=_required_text("employee_name", employee_name),
+            domain_registration=domain_registration,
+            aliases=_aliases_from_payload(payload),
+            root=employee_registry_root,
+        )
+        action_extra_payload = {
+            "persist_to_employee_registry": True,
+            "scopes": ["current_run_editable_config", "company_employee_registry"],
+            "employee_registry_path": str(registry_path),
+        }
+    else:
+        action_extra_payload = {
+            "persist_to_employee_registry": False,
+            "scopes": ["current_run_editable_config"],
+        }
 
     return upsert_employee_mapping_override(
         paths,
         employee_key=pending_item.employee_key,
-        employee_name=_stringify(payload.get("employee_name")) or pending_item.employee_name,
+        employee_name=employee_name,
         domain_registration=domain_registration,
         pending_uid=pending_item.uid,
+        scope=scope,
+        extra_payload=action_extra_payload,
     )
 
 
@@ -551,6 +593,61 @@ def _require_editable_company_config(paths: DashboardPaths) -> dict:
             source=str(paths.editable_config_path),
         )
     return payload
+
+
+def _persist_employee_mapping_to_registry(
+    *,
+    company_code: str,
+    company_name: str | None,
+    employee_key: str,
+    employee_name: str,
+    domain_registration: str,
+    aliases: list[str],
+    root: str | Path | None,
+) -> Path:
+    try:
+        registry = load_company_employee_registry(
+            company_code,
+            company_name=company_name,
+            root=root,
+        )
+        employee = CompanyEmployeeRecord(
+            employee_key=employee_key,
+            employee_name=employee_name,
+            domain_registration=domain_registration,
+            aliases=aliases,
+            status="active",
+            source="dashboard_manual_action",
+        )
+        updated_registry = upsert_employee_record(registry, employee)
+        return save_company_employee_registry(updated_registry, root=root)
+    except Exception as exc:
+        raise DashboardOperationError(
+            "cadastro_funcionario_invalido",
+            f"Nao foi possivel salvar o cadastro persistente do funcionario: {exc}",
+            source=company_code,
+        ) from exc
+
+
+def _aliases_from_payload(payload: Mapping[str, Any]) -> list[str]:
+    raw_aliases = payload.get("aliases", [])
+    if raw_aliases is None:
+        return []
+    if not isinstance(raw_aliases, list):
+        raise DashboardOperationError(
+            "aliases_invalidos",
+            "Aliases de funcionario devem ser informados como lista.",
+            source="aliases",
+        )
+    return [str(alias).strip() for alias in raw_aliases if str(alias).strip()]
+
+
+def _as_bool(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return False
+    return str(value).strip().lower() in {"1", "true", "sim", "s", "yes", "y"}
 
 
 def _load_company_config_payload(path: Path) -> dict:

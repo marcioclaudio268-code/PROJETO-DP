@@ -10,6 +10,8 @@ from dashboard import (
     ColumnGenerationMode,
     ColumnMappingRule,
     ColumnValueKind,
+    CompanyEmployeeRecord,
+    CompanyEmployeeRegistry,
     CompanyColumnMappingProfile,
     ConfigResolutionStatus,
     ConfigResolver,
@@ -20,6 +22,7 @@ from dashboard import (
     load_dashboard_run,
     run_dashboard_analysis,
     save_column_mapping_profile,
+    save_company_employee_registry,
 )
 from ingestion import save_planilha_padrao_folha_v1
 
@@ -309,6 +312,101 @@ def test_dashboard_can_apply_event_mapping_action_and_reprocess(tmp_path: Path) 
             "rubrica_saida": "201",
         }
     ]
+
+
+def test_dashboard_applies_employee_registry_to_editable_config(tmp_path: Path) -> None:
+    workbook_path = _prepare_single_row_workbook(tmp_path)
+    configs_root = tmp_path / "configs"
+    _write_internal_config(
+        configs_root,
+        company_code="72",
+        file_name="03-2024.json",
+        competence="03/2024",
+        payload_override={"employee_mappings": []},
+    )
+    employee_registry_root = tmp_path / "employee_registries"
+    save_company_employee_registry(
+        CompanyEmployeeRegistry(
+            company_code="72",
+            company_name="Dela More",
+            employees=[
+                CompanyEmployeeRecord(
+                    employee_key="col-999",
+                    employee_name="Nova Pessoa",
+                    domain_registration="999",
+                    aliases=["N Pessoa"],
+                    source="test",
+                )
+            ],
+        ),
+        root=employee_registry_root,
+    )
+    paths = create_dashboard_run_from_paths(workbook_path, runs_root=tmp_path / "runs")
+
+    result = run_dashboard_analysis(
+        paths,
+        config_resolver=ConfigResolver(registry_root=tmp_path / "master", legacy_root=configs_root),
+        employee_registry_root=employee_registry_root,
+    )
+
+    config_payload = json.loads(paths.editable_config_path.read_text(encoding="utf-8"))
+    assert config_payload["employee_mappings"] == [
+        {
+            "active": True,
+            "aliases": [],
+            "domain_registration": "999",
+            "notes": "Preenchido a partir do cadastro persistente de funcionarios.",
+            "source_employee_key": "col-999",
+            "source_employee_name": "Nova Pessoa",
+        }
+    ]
+    assert result.mapped_payload["config"]["active_employee_mappings"] == 1
+
+
+def test_dashboard_does_not_apply_ambiguous_employee_registry_match(tmp_path: Path) -> None:
+    workbook_path = _prepare_single_row_workbook(tmp_path)
+    configs_root = tmp_path / "configs"
+    _write_internal_config(
+        configs_root,
+        company_code="72",
+        file_name="03-2024.json",
+        competence="03/2024",
+        payload_override={"employee_mappings": []},
+    )
+    employee_registry_root = tmp_path / "employee_registries"
+    save_company_employee_registry(
+        CompanyEmployeeRegistry(
+            company_code="72",
+            company_name="Dela More",
+            employees=[
+                CompanyEmployeeRecord(
+                    employee_key="col-101",
+                    employee_name="Pessoa Um",
+                    domain_registration="101",
+                    aliases=["Nova Pessoa"],
+                    source="test",
+                ),
+                CompanyEmployeeRecord(
+                    employee_key="col-102",
+                    employee_name="Pessoa Dois",
+                    domain_registration="102",
+                    aliases=["Nova Pessoa"],
+                    source="test",
+                ),
+            ],
+        ),
+        root=employee_registry_root,
+    )
+    paths = create_dashboard_run_from_paths(workbook_path, runs_root=tmp_path / "runs")
+
+    run_dashboard_analysis(
+        paths,
+        config_resolver=ConfigResolver(registry_root=tmp_path / "master", legacy_root=configs_root),
+        employee_registry_root=employee_registry_root,
+    )
+
+    config_payload = json.loads(paths.editable_config_path.read_text(encoding="utf-8"))
+    assert config_payload["employee_mappings"] == []
 
 
 def test_dashboard_returns_internal_pending_when_config_is_missing(tmp_path: Path) -> None:
