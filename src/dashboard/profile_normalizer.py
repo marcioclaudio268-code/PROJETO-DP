@@ -71,6 +71,12 @@ STATUS_TOKENS = {
     "rescisao": "rescindido",
     "ignorar": "ignorar",
 }
+IDENTITY_COLUMN_TOKENS = {
+    "matricula",
+    "matricula dominio",
+    "registro",
+    "registro dominio",
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -161,6 +167,7 @@ def build_canonical_workbook_from_column_profile(
     funcionarios = normalized_workbook["FUNCIONARIOS"]
     lancamentos = normalized_workbook["LANCAMENTOS_FACEIS"]
     column_mappings = _match_profile_mappings_to_columns(profile, inspection.columns)
+    identity_column = _find_domain_registration_column(inspection.columns)
 
     employee_rows_written = 0
     canonical_rows_written = 0
@@ -181,6 +188,11 @@ def build_canonical_workbook_from_column_profile(
 
         employee_key = normalized_optional_text(row_values.get(1))
         employee_name = normalized_optional_text(row_values.get(2))
+        domain_registration = (
+            normalized_optional_text(row_values.get(identity_column.column_index))
+            if identity_column is not None
+            else None
+        )
         if employee_key is None and employee_name is None:
             if _row_has_profile_data(row_values, column_mappings):
                 raise InputLayoutNormalizationError(
@@ -197,6 +209,7 @@ def build_canonical_workbook_from_column_profile(
             employee_rows_written + 1,
             employee_key=employee_key,
             employee_name=employee_name,
+            domain_registration=domain_registration,
             status_colaborador=employee_status,
             note=employee_note,
             source_sheet=selected_sheet.title,
@@ -238,6 +251,7 @@ def build_canonical_workbook_from_column_profile(
                     value=parsed_value.value_for_workbook,
                     employee_key=employee_key,
                     employee_name=employee_name,
+                    domain_registration=domain_registration,
                     observation=_build_launch_observation(
                         inspection=inspection,
                         source_row=source_row,
@@ -312,6 +326,16 @@ def _match_profile_mappings_to_columns(
         if mapping is not None:
             matches.append((column, mapping))
     return tuple(matches)
+
+
+def is_profile_identity_column(column: InputColumnMetadata) -> bool:
+    return _normalize_token(column.column_name) in IDENTITY_COLUMN_TOKENS
+
+
+def _find_domain_registration_column(
+    columns: tuple[InputColumnMetadata, ...],
+) -> InputColumnMetadata | None:
+    return next((column for column in columns if is_profile_identity_column(column)), None)
 
 
 def _parse_profile_value(
@@ -401,6 +425,7 @@ def _write_employee_row(
     *,
     employee_key: str | None,
     employee_name: str | None,
+    domain_registration: str | None,
     status_colaborador: str,
     note: str | None,
     source_sheet: str,
@@ -409,6 +434,7 @@ def _write_employee_row(
     values = {
         "A": employee_key,
         "B": employee_name,
+        "E": domain_registration,
         "H": status_colaborador,
         "I": "nao" if status_colaborador == "ignorar" else "sim",
         "J": note or f"layout={MONTHLY_LAYOUT_ID}; aba={source_sheet}; linha_origem={source_row}",
@@ -425,10 +451,12 @@ def _write_launch_row(
     value: str,
     employee_key: str | None,
     employee_name: str | None,
+    domain_registration: str | None,
     observation: str,
 ) -> None:
     worksheet[f"B{row_number}"] = employee_key
     worksheet[f"C{row_number}"] = employee_name
+    worksheet[f"D{row_number}"] = domain_registration
     worksheet[f"F{row_number}"] = observation
     worksheet[f"{event_column}{row_number}"] = value
 
@@ -485,5 +513,6 @@ def _normalize_token(value: object) -> str:
 
 __all__ = [
     "build_canonical_workbook_from_column_profile",
+    "is_profile_identity_column",
     "normalize_workbook_with_column_profile",
 ]

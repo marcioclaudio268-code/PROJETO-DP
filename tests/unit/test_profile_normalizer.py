@@ -38,11 +38,12 @@ def _build_profile_source_workbook() -> Workbook:
         "ADIANT. QUINZ",
         "GRAT. ZERO",
         "GRAT. TEXTO",
+        "MATRICULA",
     )
     for column_index, header in enumerate(headers, start=1):
         sheet.cell(row=4, column=column_index, value=header)
 
-    row = ("col-001", "Ana Lima", "150,00", "01:30", 2, "Sim", 0, "ferias")
+    row = ("col-001", "Ana Lima", "150,00", "01:30", 2, "Sim", 0, "ferias", "123")
     for column_index, value in enumerate(row, start=1):
         sheet.cell(row=6, column=column_index, value=value)
     return workbook
@@ -71,6 +72,7 @@ def _build_inspection() -> InputWorkbookInspection:
         "ADIANT. QUINZ",
         "GRAT. ZERO",
         "GRAT. TEXTO",
+        "MATRICULA",
     )
     columns = tuple(
         InputColumnMetadata(
@@ -89,6 +91,7 @@ def _build_inspection() -> InputWorkbookInspection:
             (6, "F", headers[5]),
             (7, "G", headers[6]),
             (8, "H", headers[7]),
+            (9, "I", headers[8]),
         )
     )
     return InputWorkbookInspection(
@@ -187,6 +190,7 @@ def test_profile_normalizer_translates_supported_column_rules_to_canonical_workb
     assert _non_empty_launch_rows(normalized) == [2, 3, 4, 5]
     assert lancamentos["B2"].value == "col-001"
     assert lancamentos["C2"].value == "Ana Lima"
+    assert lancamentos["D2"].value == "123"
     assert lancamentos["H2"].value == "150"
     assert lancamentos["S3"].value == "01:30"
     assert lancamentos["R4"].value == "2"
@@ -218,6 +222,7 @@ def test_profile_normalizer_output_remains_ingestable_by_v1_loader() -> None:
         "faltas_dias",
     ]
     assert result.movements[0].amount_for_sheet() == "150"
+    assert result.movements[0].domain_registration == "123"
     assert result.movements[1].quantity_for_sheet() == "01:30"
     assert result.movements[2].quantity_for_sheet() == "2"
     assert result.movements[3].quantity_for_sheet() == "2"
@@ -246,3 +251,4 @@ def test_profile_normalizer_persists_canonical_workbook_and_report(tmp_path: Pat
     persisted = load_workbook(output_path)
     assert persisted["PARAMETROS"]["B2"].value == "72"
     assert persisted["PARAMETROS"]["B6"].value == "11"
+    assert persisted["FUNCIONARIOS"]["E2"].value == "123"

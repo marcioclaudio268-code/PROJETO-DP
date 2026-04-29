@@ -38,7 +38,7 @@ from .models import (
     DashboardSummary,
 )
 from .overrides import describe_ignore_strategy
-from .profile_normalizer import normalize_workbook_with_column_profile
+from .profile_normalizer import is_profile_identity_column, normalize_workbook_with_column_profile
 from .storage import load_dashboard_state, write_dashboard_state
 
 
@@ -718,6 +718,8 @@ def _relevant_profile_columns(
     relevant: list[InputColumnMetadata] = []
     for column in inspection.columns:
         if column.column_index <= 2:
+            continue
+        if is_profile_identity_column(column):
             continue
         if _column_has_any_data(worksheet, column):
             relevant.append(column)
