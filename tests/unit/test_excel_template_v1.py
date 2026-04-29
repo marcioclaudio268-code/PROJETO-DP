@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from openpyxl import load_workbook
+from openpyxl.utils import get_column_letter
 
 from ingestion.template_v1 import (
     FUNCIONARIOS_HEADERS,
@@ -41,8 +42,11 @@ def test_template_workbook_configures_main_human_sheet():
     worksheet = workbook["LANCAMENTOS_FACEIS"]
 
     assert worksheet.freeze_panes == "A2"
-    assert worksheet.auto_filter.ref == "A1:U1000"
+    last_column = get_column_letter(len(LANCAMENTOS_FACEIS_HEADERS))
+    assert worksheet.auto_filter.ref == f"A1:{last_column}1000"
     assert worksheet["N1"].value == "vale_transporte"
+    assert worksheet["V1"].value == "horas_extras_70"
+    assert worksheet["Y1"].value == "faltas_dsr"
 
     validations = list(worksheet.data_validations.dataValidation)
     formulas = {validation.formula1 for validation in validations}

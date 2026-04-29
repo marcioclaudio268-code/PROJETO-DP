@@ -34,6 +34,8 @@ from .taxonomy import FatalIngestionCode, render_fatal_error_message, render_pen
 from .template_v1 import (
     FUNCIONARIOS_HEADERS,
     LANCAMENTOS_FACEIS_HEADERS,
+    LANCAMENTOS_FACEIS_REQUIRED_HEADERS,
+    LANCAMENTOS_PROFILE_EXTENSION_HEADERS,
     MOVIMENTOS_CANONICOS_HEADERS,
     PARAMETROS_HEADERS,
     PENDENCIAS_HEADERS,
@@ -78,6 +80,10 @@ EVENT_SPECS: tuple[HumanEventSpec, ...] = (
     HumanEventSpec("faltas_dias", ValueType.DAYS),
     HumanEventSpec("atrasos_horas", ValueType.HOURS),
     HumanEventSpec("desconto_adiantamento", ValueType.MONETARY),
+    HumanEventSpec("horas_extras_70", ValueType.HOURS),
+    HumanEventSpec("horas_extras_100", ValueType.HOURS),
+    HumanEventSpec("hora_extra_noturna", ValueType.HOURS),
+    HumanEventSpec("faltas_dsr", ValueType.DAYS),
 )
 
 AUTOMATED_EVENT_SPECS = tuple(spec for spec in EVENT_SPECS if spec.allows_automatic_movement)
@@ -127,12 +133,16 @@ def ingest_template_v1_workbook(workbook: Workbook) -> IngestionResult:
     )
 
     human_sheet = workbook[LANCAMENTOS_SHEET_NAME]
-    human_headers = _read_header_map(human_sheet, LANCAMENTOS_FACEIS_HEADERS)
+    human_headers = _read_lancamentos_header_map(human_sheet)
 
     for row_number in range(2, human_sheet.max_row + 1):
         row_values = {
-            header: human_sheet.cell(row=row_number, column=column_index).value
-            for header, column_index in human_headers.items()
+            header: (
+                human_sheet.cell(row=row_number, column=column_index).value
+                if (column_index := human_headers.get(header)) is not None
+                else None
+            )
+            for header in LANCAMENTOS_FACEIS_HEADERS
         }
 
         if _row_is_completely_empty(row_values):
@@ -795,6 +805,19 @@ def _read_header_map(worksheet: Worksheet, expected_headers: tuple[str, ...]) ->
         )
 
     return {header: header_values[header] for header in expected_headers}
+
+
+def _read_lancamentos_header_map(worksheet: Worksheet) -> dict[str, int | None]:
+    required_headers = _read_header_map(worksheet, LANCAMENTOS_FACEIS_REQUIRED_HEADERS)
+    header_values = {
+        normalized_optional_text(worksheet.cell(row=1, column=column_index).value): column_index
+        for column_index in range(1, worksheet.max_column + 1)
+    }
+    optional_headers = {
+        header: header_values.get(header)
+        for header in LANCAMENTOS_PROFILE_EXTENSION_HEADERS
+    }
+    return {**required_headers, **optional_headers}
 
 
 def _coerce_workbook(workbook_or_path: Workbook | str | Path) -> tuple[Workbook, Path | None]:

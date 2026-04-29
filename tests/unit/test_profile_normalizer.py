@@ -194,7 +194,7 @@ def test_profile_normalizer_translates_supported_column_rules_to_canonical_workb
     assert lancamentos["H2"].value == "150"
     assert lancamentos["S3"].value == "01:30"
     assert lancamentos["R4"].value == "2"
-    assert lancamentos["R5"].value == "2"
+    assert lancamentos["Y5"].value == "2"
     assert "rubrica_target=8792" in lancamentos["F4"].value
     assert "rubrica_target=8794" in lancamentos["F5"].value
 
@@ -219,7 +219,7 @@ def test_profile_normalizer_output_remains_ingestable_by_v1_loader() -> None:
         "gratificacao",
         "atrasos_horas",
         "faltas_dias",
-        "faltas_dias",
+        "faltas_dsr",
     ]
     assert result.movements[0].amount_for_sheet() == "150"
     assert result.movements[0].domain_registration == "123"
@@ -252,3 +252,121 @@ def test_profile_normalizer_persists_canonical_workbook_and_report(tmp_path: Pat
     assert persisted["PARAMETROS"]["B2"].value == "72"
     assert persisted["PARAMETROS"]["B6"].value == "11"
     assert persisted["FUNCIONARIOS"]["E2"].value == "123"
+
+
+def test_profile_normalizer_routes_critical_rubrics_to_distinct_canonical_columns() -> None:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "mar 26"
+    sheet["A1"] = "Empresa Teste"
+    headers = (
+        "COD.",
+        "NOME",
+        "EXTRA 70%",
+        "EXTRA 100%",
+        "EXTRA NOTURNA",
+        "DESPESAS",
+        "MATRICULA",
+    )
+    values = ("col-001", "Ana Lima", "01:00", "02:00", "03:00", "10,00", "123")
+    for column_index, header in enumerate(headers, start=1):
+        sheet.cell(row=4, column=column_index, value=header)
+        sheet.cell(row=6, column=column_index, value=values[column_index - 1])
+
+    detection = InputLayoutDetection(
+        layout_id=MONTHLY_LAYOUT_ID,
+        active_sheet_name="mar 26",
+        selected_sheet_name="mar 26",
+        selected_sheet_reason="unit_test",
+        company_code="72",
+        company_name="Empresa Teste",
+        competence="03/2026",
+        source_company_name="Empresa Teste",
+        source_title_text=None,
+        source_sheet_names=("mar 26",),
+        rules_applied=("unit_test",),
+    )
+    inspection = InputWorkbookInspection(
+        layout_id=MONTHLY_LAYOUT_ID,
+        company_code="72",
+        company_name="Empresa Teste",
+        competence="03/2026",
+        selected_sheet_name="mar 26",
+        source_sheet_names=("mar 26",),
+        columns=tuple(
+            InputColumnMetadata(
+                column_index=index,
+                column_letter=letter,
+                column_name=header,
+                normalized_column_name=header.lower(),
+                header_row=4,
+            )
+            for index, letter, header in (
+                (1, "A", headers[0]),
+                (2, "B", headers[1]),
+                (3, "C", headers[2]),
+                (4, "D", headers[3]),
+                (5, "E", headers[4]),
+                (6, "F", headers[5]),
+                (7, "G", headers[6]),
+            )
+        ),
+        warnings=(),
+        detection=detection,
+    )
+    profile = CompanyColumnMappingProfile(
+        company_code="72",
+        company_name="Empresa Teste",
+        default_process="11",
+        mappings=[
+            ColumnMappingRule(
+                column_name="EXTRA 70%",
+                enabled=True,
+                rubrica_target="201",
+                value_kind=ColumnValueKind.HOURS,
+                generation_mode=ColumnGenerationMode.SINGLE_LINE,
+                ignore_zero=True,
+                ignore_text=True,
+            ),
+            ColumnMappingRule(
+                column_name="EXTRA 100%",
+                enabled=True,
+                rubrica_target="200",
+                value_kind=ColumnValueKind.HOURS,
+                generation_mode=ColumnGenerationMode.SINGLE_LINE,
+                ignore_zero=True,
+                ignore_text=True,
+            ),
+            ColumnMappingRule(
+                column_name="EXTRA NOTURNA",
+                enabled=True,
+                rubrica_target="25",
+                value_kind=ColumnValueKind.HOURS,
+                generation_mode=ColumnGenerationMode.SINGLE_LINE,
+                ignore_zero=True,
+                ignore_text=True,
+            ),
+            ColumnMappingRule(
+                column_name="DESPESAS",
+                enabled=True,
+                rubrica_target="204",
+                value_kind=ColumnValueKind.MONETARY,
+                generation_mode=ColumnGenerationMode.SINGLE_LINE,
+                ignore_zero=True,
+                ignore_text=True,
+            ),
+        ],
+    )
+
+    normalized, _manifest = build_canonical_workbook_from_column_profile(
+        workbook,
+        inspection=inspection,
+        profile=profile,
+    )
+
+    lancamentos = normalized["LANCAMENTOS_FACEIS"]
+    assert lancamentos["V2"].value == "01:00"
+    assert lancamentos["W3"].value == "02:00"
+    assert lancamentos["X4"].value == "03:00"
+    assert lancamentos["P5"].value == "10"
+    assert lancamentos["H2"].value is None

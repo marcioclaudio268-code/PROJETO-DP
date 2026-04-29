@@ -88,6 +88,21 @@ LANCAMENTOS_FACEIS_HEADERS = (
     "atrasos_horas",
     "desconto_adiantamento",
     "observacao_eventos",
+    "horas_extras_70",
+    "horas_extras_100",
+    "hora_extra_noturna",
+    "faltas_dsr",
+)
+
+LANCAMENTOS_PROFILE_EXTENSION_HEADERS = (
+    "horas_extras_70",
+    "horas_extras_100",
+    "hora_extra_noturna",
+    "faltas_dsr",
+)
+
+LANCAMENTOS_FACEIS_REQUIRED_HEADERS = tuple(
+    header for header in LANCAMENTOS_FACEIS_HEADERS if header not in LANCAMENTOS_PROFILE_EXTENSION_HEADERS
 )
 
 MOVIMENTOS_CANONICOS_HEADERS = (
@@ -156,15 +171,19 @@ LIST_BLOCKS: dict[str, tuple[str, ...]] = {
         "faltas_dias",
         "atrasos_horas",
         "desconto_adiantamento",
+        "horas_extras_70",
+        "horas_extras_100",
+        "hora_extra_noturna",
+        "faltas_dsr",
     ),
     # Preparacao tecnica para a aba canonica; ainda nao dirigem regra automatica.
     "tipos_valor": ("monetario", "horas", "dias", "texto"),
     "natureza_evento": ("provento", "desconto", "informativo"),
 }
 
-HOUR_COLUMNS = ("G", "S")
+HOUR_COLUMNS = ("G", "S", "V", "W", "X")
 MONETARY_COLUMNS = ("H", "I", "J", "K", "L", "M", "O", "P", "Q", "T")
-NUMBER_COLUMNS = ("R",)
+NUMBER_COLUMNS = ("R", "Y")
 
 THIN_SIDE = Side(style="thin", color="D9E2F3")
 THIN_BORDER = Border(left=THIN_SIDE, right=THIN_SIDE, top=THIN_SIDE, bottom=THIN_SIDE)
@@ -327,7 +346,7 @@ def _build_funcionarios_sheet(worksheet, max_data_rows: int) -> None:
 def _build_lancamentos_faceis_sheet(worksheet, max_data_rows: int) -> None:
     _write_headers(worksheet, LANCAMENTOS_FACEIS_HEADERS)
     worksheet.freeze_panes = "A2"
-    worksheet.auto_filter.ref = f"A1:U{max_data_rows}"
+    worksheet.auto_filter.ref = f"A1:Y{max_data_rows}"
     worksheet.sheet_properties.tabColor = "70AD47"
 
     widths = {
@@ -352,6 +371,10 @@ def _build_lancamentos_faceis_sheet(worksheet, max_data_rows: int) -> None:
         "S": 16,
         "T": 20,
         "U": 30,
+        "V": 18,
+        "W": 18,
+        "X": 20,
+        "Y": 14,
     }
     _set_column_widths(worksheet, widths)
     _paint_lancamentos_header_groups(worksheet)
@@ -361,6 +384,9 @@ def _build_lancamentos_faceis_sheet(worksheet, max_data_rows: int) -> None:
     worksheet["N1"].comment = Comment("Selecione a situacao do vale transporte.", "motor")
     worksheet["S1"].comment = Comment("Use HH:MM para atrasos.", "motor")
     worksheet["U1"].comment = Comment("Descreva apenas o que precisa de revisao humana.", "motor")
+    worksheet["V1"].comment = Comment("Use HH:MM para horas extras 70%.", "motor")
+    worksheet["W1"].comment = Comment("Use HH:MM para horas extras 100%.", "motor")
+    worksheet["X1"].comment = Comment("Use HH:MM para hora extra noturna.", "motor")
 
     _add_hour_validation(worksheet, "G", max_data_rows)
     _add_hour_validation(worksheet, "S", max_data_rows)
@@ -587,4 +613,3 @@ def _add_hour_validation(worksheet, column_letter: str, max_data_rows: int) -> N
     validation.prompt = "Digite horas no formato HH:MM."
     worksheet.add_data_validation(validation)
     validation.add(f"{column_letter}2:{column_letter}{max_data_rows}")
-

@@ -43,13 +43,19 @@ from .column_mapping_profiles import (
 
 RUBRIC_TO_CANONICAL_EVENT_COLUMN = {
     "20": "gratificacao",
-    "201": "gratificacao",
+    "201": "horas_extras_70",
+    "219": "horas_extras_70",
     "150": "horas_extras_50",
     "350": "horas_extras_50",
+    "200": "horas_extras_100",
+    "25": "hora_extra_noturna",
     "8069": "atrasos_horas",
     "8792": "faltas_dias",
-    "8794": "faltas_dias",
+    "8794": "faltas_dsr",
     "266": "mercadoria",
+    "204": "mercadoria",
+    "202": "mercadoria",
+    "264": "mercadoria",
     "981": "desconto_adiantamento",
     "48": "vale_transporte",
 }
@@ -62,6 +68,10 @@ CANONICAL_EVENT_COLUMNS = {
     "faltas_dias": "R",
     "atrasos_horas": "S",
     "desconto_adiantamento": "T",
+    "horas_extras_70": "V",
+    "horas_extras_100": "W",
+    "hora_extra_noturna": "X",
+    "faltas_dsr": "Y",
 }
 
 STATUS_TOKENS = {

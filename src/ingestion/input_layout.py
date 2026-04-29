@@ -23,6 +23,7 @@ from .normalization import is_empty_value, normalize_hours_hhmm, normalize_quant
 from .template_v1 import (
     FUNCIONARIOS_HEADERS,
     LANCAMENTOS_FACEIS_HEADERS,
+    LANCAMENTOS_FACEIS_REQUIRED_HEADERS,
     MAX_DATA_ROWS,
     MOVIMENTOS_CANONICOS_HEADERS,
     PARAMETROS_HEADERS,
@@ -531,7 +532,7 @@ def _detect_canonical_v1_layout(workbook: Workbook) -> InputLayoutDetection | No
     for sheet_name, expected_headers in (
         ("PARAMETROS", PARAMETROS_HEADERS),
         ("FUNCIONARIOS", FUNCIONARIOS_HEADERS),
-        ("LANCAMENTOS_FACEIS", LANCAMENTOS_FACEIS_HEADERS),
+        ("LANCAMENTOS_FACEIS", LANCAMENTOS_FACEIS_REQUIRED_HEADERS),
     ):
         worksheet = workbook[sheet_name]
         actual_headers = tuple(
