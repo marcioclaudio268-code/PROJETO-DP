@@ -36,11 +36,29 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 class _FakeStreamlit:
-    def __init__(self, *, uploaded_workbook=None, button_result: bool = False) -> None:
+    def __init__(
+        self,
+        *,
+        uploaded_workbook=None,
+        button_result: bool = False,
+        selected_label: str | None = None,
+        form_submit_result: bool = False,
+        text_inputs: dict[str, str] | None = None,
+        checkboxes: dict[str, bool] | None = None,
+        selectboxes: dict[str, str] | None = None,
+    ) -> None:
         self.session_state: dict[str, object] = {}
         self.errors: list[str] = []
+        self.infos: list[str] = []
+        self.markdowns: list[str] = []
+        self.tables: list[object] = []
         self.uploaded_workbook = uploaded_workbook
         self.button_result = button_result
+        self.selected_label = selected_label
+        self.form_submit_result = form_submit_result
+        self.text_inputs = text_inputs or {}
+        self.checkboxes = checkboxes or {}
+        self.selectboxes = selectboxes or {}
         self.rerun_called = False
 
     def set_page_config(self, **kwargs) -> None:
@@ -67,14 +85,14 @@ class _FakeStreamlit:
     def warning(self, *args, **kwargs) -> None:
         return None
 
-    def info(self, *args, **kwargs) -> None:
-        return None
+    def info(self, message: str, *args, **kwargs) -> None:
+        self.infos.append(message)
 
-    def markdown(self, *args, **kwargs) -> None:
-        return None
+    def markdown(self, message: str, *args, **kwargs) -> None:
+        self.markdowns.append(message)
 
-    def table(self, *args, **kwargs) -> None:
-        return None
+    def table(self, data, *args, **kwargs) -> None:
+        self.tables.append(data)
 
     def metric(self, *args, **kwargs) -> None:
         return None
@@ -82,8 +100,10 @@ class _FakeStreamlit:
     def columns(self, count: int):
         return [self for _ in range(count)]
 
-    def selectbox(self, *args, **kwargs):
-        return "Selecione um item"
+    def selectbox(self, label, options=None, *args, **kwargs):
+        if label == "Corrigir item selecionado" and self.selected_label is not None:
+            return self.selected_label
+        return self.selectboxes.get(label, options[0] if options else "Selecione um item")
 
     def form(self, *args, **kwargs):
         class _FormContext:
@@ -96,7 +116,13 @@ class _FakeStreamlit:
         return _FormContext()
 
     def form_submit_button(self, *args, **kwargs):
-        return False
+        return self.form_submit_result
+
+    def text_input(self, label, value="", *args, **kwargs):
+        return self.text_inputs.get(label, value)
+
+    def checkbox(self, label, value=False, *args, **kwargs):
+        return self.checkboxes.get(label, value)
 
     def file_uploader(self, *args, **kwargs):
         return self.uploaded_workbook
@@ -336,6 +362,15 @@ def _persist_column_profile_pending_for_action(paths, pending: DashboardPendingI
         }
     )
     write_dashboard_state(paths.state_path, updated_state)
+
+
+def _fake_dashboard_result(*, paths, pendings: list[DashboardPendingItem]):
+    return SimpleNamespace(
+        paths=paths,
+        pendings=pendings,
+        state=SimpleNamespace(actions=[]),
+        summary=SimpleNamespace(),
+    )
 
 
 def test_txt_download_enabled_requires_success_and_serialized_lines() -> None:
@@ -947,6 +982,173 @@ def test_dashboard_main_continues_normal_flow_when_run_root_exists(tmp_path: Pat
 
     assert called == {"load": 1, "summary": 1, "pendings": 1, "history": 1, "downloads": 1}
     assert fake_st.errors == []
+
+
+def test_render_pendings_displays_operational_columns(tmp_path: Path) -> None:
+    module = _load_dashboard_v1_module()
+    fake_st = _FakeStreamlit()
+    module.st = fake_st
+    workbook_path, config_path = _prepare_workbook_and_config(tmp_path)
+    paths = create_dashboard_run_from_paths(workbook_path, config_path, runs_root=tmp_path / "runs")
+    pending = _event_mapping_pending()
+
+    module._render_pendings(_fake_dashboard_result(paths=paths, pendings=[pending]))
+
+    assert fake_st.tables
+    assert fake_st.tables[0][0]["Severidade"] == "bloqueante"
+    assert fake_st.tables[0][0]["Etapa"] == "mapeamento"
+    assert fake_st.tables[0][0]["Codigo"] == "mapeamento_evento_ausente"
+    assert fake_st.tables[0][0]["Evento"] == "horas_extras_50"
+
+
+def test_render_pendings_employee_form_calls_manual_action_and_reprocesses(tmp_path: Path) -> None:
+    module = _load_dashboard_v1_module()
+    workbook_path, config_path = _prepare_workbook_and_config(tmp_path)
+    paths = create_dashboard_run_from_paths(workbook_path, config_path, runs_root=tmp_path / "runs")
+    pending = _employee_mapping_pending()
+    fake_st = _FakeStreamlit(
+        selected_label=pending.selection_label(),
+        form_submit_result=True,
+        text_inputs={"Matricula Dominio corrigida": "456"},
+        checkboxes={"Salvar no cadastro da empresa para proximas importacoes": True},
+    )
+    module.st = fake_st
+    calls: dict[str, object] = {}
+
+    def _apply_dashboard_action(*args, **kwargs):
+        calls["action"] = kwargs
+
+    def _run_dashboard_analysis(paths_arg):
+        calls["run"] = paths_arg
+
+    module.apply_dashboard_action = _apply_dashboard_action
+    module.run_dashboard_analysis = _run_dashboard_analysis
+
+    module._render_pendings(_fake_dashboard_result(paths=paths, pendings=[pending]))
+
+    assert calls["action"]["action_type"] == DashboardActionType.EMPLOYEE_MAPPING_UPDATE
+    assert calls["action"]["pending_uid"] == pending.uid
+    assert calls["action"]["payload"] == {
+        "domain_registration": "456",
+        "persist_to_employee_registry": True,
+    }
+    assert calls["run"] == paths
+    assert fake_st.rerun_called is True
+
+
+def test_render_pendings_rubric_form_calls_manual_action_with_explicit_persistence(tmp_path: Path) -> None:
+    module = _load_dashboard_v1_module()
+    workbook_path, config_path = _prepare_workbook_and_config(tmp_path)
+    paths = create_dashboard_run_from_paths(workbook_path, config_path, runs_root=tmp_path / "runs")
+    pending = _event_mapping_pending()
+    fake_st = _FakeStreamlit(
+        selected_label=pending.selection_label(),
+        form_submit_result=True,
+        text_inputs={
+            "Rubrica de saida corrigida": "350",
+            "Descricao da rubrica": "HORAS EXTRAS 50%",
+            "Evento canonico": "horas_extras_50",
+        },
+        checkboxes={"Salvar no catalogo de rubricas da empresa para proximas importacoes": True},
+        selectboxes={"Tipo do valor": "horas", "Natureza": "provento"},
+    )
+    module.st = fake_st
+    calls: dict[str, object] = {}
+    module.apply_dashboard_action = lambda *args, **kwargs: calls.setdefault("action", kwargs)
+    module.run_dashboard_analysis = lambda paths_arg: calls.setdefault("run", paths_arg)
+
+    module._render_pendings(_fake_dashboard_result(paths=paths, pendings=[pending]))
+
+    assert calls["action"]["action_type"] == DashboardActionType.EVENT_MAPPING_UPDATE
+    assert calls["action"]["payload"] == {
+        "output_rubric": "350",
+        "persist_to_rubric_catalog": True,
+        "description": "HORAS EXTRAS 50%",
+        "value_kind": "horas",
+        "canonical_event": "horas_extras_50",
+        "nature": "provento",
+    }
+    assert calls["run"] == paths
+
+
+def test_render_pendings_column_profile_ignore_does_not_send_rubric(tmp_path: Path) -> None:
+    module = _load_dashboard_v1_module()
+    workbook_path, config_path = _prepare_workbook_and_config(tmp_path)
+    paths = create_dashboard_run_from_paths(workbook_path, config_path, runs_root=tmp_path / "runs")
+    pending = _column_profile_pending()
+    fake_st = _FakeStreamlit(
+        selected_label=pending.selection_label(),
+        form_submit_result=True,
+        text_inputs={"Coluna": "EXTRA 100%"},
+        selectboxes={
+            "Modo de geracao": "ignore",
+            "Tipo do valor da coluna": "monetario",
+        },
+    )
+    module.st = fake_st
+    calls: dict[str, object] = {}
+    module.apply_dashboard_action = lambda *args, **kwargs: calls.setdefault("action", kwargs)
+    module.run_dashboard_analysis = lambda paths_arg: calls.setdefault("run", paths_arg)
+
+    module._render_pendings(_fake_dashboard_result(paths=paths, pendings=[pending]))
+
+    assert calls["action"]["action_type"] == DashboardActionType.COLUMN_MAPPING_PROFILE_UPDATE
+    assert calls["action"]["payload"] == {
+        "column_name": "EXTRA 100%",
+        "value_kind": "monetario",
+        "generation_mode": "ignore",
+        "ignore_zero": True,
+        "ignore_text": True,
+    }
+    assert "rubrica_target" not in calls["action"]["payload"]
+    assert "rubricas_target" not in calls["action"]["payload"]
+    assert calls["run"] == paths
+
+
+def test_render_pendings_ignore_button_calls_manual_action_and_reprocesses(tmp_path: Path) -> None:
+    module = _load_dashboard_v1_module()
+    workbook_path, config_path = _prepare_workbook_and_config(tmp_path)
+    paths = create_dashboard_run_from_paths(workbook_path, config_path, runs_root=tmp_path / "runs")
+    pending = _event_mapping_pending()
+    fake_st = _FakeStreamlit(
+        selected_label=pending.selection_label(),
+        form_submit_result=False,
+        button_result=True,
+    )
+    module.st = fake_st
+    calls: dict[str, object] = {}
+    module.apply_dashboard_action = lambda *args, **kwargs: calls.setdefault("action", kwargs)
+    module.run_dashboard_analysis = lambda paths_arg: calls.setdefault("run", paths_arg)
+
+    module._render_pendings(_fake_dashboard_result(paths=paths, pendings=[pending]))
+
+    assert calls["action"]["action_type"] == DashboardActionType.IGNORE_PENDING
+    assert calls["action"]["pending_uid"] == pending.uid
+    assert calls["run"] == paths
+
+
+def test_render_pendings_shows_backend_error_without_masking(tmp_path: Path) -> None:
+    module = _load_dashboard_v1_module()
+    workbook_path, config_path = _prepare_workbook_and_config(tmp_path)
+    paths = create_dashboard_run_from_paths(workbook_path, config_path, runs_root=tmp_path / "runs")
+    pending = _employee_mapping_pending()
+    fake_st = _FakeStreamlit(
+        selected_label=pending.selection_label(),
+        form_submit_result=True,
+        text_inputs={"Matricula Dominio corrigida": "456"},
+    )
+    module.st = fake_st
+
+    def _raise_backend_error(*args, **kwargs):
+        raise RuntimeError("falha backend")
+
+    module.apply_dashboard_action = _raise_backend_error
+    module.run_dashboard_analysis = lambda paths_arg: None
+
+    module._render_pendings(_fake_dashboard_result(paths=paths, pendings=[pending]))
+
+    assert fake_st.session_state[module.ERROR_KEY] == "Falha ao salvar a matricula: falha backend"
+    assert fake_st.rerun_called is True
 
 
 def test_config_resolver_prefers_specific_company_competence(tmp_path: Path) -> None:

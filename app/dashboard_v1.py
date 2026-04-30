@@ -3,19 +3,25 @@ from __future__ import annotations
 import streamlit as st
 
 from dashboard import (
+    DashboardActionType,
+    apply_dashboard_action,
     apply_workbook_cell_correction,
     build_dashboard_paths,
     create_dashboard_run_from_uploads,
-    ignore_pending_for_import,
     load_dashboard_run,
     run_dashboard_analysis,
-    upsert_employee_mapping_override,
-    upsert_event_mapping_override,
 )
 
 
 RUN_ROOT_KEY = "dashboard_v1_run_root"
 ERROR_KEY = "dashboard_v1_last_error"
+COLUMN_MAPPING_PROFILE_CODES = {
+    "column_mapping_profile_missing",
+    "column_mapping_profile_incomplete",
+}
+VALUE_KIND_OPTIONS = ("monetario", "horas", "quantidade")
+GENERATION_MODE_OPTIONS = ("single_line", "multi_line", "ignore")
+RUBRIC_NATURE_OPTIONS = ("unknown", "provento", "desconto", "informativo")
 
 
 def main() -> None:
@@ -133,7 +139,7 @@ def _render_pendings(result) -> None:
         st.success("Nenhuma pendencia operacional aberta neste momento.")
         return
 
-    st.table([item.table_row() for item in result.pendings])
+    st.table([_pending_table_row(item) for item in result.pendings])
 
     pending_map = {item.selection_label(): item for item in result.pendings}
     selected_label = st.selectbox(
@@ -147,6 +153,11 @@ def _render_pendings(result) -> None:
     st.markdown(f"**Problema:** {pending.problem}")
     st.markdown(f"**O que fazer:** {pending.recommended_action}")
     st.markdown(f"**Valor atual:** {pending.found_value or 'em branco'}")
+    st.markdown(f"**Codigo:** `{pending.code}`")
+    st.markdown(f"**Etapa:** `{pending.stage}`")
+    st.markdown(f"**Funcionario:** {pending.employee_name or pending.employee_key or '-'}")
+    st.markdown(f"**Evento:** {pending.event_name or '-'}")
+    st.markdown(f"**Coluna:** {pending.source_column_name or '-'}")
 
     if pending.can_edit_workbook:
         with st.form(f"corrigir-workbook-{pending.uid}"):
@@ -178,15 +189,23 @@ def _render_pendings(result) -> None:
                 "Matricula Dominio corrigida",
                 value="" if pending.found_value in {None, "sem cadastro", "em branco"} else pending.found_value,
             )
+            persist_to_employee_registry = st.checkbox(
+                "Salvar no cadastro da empresa para proximas importacoes",
+                value=False,
+            )
             submitted = st.form_submit_button("Salvar matricula")
             if submitted:
                 try:
-                    upsert_employee_mapping_override(
+                    if not domain_registration.strip():
+                        raise ValueError("Informe a matricula/codigo Dominio.")
+                    apply_dashboard_action(
                         result.paths,
-                        employee_key=pending.employee_key or "",
-                        employee_name=pending.employee_name,
-                        domain_registration=domain_registration,
+                        action_type=DashboardActionType.EMPLOYEE_MAPPING_UPDATE,
                         pending_uid=pending.uid,
+                        payload={
+                            "domain_registration": domain_registration,
+                            "persist_to_employee_registry": persist_to_employee_registry,
+                        },
                     )
                     run_dashboard_analysis(result.paths)
                     st.session_state[ERROR_KEY] = None
@@ -201,14 +220,41 @@ def _render_pendings(result) -> None:
                 "Rubrica de saida corrigida",
                 value="" if pending.found_value in {None, "sem rubrica", "em branco"} else pending.found_value,
             )
+            persist_to_rubric_catalog = st.checkbox(
+                "Salvar no catalogo de rubricas da empresa para proximas importacoes",
+                value=False,
+            )
+            description = st.text_input("Descricao da rubrica", value="")
+            value_kind = st.selectbox("Tipo do valor", options=VALUE_KIND_OPTIONS)
+            canonical_event = st.text_input("Evento canonico", value=pending.event_name or "")
+            nature = st.selectbox("Natureza", options=RUBRIC_NATURE_OPTIONS)
             submitted = st.form_submit_button("Salvar rubrica")
             if submitted:
                 try:
-                    upsert_event_mapping_override(
+                    if not output_rubric.strip():
+                        raise ValueError("Informe a rubrica de saida.")
+                    payload = {
+                        "output_rubric": output_rubric,
+                        "persist_to_rubric_catalog": persist_to_rubric_catalog,
+                    }
+                    if persist_to_rubric_catalog:
+                        if not description.strip():
+                            raise ValueError("Informe a descricao da rubrica para salvar no catalogo.")
+                        if not value_kind:
+                            raise ValueError("Informe o tipo do valor para salvar no catalogo.")
+                        payload.update(
+                            {
+                                "description": description,
+                                "value_kind": value_kind,
+                                "canonical_event": canonical_event,
+                                "nature": nature,
+                            }
+                        )
+                    apply_dashboard_action(
                         result.paths,
-                        event_name=pending.event_name or "",
-                        output_rubric=output_rubric,
+                        action_type=DashboardActionType.EVENT_MAPPING_UPDATE,
                         pending_uid=pending.uid,
+                        payload=payload,
                     )
                     run_dashboard_analysis(result.paths)
                     st.session_state[ERROR_KEY] = None
@@ -217,13 +263,57 @@ def _render_pendings(result) -> None:
                     st.session_state[ERROR_KEY] = f"Falha ao salvar a rubrica: {exc}"
                     st.rerun()
 
+    if _can_edit_column_profile(pending):
+        with st.form(f"corrigir-perfil-coluna-{pending.uid}"):
+            column_name = st.text_input("Coluna", value=pending.source_column_name or "")
+            generation_mode = st.selectbox("Modo de geracao", options=GENERATION_MODE_OPTIONS)
+            value_kind = st.selectbox("Tipo do valor da coluna", options=VALUE_KIND_OPTIONS)
+            rubrica_target = ""
+            rubricas_target = ""
+            if generation_mode == "single_line":
+                rubrica_target = st.text_input("Rubrica unica", value="")
+            elif generation_mode == "multi_line":
+                rubricas_target = st.text_input("Rubricas multiplas separadas por virgula", value="")
+            else:
+                st.info("Coluna ignorada nao envia rubrica e nao cria lancamento.")
+            ignore_zero = st.checkbox("Ignorar valores zerados", value=True)
+            ignore_text = st.checkbox("Ignorar textos sem valor numerico", value=True)
+            submitted = st.form_submit_button("Salvar regra da coluna")
+            if submitted:
+                try:
+                    payload = _build_column_profile_payload(
+                        column_name=column_name,
+                        generation_mode=generation_mode,
+                        value_kind=value_kind,
+                        rubrica_target=rubrica_target,
+                        rubricas_target=rubricas_target,
+                        ignore_zero=ignore_zero,
+                        ignore_text=ignore_text,
+                    )
+                    apply_dashboard_action(
+                        result.paths,
+                        action_type=DashboardActionType.COLUMN_MAPPING_PROFILE_UPDATE,
+                        pending_uid=pending.uid,
+                        payload=payload,
+                    )
+                    run_dashboard_analysis(result.paths)
+                    st.session_state[ERROR_KEY] = None
+                    st.rerun()
+                except Exception as exc:  # pragma: no cover - visual feedback path
+                    st.session_state[ERROR_KEY] = f"Falha ao salvar a regra da coluna: {exc}"
+                    st.rerun()
+
     if pending.can_ignore:
         st.info(
             f"Opcao disponivel: **{pending.ignore_label}**. O dado original fica preservado na origem do caso e o ignorar vale apenas para esta execucao local."
         )
         if st.button("Ignorar nesta importacao", key=f"ignorar-{pending.uid}"):
             try:
-                ignore_pending_for_import(result.paths, pending)
+                apply_dashboard_action(
+                    result.paths,
+                    action_type=DashboardActionType.IGNORE_PENDING,
+                    pending_uid=pending.uid,
+                )
                 run_dashboard_analysis(result.paths)
                 st.session_state[ERROR_KEY] = None
                 st.rerun()
@@ -236,12 +326,66 @@ def _render_pendings(result) -> None:
             pending.can_edit_workbook,
             pending.can_edit_employee_mapping,
             pending.can_edit_event_mapping,
+            _can_edit_column_profile(pending),
             pending.can_ignore,
         ]
     ):
         st.info(
             "Este item nao tem correcao guiada neste MVP. Ajuste a origem correspondente e rode a analise novamente."
         )
+
+
+def _can_edit_column_profile(pending) -> bool:
+    return pending.stage == "perfil_colunas" and pending.code in COLUMN_MAPPING_PROFILE_CODES
+
+
+def _pending_table_row(pending) -> dict[str, str]:
+    return {
+        "Severidade": pending.severity,
+        "Etapa": pending.stage,
+        "Codigo": pending.code,
+        "Funcionario": pending.employee_name or pending.employee_key or "-",
+        "Evento": pending.event_name or "-",
+        "Coluna": pending.source_column_name or "-",
+        "Problema": pending.problem,
+        "Acao recomendada": pending.recommended_action,
+    }
+
+
+def _build_column_profile_payload(
+    *,
+    column_name: str,
+    generation_mode: str,
+    value_kind: str,
+    rubrica_target: str,
+    rubricas_target: str,
+    ignore_zero: bool,
+    ignore_text: bool,
+) -> dict:
+    column_name = column_name.strip()
+    if not column_name:
+        raise ValueError("Informe a coluna do perfil.")
+    payload = {
+        "column_name": column_name,
+        "value_kind": value_kind,
+        "generation_mode": generation_mode,
+        "ignore_zero": ignore_zero,
+        "ignore_text": ignore_text,
+    }
+    if generation_mode == "single_line":
+        if not rubrica_target.strip():
+            raise ValueError("Informe a rubrica unica para a regra single_line.")
+        payload["rubrica_target"] = rubrica_target.strip()
+    elif generation_mode == "multi_line":
+        targets = [item.strip() for item in rubricas_target.split(",") if item.strip()]
+        if len(targets) < 2:
+            raise ValueError("Informe pelo menos duas rubricas para a regra multi_line.")
+        payload["rubricas_target"] = targets
+    elif generation_mode == "ignore":
+        pass
+    else:
+        raise ValueError(f"Modo de geracao nao suportado: {generation_mode}.")
+    return payload
 
 
 def _render_actions_history(result) -> None:
