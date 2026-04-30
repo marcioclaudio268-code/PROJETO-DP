@@ -1,0 +1,153 @@
+{
+  "company_code": "528",
+  "company_name": "FRIED FISH VILAREJO",
+  "default_process": "11",
+  "mappings": [
+    {
+      "column_key": null,
+      "column_name": "H. EXTRA 50% COD.150",
+      "enabled": false,
+      "generation_mode": "ignore",
+      "ignore_text": true,
+      "ignore_zero": true,
+      "notes": "Ignorado por regra exclusiva da empresa 528; coluna 3 da aba abril 26.",
+      "rubrica_target": null,
+      "rubricas_target": [],
+      "value_kind": "horas"
+    },
+    {
+      "column_key": null,
+      "column_name": "H. EXTRA 100% COD.200  FERIADO",
+      "enabled": true,
+      "generation_mode": "single_line",
+      "ignore_text": true,
+      "ignore_zero": true,
+      "notes": "Coluna D: 8=>08:00 e 16=>16:00; nao multiplicar por 8.",
+      "rubrica_target": "200",
+      "rubricas_target": [],
+      "value_kind": "horas"
+    },
+    {
+      "column_key": null,
+      "column_name": "AD. NOTURNO COD.25",
+      "enabled": false,
+      "generation_mode": "ignore",
+      "ignore_text": true,
+      "ignore_zero": true,
+      "notes": "Ignorado por regra exclusiva da empresa 528; coluna 5 da aba abril 26.",
+      "rubrica_target": null,
+      "rubricas_target": [],
+      "value_kind": "horas"
+    },
+    {
+      "column_key": null,
+      "column_name": "GORJETA COD.237",
+      "enabled": false,
+      "generation_mode": "ignore",
+      "ignore_text": true,
+      "ignore_zero": true,
+      "notes": "Ignorado por regra exclusiva da empresa 528; coluna 6 da aba abril 26.",
+      "rubrica_target": null,
+      "rubricas_target": [],
+      "value_kind": "monetario"
+    },
+    {
+      "column_key": null,
+      "column_name": "ADIANTAMENTO COD. 981",
+      "enabled": false,
+      "generation_mode": "ignore",
+      "ignore_text": true,
+      "ignore_zero": true,
+      "notes": "Ignorado por regra exclusiva da empresa 528; coluna 7 da aba abril 26.",
+      "rubrica_target": null,
+      "rubricas_target": [],
+      "value_kind": "monetario"
+    },
+    {
+      "column_key": null,
+      "column_name": "FALTAS             COD. 8792",
+      "enabled": true,
+      "generation_mode": "single_line",
+      "ignore_text": true,
+      "ignore_zero": true,
+      "notes": "Coluna H: cada valor preenchido representa 1 dia de falta.",
+      "rubrica_target": "8792",
+      "rubricas_target": [],
+      "value_kind": "quantidade"
+    },
+    {
+      "column_key": null,
+      "column_name": "DSR DE FALTA COD. 8794",
+      "enabled": true,
+      "generation_mode": "single_line",
+      "ignore_text": true,
+      "ignore_zero": true,
+      "notes": "Coluna I: cada valor preenchido representa 1 dia de DSR de falta.",
+      "rubrica_target": "8794",
+      "rubricas_target": [],
+      "value_kind": "quantidade"
+    },
+    {
+      "column_key": null,
+      "column_name": "ATRASOS       COD. 8069",
+      "enabled": false,
+      "generation_mode": "ignore",
+      "ignore_text": true,
+      "ignore_zero": true,
+      "notes": "Ignorado por regra exclusiva da empresa 528; coluna 10 da aba abril 26.",
+      "rubrica_target": null,
+      "rubricas_target": [],
+      "value_kind": "horas"
+    },
+    {
+      "column_key": null,
+      "column_name": "CONSUMO              COD. 266",
+      "enabled": true,
+      "generation_mode": "single_line",
+      "ignore_text": true,
+      "ignore_zero": true,
+      "notes": "Coluna K: valor monetario de consumo/mercadoria.",
+      "rubrica_target": "266",
+      "rubricas_target": [],
+      "value_kind": "monetario"
+    },
+    {
+      "column_key": null,
+      "column_name": "VALE TRANSPORTE COD. 48",
+      "enabled": false,
+      "generation_mode": "ignore",
+      "ignore_text": true,
+      "ignore_zero": true,
+      "notes": "Ignorado por regra exclusiva da empresa 528; coluna 12 da aba abril 26.",
+      "rubrica_target": null,
+      "rubricas_target": [],
+      "value_kind": "monetario"
+    },
+    {
+      "column_key": null,
+      "column_name": "PLANO ODONT.                               COD. 222",
+      "enabled": false,
+      "generation_mode": "ignore",
+      "ignore_text": true,
+      "ignore_zero": true,
+      "notes": "Ignorado por regra exclusiva da empresa 528; coluna 13 da aba abril 26.",
+      "rubrica_target": null,
+      "rubricas_target": [],
+      "value_kind": "monetario"
+    },
+    {
+      "column_key": null,
+      "column_name": "OBSERVA\u00c7\u00d5ES dias das faltas",
+      "enabled": false,
+      "generation_mode": "ignore",
+      "ignore_text": true,
+      "ignore_zero": true,
+      "notes": "Ignorado por regra exclusiva da empresa 528; coluna 14 da aba abril 26.",
+      "rubrica_target": null,
+      "rubricas_target": [],
+      "value_kind": "monetario"
+    }
+  ],
+  "notes": "Perfil exclusivo gerado a partir de PLANILHA FOLHA PAGTO 26 corr.xlsx, aba abril 26. Nao herda configuracoes de outras empresas.",
+  "profile_version": "column-mapping-v1"
+}

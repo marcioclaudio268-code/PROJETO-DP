@@ -9001,26 +9001,247 @@
     "competence_start": "04/2026",
     "config_payload_internal": {
       "company_code": "528",
-      "company_name": "FRIED FISH VILAREJO RESTAURANTE BAURU",
+      "company_name": "FRIED FISH VILAREJO",
       "competence": "04/2026",
       "config_version": "seed-v1-04-2026",
       "default_process": "11",
-      "employee_mappings": [],
-      "event_mappings": [
+      "employee_mappings": [
         {
           "active": true,
-          "event_negocio": "gratificacao",
-          "notes": null,
-          "rubrica_saida": "201"
+          "aliases": [],
+          "domain_registration": "1298",
+          "notes": "source=PLANILHA FOLHA PAGTO 26 corr.xlsx; sheet=abril 26; row=5",
+          "source_employee_key": "1298",
+          "source_employee_name": "ALYSON"
         },
         {
           "active": true,
-          "event_negocio": "horas_extras_50",
-          "notes": null,
-          "rubrica_saida": "350"
+          "aliases": [],
+          "domain_registration": "1286",
+          "notes": "source=PLANILHA FOLHA PAGTO 26 corr.xlsx; sheet=abril 26; row=6",
+          "source_employee_key": "1286",
+          "source_employee_name": "Anderson"
+        },
+        {
+          "active": true,
+          "aliases": [],
+          "domain_registration": "1299",
+          "notes": "source=PLANILHA FOLHA PAGTO 26 corr.xlsx; sheet=abril 26; row=7",
+          "source_employee_key": "1299",
+          "source_employee_name": "Andre"
+        },
+        {
+          "active": true,
+          "aliases": [],
+          "domain_registration": "394",
+          "notes": "source=PLANILHA FOLHA PAGTO 26 corr.xlsx; sheet=abril 26; row=8",
+          "source_employee_key": "394",
+          "source_employee_name": "Bianca"
+        },
+        {
+          "active": true,
+          "aliases": [],
+          "domain_registration": "301",
+          "notes": "source=PLANILHA FOLHA PAGTO 26 corr.xlsx; sheet=abril 26; row=9",
+          "source_employee_key": "301",
+          "source_employee_name": "Daniel"
+        },
+        {
+          "active": true,
+          "aliases": [],
+          "domain_registration": "390",
+          "notes": "source=PLANILHA FOLHA PAGTO 26 corr.xlsx; sheet=abril 26; row=10",
+          "source_employee_key": "390",
+          "source_employee_name": "Danieli bar"
+        },
+        {
+          "active": true,
+          "aliases": [],
+          "domain_registration": "1291",
+          "notes": "source=PLANILHA FOLHA PAGTO 26 corr.xlsx; sheet=abril 26; row=11",
+          "source_employee_key": "1291",
+          "source_employee_name": "Danilo Bar"
+        },
+        {
+          "active": true,
+          "aliases": [],
+          "domain_registration": "1283",
+          "notes": "source=PLANILHA FOLHA PAGTO 26 corr.xlsx; sheet=abril 26; row=12",
+          "source_employee_key": "1283",
+          "source_employee_name": "Debora"
+        },
+        {
+          "active": true,
+          "aliases": [],
+          "domain_registration": "114",
+          "notes": "source=PLANILHA FOLHA PAGTO 26 corr.xlsx; sheet=abril 26; row=13",
+          "source_employee_key": "114",
+          "source_employee_name": "Edson"
+        },
+        {
+          "active": true,
+          "aliases": [],
+          "domain_registration": "323",
+          "notes": "source=PLANILHA FOLHA PAGTO 26 corr.xlsx; sheet=abril 26; row=14",
+          "source_employee_key": "323",
+          "source_employee_name": "Flavio"
+        },
+        {
+          "active": true,
+          "aliases": [],
+          "domain_registration": "1290",
+          "notes": "source=PLANILHA FOLHA PAGTO 26 corr.xlsx; sheet=abril 26; row=15",
+          "source_employee_key": "1290",
+          "source_employee_name": "Ivanir"
+        },
+        {
+          "active": true,
+          "aliases": [],
+          "domain_registration": "1295",
+          "notes": "source=PLANILHA FOLHA PAGTO 26 corr.xlsx; sheet=abril 26; row=16",
+          "source_employee_key": "1295",
+          "source_employee_name": "Gabriela"
+        },
+        {
+          "active": true,
+          "aliases": [],
+          "domain_registration": "1300",
+          "notes": "source=PLANILHA FOLHA PAGTO 26 corr.xlsx; sheet=abril 26; row=17",
+          "source_employee_key": "1300",
+          "source_employee_name": "Giovani"
+        },
+        {
+          "active": true,
+          "aliases": [],
+          "domain_registration": "254",
+          "notes": "source=PLANILHA FOLHA PAGTO 26 corr.xlsx; sheet=abril 26; row=18",
+          "source_employee_key": "254",
+          "source_employee_name": "Ivonete"
+        },
+        {
+          "active": true,
+          "aliases": [],
+          "domain_registration": "1282",
+          "notes": "source=PLANILHA FOLHA PAGTO 26 corr.xlsx; sheet=abril 26; row=19",
+          "source_employee_key": "1282",
+          "source_employee_name": "Leandro"
+        },
+        {
+          "active": true,
+          "aliases": [],
+          "domain_registration": "1237",
+          "notes": "source=PLANILHA FOLHA PAGTO 26 corr.xlsx; sheet=abril 26; row=20",
+          "source_employee_key": "1237",
+          "source_employee_name": "Lidia"
+        },
+        {
+          "active": true,
+          "aliases": [],
+          "domain_registration": "136",
+          "notes": "source=PLANILHA FOLHA PAGTO 26 corr.xlsx; sheet=abril 26; row=21",
+          "source_employee_key": "136",
+          "source_employee_name": "Fatima"
+        },
+        {
+          "active": true,
+          "aliases": [],
+          "domain_registration": "1301",
+          "notes": "source=PLANILHA FOLHA PAGTO 26 corr.xlsx; sheet=abril 26; row=22",
+          "source_employee_key": "1301",
+          "source_employee_name": "Maikon"
+        },
+        {
+          "active": true,
+          "aliases": [],
+          "domain_registration": "1294",
+          "notes": "source=PLANILHA FOLHA PAGTO 26 corr.xlsx; sheet=abril 26; row=23",
+          "source_employee_key": "1294",
+          "source_employee_name": "Mauricio"
+        },
+        {
+          "active": true,
+          "aliases": [],
+          "domain_registration": "385",
+          "notes": "source=PLANILHA FOLHA PAGTO 26 corr.xlsx; sheet=abril 26; row=24",
+          "source_employee_key": "385",
+          "source_employee_name": "Menzaque"
+        },
+        {
+          "active": true,
+          "aliases": [],
+          "domain_registration": "1236",
+          "notes": "source=PLANILHA FOLHA PAGTO 26 corr.xlsx; sheet=abril 26; row=25",
+          "source_employee_key": "1236",
+          "source_employee_name": "Paula"
+        },
+        {
+          "active": true,
+          "aliases": [],
+          "domain_registration": "1264",
+          "notes": "source=PLANILHA FOLHA PAGTO 26 corr.xlsx; sheet=abril 26; row=26",
+          "source_employee_key": "1264",
+          "source_employee_name": "Rafaela"
+        },
+        {
+          "active": true,
+          "aliases": [],
+          "domain_registration": "1297",
+          "notes": "source=PLANILHA FOLHA PAGTO 26 corr.xlsx; sheet=abril 26; row=27",
+          "source_employee_key": "1297",
+          "source_employee_name": "SIMONE"
+        },
+        {
+          "active": true,
+          "aliases": [],
+          "domain_registration": "190",
+          "notes": "source=PLANILHA FOLHA PAGTO 26 corr.xlsx; sheet=abril 26; row=28",
+          "source_employee_key": "190",
+          "source_employee_name": "Tabata"
+        },
+        {
+          "active": true,
+          "aliases": [],
+          "domain_registration": "1296",
+          "notes": "source=PLANILHA FOLHA PAGTO 26 corr.xlsx; sheet=abril 26; row=29",
+          "source_employee_key": "1296",
+          "source_employee_name": "TAMIRES"
+        },
+        {
+          "active": true,
+          "aliases": [],
+          "domain_registration": "351",
+          "notes": "source=PLANILHA FOLHA PAGTO 26 corr.xlsx; sheet=abril 26; row=30",
+          "source_employee_key": "351",
+          "source_employee_name": "Veronica"
         }
       ],
-      "notes": "Seed em lote da Fase 3B. default_process=11. competence=04/2026.",
+      "event_mappings": [
+        {
+          "active": true,
+          "event_negocio": "horas_extras_100",
+          "notes": "Empresa 528: coluna D da aba abril 26.",
+          "rubrica_saida": "0200"
+        },
+        {
+          "active": true,
+          "event_negocio": "faltas_dias",
+          "notes": "Empresa 528: coluna H da aba abril 26.",
+          "rubrica_saida": "8792"
+        },
+        {
+          "active": true,
+          "event_negocio": "faltas_dsr",
+          "notes": "Empresa 528: coluna I da aba abril 26.",
+          "rubrica_saida": "8794"
+        },
+        {
+          "active": true,
+          "event_negocio": "mercadoria",
+          "notes": "Empresa 528: coluna K da aba abril 26.",
+          "rubrica_saida": "0266"
+        }
+      ],
+      "notes": "Config exclusiva da empresa 528 ajustada pela planilha PLANILHA FOLHA PAGTO 26 corr.xlsx, aba abril 26. default_process=11. Nao herda empresa 72 ou outros perfis.",
       "pending_policy": {
         "block_on_ambiguous_observations": true,
         "block_on_unmapped_employee": true,
@@ -9034,8 +9255,8 @@
     "created_at": "2026-04-22T20:08:21.210806Z",
     "id": "config:company:528:seed-v1-04-2026",
     "status": "active",
-    "updated_at": "2026-04-23T11:35:56.788835Z",
-    "validated_at": "2026-04-23T11:35:56.788835Z",
+    "updated_at": "2026-04-30T18:23:41.968618Z",
+    "validated_at": "2026-04-30T18:23:41.968618Z",
     "version": "seed-v1-04-2026"
   },
   {

@@ -87,6 +87,11 @@ IDENTITY_COLUMN_TOKENS = {
     "registro",
     "registro dominio",
 }
+FALLBACK_IDENTITY_COLUMN_TOKENS = {
+    "cod",
+    "codigo",
+    "codigo dominio",
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -345,7 +350,17 @@ def is_profile_identity_column(column: InputColumnMetadata) -> bool:
 def _find_domain_registration_column(
     columns: tuple[InputColumnMetadata, ...],
 ) -> InputColumnMetadata | None:
-    return next((column for column in columns if is_profile_identity_column(column)), None)
+    explicit_column = next((column for column in columns if is_profile_identity_column(column)), None)
+    if explicit_column is not None:
+        return explicit_column
+    return next(
+        (
+            column
+            for column in columns
+            if _normalize_token(column.column_name) in FALLBACK_IDENTITY_COLUMN_TOKENS
+        ),
+        None,
+    )
 
 
 def _parse_profile_value(
