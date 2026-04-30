@@ -11,6 +11,7 @@ from dashboard import (
     load_dashboard_run,
     run_dashboard_analysis,
 )
+from dashboard.txt_audit import build_txt_audit
 
 
 RUN_ROOT_KEY = "dashboard_v1_run_root"
@@ -53,6 +54,7 @@ def main() -> None:
         return
 
     _render_summary(result)
+    _render_txt_audit(result)
     _render_pendings(result)
     _render_actions_history(result)
     _render_downloads(result)
@@ -131,6 +133,77 @@ def _render_summary(result) -> None:
         except Exception as exc:  # pragma: no cover - visual feedback path
             st.session_state[ERROR_KEY] = f"Falha ao reprocessar a analise: {exc}"
             st.rerun()
+
+
+def _render_txt_audit(result) -> None:
+    if not result.paths.txt_path.exists() or result.summary.serialized_line_count == 0:
+        return
+
+    st.subheader("Auditoria visual do TXT")
+    try:
+        audit = build_txt_audit(result)
+    except Exception as exc:  # pragma: no cover - defensive visual path
+        st.warning(f"Nao foi possivel montar a auditoria visual do TXT: {exc}")
+        return
+
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Linhas do TXT", audit.summary.total_lines)
+    col2.metric("Empresa", result.summary.company_code)
+    col3.metric(
+        "Processo",
+        ", ".join(audit.summary.process_codes) if audit.summary.process_codes else "-",
+    )
+    col4.metric("Competencia", audit.summary.competence)
+
+    if audit.summary.rubric_totals:
+        st.markdown("**Rubricas lancadas**")
+        st.table(
+            [
+                {
+                    "Rubrica": item.rubric,
+                    "Rubrica TXT": item.rubric_raw,
+                    "Linhas": item.line_count,
+                    "Tipo": item.value_type,
+                    "Total": item.display_total,
+                }
+                for item in audit.summary.rubric_totals
+            ]
+        )
+
+    if audit.employee_rows:
+        st.markdown("**Auditoria por funcionario**")
+        st.table(
+            [
+                {
+                    "Linha TXT": row.line_number,
+                    "Matricula": row.domain_registration,
+                    "Nome": row.employee_name or "-",
+                    "Rubrica": row.rubric,
+                    "Descricao": row.description,
+                    "Valor/quantidade": row.launched_value,
+                    "Status": row.check_status,
+                }
+                for row in audit.employee_rows
+            ]
+        )
+
+    if audit.divergences:
+        st.warning("Divergencias encontradas na auditoria visual do TXT.")
+        st.table(
+            [
+                {
+                    "Status": item.code,
+                    "Linha TXT": item.line_number or "-",
+                    "Matricula": item.domain_registration or "-",
+                    "Rubrica": item.rubric or "-",
+                    "Movimento": item.canonical_movement_id or "-",
+                    "Mensagem": item.message,
+                }
+                for item in audit.divergences
+            ]
+        )
+    else:
+        st.success("Auditoria visual sem divergencias entre TXT e artefato mapeado.")
 
 
 def _render_pendings(result) -> None:

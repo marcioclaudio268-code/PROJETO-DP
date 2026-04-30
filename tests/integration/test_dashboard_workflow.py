@@ -27,6 +27,7 @@ from dashboard import (
     save_company_employee_registry,
     save_company_rubric_catalog,
 )
+from dashboard.txt_audit import build_txt_audit
 from ingestion import save_planilha_padrao_folha_v1
 
 
@@ -199,6 +200,11 @@ def test_dashboard_happy_path_enables_txt(tmp_path: Path) -> None:
     assert result.profile_resolution.status == "not_required"
     assert persisted.summary.txt_enabled is True
     assert persisted.summary.serialized_line_count == 2
+
+    audit = build_txt_audit(result)
+    assert audit.summary.total_lines == 2
+    assert {row.check_status for row in audit.employee_rows} == {"OK"}
+    assert audit.divergences == ()
 
 
 def test_dashboard_default_master_data_allows_xlsx_only_flow(tmp_path: Path) -> None:

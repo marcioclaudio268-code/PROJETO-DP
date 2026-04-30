@@ -51,6 +51,7 @@ class _FakeStreamlit:
         self.errors: list[str] = []
         self.infos: list[str] = []
         self.markdowns: list[str] = []
+        self.subheaders: list[str] = []
         self.tables: list[object] = []
         self.uploaded_workbook = uploaded_workbook
         self.button_result = button_result
@@ -70,8 +71,8 @@ class _FakeStreamlit:
     def caption(self, *args, **kwargs) -> None:
         return None
 
-    def subheader(self, *args, **kwargs) -> None:
-        return None
+    def subheader(self, message: str, *args, **kwargs) -> None:
+        self.subheaders.append(message)
 
     def write(self, *args, **kwargs) -> None:
         return None
@@ -959,7 +960,7 @@ def test_dashboard_main_continues_normal_flow_when_run_root_exists(tmp_path: Pat
     fake_paths = SimpleNamespace(state_path=state_path)
     module.build_dashboard_paths = lambda run_root: fake_paths
 
-    called = {"load": 0, "summary": 0, "pendings": 0, "history": 0, "downloads": 0}
+    called = {"load": 0, "summary": 0, "txt_audit": 0, "pendings": 0, "history": 0, "downloads": 0}
 
     def _load_dashboard_run(paths):
         called["load"] += 1
@@ -972,6 +973,7 @@ def test_dashboard_main_continues_normal_flow_when_run_root_exists(tmp_path: Pat
 
     module.load_dashboard_run = _load_dashboard_run
     module._render_summary = lambda result: called.__setitem__("summary", called["summary"] + 1)
+    module._render_txt_audit = lambda result: called.__setitem__("txt_audit", called["txt_audit"] + 1)
     module._render_pendings = lambda result: called.__setitem__("pendings", called["pendings"] + 1)
     module._render_actions_history = lambda result: called.__setitem__("history", called["history"] + 1)
     module._render_downloads = lambda result: called.__setitem__("downloads", called["downloads"] + 1)
@@ -980,7 +982,7 @@ def test_dashboard_main_continues_normal_flow_when_run_root_exists(tmp_path: Pat
 
     module.main()
 
-    assert called == {"load": 1, "summary": 1, "pendings": 1, "history": 1, "downloads": 1}
+    assert called == {"load": 1, "summary": 1, "txt_audit": 1, "pendings": 1, "history": 1, "downloads": 1}
     assert fake_st.errors == []
 
 
@@ -999,6 +1001,25 @@ def test_render_pendings_displays_operational_columns(tmp_path: Path) -> None:
     assert fake_st.tables[0][0]["Etapa"] == "mapeamento"
     assert fake_st.tables[0][0]["Codigo"] == "mapeamento_evento_ausente"
     assert fake_st.tables[0][0]["Evento"] == "horas_extras_50"
+
+
+def test_render_txt_audit_is_hidden_when_no_serialized_lines(tmp_path: Path) -> None:
+    module = _load_dashboard_v1_module()
+    fake_st = _FakeStreamlit()
+    module.st = fake_st
+    txt_path = tmp_path / "input.txt"
+    txt_path.write_text("", encoding="utf-8")
+
+    module._render_txt_audit(
+        SimpleNamespace(
+            paths=SimpleNamespace(txt_path=txt_path),
+            summary=SimpleNamespace(serialized_line_count=0),
+        )
+    )
+
+    assert fake_st.subheaders == []
+    assert fake_st.infos == []
+    assert fake_st.tables == []
 
 
 def test_render_pendings_employee_form_calls_manual_action_and_reprocesses(tmp_path: Path) -> None:
