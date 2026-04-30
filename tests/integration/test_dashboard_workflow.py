@@ -648,3 +648,46 @@ def test_dashboard_can_apply_column_profile_action_and_reprocess(tmp_path: Path)
     assert updated.profile_resolution.status == "found"
     assert not any(item.code == "column_mapping_profile_incomplete" for item in updated.pendings)
     assert paths.normalization_path.exists()
+
+
+def test_dashboard_turns_orphan_profile_row_into_editable_pending_and_reprocesses(tmp_path: Path) -> None:
+    workbook_path = tmp_path / "orphan-row.xlsx"
+    workbook = load_workbook(MONTHLY_FIXTURE)
+    worksheet = workbook["mar 26"]
+    worksheet["A20"] = None
+    worksheet["B20"] = None
+    worksheet["C20"] = "01:00"
+    workbook.save(workbook_path)
+
+    profile_root = tmp_path / "profiles"
+    _write_monthly_column_profile(profile_root)
+    paths = create_dashboard_run_from_paths(workbook_path, runs_root=tmp_path / "runs")
+
+    initial = run_dashboard_analysis(paths, column_profile_root=profile_root)
+
+    assert initial.summary.txt_enabled is False
+    assert initial.summary.validation_status == "blocked"
+    assert paths.editable_workbook_path.exists()
+    pending = next(item for item in initial.pendings if item.code == "linha_com_lancamento_sem_colaborador")
+    assert pending.stage == "ingestao"
+    assert pending.severity == "bloqueante"
+    assert pending.source_sheet == "mar 26"
+    assert pending.source_cell == "A20"
+    assert pending.source_row == 20
+    assert pending.can_edit_workbook is True
+
+    persisted = load_dashboard_run(paths)
+    assert any(item.code == "linha_com_lancamento_sem_colaborador" for item in persisted.pendings)
+
+    apply_workbook_cell_correction(
+        paths,
+        sheet_name=pending.source_sheet or "",
+        cell=pending.source_cell or "",
+        new_value="col-orphan-20",
+        pending_uid=pending.uid,
+    )
+    updated = run_dashboard_analysis(paths, column_profile_root=profile_root)
+
+    assert not any(item.code == "linha_com_lancamento_sem_colaborador" for item in updated.pendings)
+    assert updated.profile_resolution.status == "found"
+    assert paths.normalization_path.exists()

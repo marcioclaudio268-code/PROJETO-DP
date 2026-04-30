@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import re
+import shutil
 import unicodedata
 from pathlib import Path
 
@@ -16,6 +18,7 @@ from validation.pipeline import validate_pipeline_v1
 from ingestion.input_layout import (
     CANONICAL_LAYOUT_ID,
     InputColumnMetadata,
+    InputLayoutNormalizationError,
     InputWorkbookInspection,
     inspect_input_workbook,
     normalize_input_workbook,
@@ -78,20 +81,32 @@ def run_dashboard_analysis(
             profile_resolution=profile_resolution,
         )
 
-    if column_profile is not None:
-        normalize_workbook_with_column_profile(
-            source_workbook_path,
+    try:
+        if column_profile is not None:
+            normalize_workbook_with_column_profile(
+                source_workbook_path,
+                inspection=inspection,
+                profile=column_profile,
+                output_path=paths.editable_workbook_path,
+                report_path=paths.normalization_path,
+            )
+        else:
+            normalize_input_workbook(
+                source_workbook_path,
+                output_path=paths.editable_workbook_path,
+                report_path=paths.normalization_path,
+                registry_root=resolver.registry_root,
+            )
+    except InputLayoutNormalizationError as exc:
+        if exc.code != "linha_orfa_com_dado_critico":
+            raise
+        return _build_blocked_run_for_recoverable_normalization_error(
+            paths=paths,
+            state=load_dashboard_state(paths.state_path),
+            source_workbook_path=source_workbook_path,
             inspection=inspection,
-            profile=column_profile,
-            output_path=paths.editable_workbook_path,
-            report_path=paths.normalization_path,
-        )
-    else:
-        normalize_input_workbook(
-            source_workbook_path,
-            output_path=paths.editable_workbook_path,
-            report_path=paths.normalization_path,
-            registry_root=resolver.registry_root,
+            profile_resolution=profile_resolution,
+            error=exc,
         )
     ingest_fill_and_persist_planilha_padrao_v1(
         paths.editable_workbook_path,
@@ -414,6 +429,84 @@ def _build_blocked_run_without_profile(
         "fatal_errors": [],
         "inconsistencies": [],
         "recommendation": profile_resolution.message,
+    }
+    summary = build_dashboard_summary(
+        state=state,
+        snapshot_payload=snapshot_payload,
+        serialization_payload=serialization_payload,
+        validation_payload=validation_payload,
+        pending_count=len(pendings),
+        config_resolution=config_resolution,
+    )
+    updated_state = state.model_copy(
+        update={
+            "source_config_name": None,
+            "last_analysis": {
+                "summary": _serialize_summary(summary),
+                "config_resolution": _serialize_config_resolution(config_resolution),
+                "profile_resolution": _serialize_profile_resolution(profile_resolution),
+                "pendings": [_serialize_pending_item(item) for item in pendings],
+            },
+        }
+    )
+    write_dashboard_state(paths.state_path, updated_state)
+    return DashboardRunResult(
+        paths=paths,
+        state=updated_state,
+        summary=summary,
+        config_resolution=config_resolution,
+        profile_resolution=profile_resolution,
+        pendings=pendings,
+        snapshot_payload=snapshot_payload,
+        mapped_payload={},
+        serialization_payload=serialization_payload,
+        validation_payload=validation_payload,
+    )
+
+
+def _build_blocked_run_for_recoverable_normalization_error(
+    *,
+    paths: DashboardPaths,
+    state,
+    source_workbook_path: Path,
+    inspection: InputWorkbookInspection,
+    profile_resolution: DashboardProfileResolution,
+    error: InputLayoutNormalizationError,
+) -> DashboardRunResult:
+    _cleanup_recoverable_normalization_artifacts(paths)
+    _materialize_editable_source_workbook(
+        source_workbook_path=source_workbook_path,
+        editable_workbook_path=paths.editable_workbook_path,
+    )
+    snapshot_payload = _inspection_to_snapshot_payload(inspection)
+    config_resolution = DashboardConfigResolution(
+        status="not_run",
+        status_label="Configuracao interna nao avaliada",
+        message=(
+            "ConfigResolver nao foi executado porque a normalizacao da planilha "
+            f"bloqueou a analise: {error}"
+        ),
+        company_code=inspection.company_code,
+        competence=inspection.competence,
+        config_source=None,
+        config_version=None,
+        source_path=None,
+    )
+    internal_pending = _build_recoverable_normalization_pending(inspection, error)
+    pendings = (internal_pending,)
+    serialization_payload = {
+        "counts": {
+            "serialized": 0,
+            "non_serialized": 0,
+            "blocked_or_non_serialized": 0,
+            "total_mapped_movements": 0,
+        }
+    }
+    validation_payload = {
+        "execution": {"status": "blocked"},
+        "fatal_errors": [],
+        "inconsistencies": [],
+        "recommendation": internal_pending.recommended_action,
     }
     summary = build_dashboard_summary(
         state=state,
@@ -865,6 +958,57 @@ def _build_profile_resolution_pending(
     )
 
 
+def _build_recoverable_normalization_pending(
+    inspection: InputWorkbookInspection,
+    error: InputLayoutNormalizationError,
+) -> DashboardPendingItem:
+    source_sheet, source_cell, source_row = _parse_normalization_error_source(error.source)
+    return DashboardPendingItem(
+        uid=f"ingestao:{error.code}",
+        stage="ingestao",
+        pending_id=error.code,
+        code="linha_com_lancamento_sem_colaborador",
+        severity="bloqueante",
+        employee_name=None,
+        employee_key=None,
+        event_name=None,
+        field_label="identificacao do colaborador",
+        found_value="em branco",
+        problem=str(error),
+        recommended_action=(
+            "Informe o codigo ou nome do colaborador na linha indicada e reprocese a analise."
+        ),
+        source_sheet=source_sheet or inspection.selected_sheet_name,
+        source_cell=source_cell,
+        source_row=source_row,
+        source_column_name="identificacao_colaborador",
+        can_edit_workbook=bool(source_sheet and source_cell),
+        can_edit_employee_mapping=False,
+        can_edit_event_mapping=False,
+        can_ignore=False,
+    )
+
+
+def _parse_normalization_error_source(source: str | None) -> tuple[str | None, str | None, int | None]:
+    if not source:
+        return None, None, None
+    match = re.fullmatch(r"(?P<sheet>[^!]+)!(?P<cell>[A-Z]+(?P<row>\d+))(?:[:].*)?", source)
+    if match is None:
+        return source, None, None
+    return match.group("sheet"), match.group("cell"), int(match.group("row"))
+
+
+def _materialize_editable_source_workbook(
+    *,
+    source_workbook_path: Path,
+    editable_workbook_path: Path,
+) -> None:
+    if source_workbook_path.resolve() == editable_workbook_path.resolve():
+        return
+    editable_workbook_path.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source_workbook_path, editable_workbook_path)
+
+
 def _cleanup_downstream_artifacts(paths: DashboardPaths) -> None:
     for target in (
         paths.editable_config_path,
@@ -879,6 +1023,21 @@ def _cleanup_downstream_artifacts(paths: DashboardPaths) -> None:
 def _cleanup_profile_block_artifacts(paths: DashboardPaths) -> None:
     for target in (
         paths.editable_workbook_path,
+        paths.editable_config_path,
+        paths.analyzed_workbook_path,
+        paths.snapshot_path,
+        paths.manifest_path,
+        paths.normalization_path,
+        paths.mapped_artifact_path,
+        paths.txt_path,
+        paths.serialization_summary_path,
+        paths.validation_path,
+    ):
+        target.unlink(missing_ok=True)
+
+
+def _cleanup_recoverable_normalization_artifacts(paths: DashboardPaths) -> None:
+    for target in (
         paths.editable_config_path,
         paths.analyzed_workbook_path,
         paths.snapshot_path,
