@@ -10,6 +10,7 @@ from .column_mapping_profiles import (
     column_mapping_profile_path,
     load_column_mapping_profile,
     save_column_mapping_profile,
+    upsert_column_mapping_rule,
 )
 from .company_employee_registry import (
     DEFAULT_COMPANY_EMPLOYEE_REGISTRIES_ROOT,
@@ -173,6 +174,7 @@ __all__ = [
     "rubric_sources_from_snapshot",
     "upsert_employee_mapping_override",
     "upsert_employee_record",
+    "upsert_column_mapping_rule",
     "upsert_event_mapping_override",
     "upsert_rubric_record",
     "write_dashboard_state",

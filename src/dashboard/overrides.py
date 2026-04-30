@@ -12,6 +12,15 @@ from openpyxl import load_workbook
 from config import CompanyConfig
 from ingestion.template_v1_loader import EVENT_SPECS
 
+from .column_mapping_profiles import (
+    ColumnGenerationMode,
+    ColumnMappingProfileError,
+    ColumnMappingRule,
+    CompanyColumnMappingProfile,
+    load_column_mapping_profile,
+    save_column_mapping_profile,
+    upsert_column_mapping_rule,
+)
 from .company_employee_registry import (
     CompanyEmployeeRecord,
     load_company_employee_registry,
@@ -36,6 +45,10 @@ from .storage import load_dashboard_state, write_dashboard_state
 
 
 EVENT_COLUMN_NAMES = tuple(spec.column_name for spec in EVENT_SPECS)
+COLUMN_MAPPING_PROFILE_CODES = {
+    "column_mapping_profile_missing",
+    "column_mapping_profile_incomplete",
+}
 IGNORABLE_NOTE_CODES = {"observacao_ambigua"}
 IGNORABLE_EVENT_CODES = {
     "evento_nao_automatizavel",
@@ -66,6 +79,7 @@ def apply_dashboard_action(
     payload: Mapping[str, Any] | None = None,
     employee_registry_root: str | Path | None = None,
     rubric_catalog_root: str | Path | None = None,
+    column_profile_root: str | Path | None = None,
 ) -> DashboardActionRecord:
     """Validate and apply one guided action against a persisted dashboard pending."""
 
@@ -96,6 +110,14 @@ def apply_dashboard_action(
             pending_item,
             action_payload,
             rubric_catalog_root=rubric_catalog_root,
+        )
+
+    if normalized_action_type == DashboardActionType.COLUMN_MAPPING_PROFILE_UPDATE:
+        return _apply_column_mapping_profile_action(
+            paths,
+            pending_item,
+            action_payload,
+            column_profile_root=column_profile_root,
         )
 
     if normalized_action_type == DashboardActionType.IGNORE_PENDING:
@@ -480,6 +502,96 @@ def _apply_event_mapping_action(
     )
 
 
+def _apply_column_mapping_profile_action(
+    paths: DashboardPaths,
+    pending_item: DashboardPendingItem,
+    payload: dict[str, Any],
+    *,
+    column_profile_root: str | Path | None,
+) -> DashboardActionRecord:
+    if pending_item.stage != "perfil_colunas" or pending_item.code not in COLUMN_MAPPING_PROFILE_CODES:
+        raise DashboardOperationError(
+            "acao_incompativel_com_pendencia",
+            "Esta pendencia nao permite correcao de perfil de colunas.",
+            source=pending_item.uid,
+        )
+
+    profile_context = _profile_context_from_state(paths)
+    company_code = _required_text("company_code", profile_context.get("company_code"))
+    company_name = _stringify(profile_context.get("company_name"))
+    default_process = _stringify(payload.get("default_process") or profile_context.get("default_process"))
+    column_name = _resolve_column_name_for_profile_action(pending_item, payload)
+    column_key = _stringify(payload.get("column_key"))
+    rule = _column_mapping_rule_from_payload(
+        payload,
+        column_name=column_name,
+        column_key=column_key,
+    )
+
+    try:
+        profile = load_column_mapping_profile(company_code, root=column_profile_root)
+        updated_profile = upsert_column_mapping_rule(profile, rule)
+    except ColumnMappingProfileError as exc:
+        if exc.code != "profile_not_found":
+            raise DashboardOperationError(
+                "perfil_colunas_invalido",
+                f"Nao foi possivel carregar o perfil de colunas da empresa: {exc}",
+                source=exc.source,
+            ) from exc
+        updated_profile = CompanyColumnMappingProfile(
+            company_code=company_code,
+            company_name=company_name,
+            default_process=default_process,
+            mappings=[rule],
+        )
+    except Exception as exc:
+        raise DashboardOperationError(
+            "perfil_colunas_invalido",
+            f"Nao foi possivel atualizar o perfil de colunas da empresa: {exc}",
+            source=company_code,
+        ) from exc
+
+    if company_name and not updated_profile.company_name:
+        updated_profile = updated_profile.model_copy(update={"company_name": company_name})
+    if default_process and not updated_profile.default_process:
+        updated_profile = updated_profile.model_copy(update={"default_process": default_process})
+
+    try:
+        profile_path = save_column_mapping_profile(updated_profile, root=column_profile_root)
+    except Exception as exc:
+        raise DashboardOperationError(
+            "perfil_colunas_invalido",
+            f"Nao foi possivel salvar o perfil de colunas da empresa: {exc}",
+            source=company_code,
+        ) from exc
+
+    action = DashboardActionRecord(
+        action_id=f"act-{uuid4().hex[:10]}",
+        action_type=DashboardActionType.COLUMN_MAPPING_PROFILE_UPDATE,
+        pending_uid=pending_item.uid,
+        description=f"Regra de perfil de coluna aplicada para '{rule.source_column_id}'.",
+        payload={
+            "scope": "company_column_mapping_profile",
+            "scopes": ["company_column_mapping_profile"],
+            "company_code": company_code,
+            "company_name": company_name,
+            "column_profile_path": str(profile_path),
+            "column_key": rule.column_key,
+            "column_name": rule.column_name,
+            "enabled": rule.enabled,
+            "rubrica_target": rule.rubrica_target,
+            "rubricas_target": list(rule.rubricas_target),
+            "value_kind": rule.value_kind.value,
+            "generation_mode": rule.generation_mode.value,
+            "ignore_zero": rule.ignore_zero,
+            "ignore_text": rule.ignore_text,
+            "notes": rule.notes,
+        },
+    )
+    _append_action(paths, action)
+    return action
+
+
 def _apply_ignore_action(
     paths: DashboardPaths,
     pending_item: DashboardPendingItem,
@@ -514,6 +626,126 @@ def _apply_workbook_cell_action(
         new_value=None if new_value is None else str(new_value),
         pending_uid=pending_item.uid,
     )
+
+
+def _profile_context_from_state(paths: DashboardPaths) -> dict[str, Any]:
+    state = load_dashboard_state(paths.state_path)
+    if state.last_analysis is None:
+        raise DashboardOperationError(
+            "analise_ausente_para_acao",
+            "Nao ha analise anterior com contexto de perfil para aplicar esta acao.",
+            source=str(paths.state_path),
+        )
+
+    summary = state.last_analysis.get("summary", {})
+    profile_resolution = state.last_analysis.get("profile_resolution", {})
+    return {
+        "company_code": profile_resolution.get("company_code") or summary.get("company_code"),
+        "company_name": summary.get("company_name"),
+        "default_process": summary.get("default_process"),
+    }
+
+
+def _resolve_column_name_for_profile_action(
+    pending_item: DashboardPendingItem,
+    payload: Mapping[str, Any],
+) -> str | None:
+    payload_column_name = _stringify(payload.get("column_name"))
+    pending_column_name = pending_item.source_column_name
+
+    if pending_column_name:
+        if payload_column_name and (
+            _normalize_profile_action_token(payload_column_name)
+            != _normalize_profile_action_token(pending_column_name)
+        ):
+            raise DashboardOperationError(
+                "coluna_divergente_da_pendencia",
+                "A coluna informada nao corresponde a coluna pendente.",
+                source=pending_item.uid,
+            )
+        return pending_column_name
+
+    if payload_column_name:
+        return payload_column_name
+
+    if _stringify(payload.get("column_key")):
+        return None
+
+    raise DashboardOperationError(
+        "campo_obrigatorio_ausente",
+        "Campo obrigatorio ausente para acao manual: column_name.",
+        source="column_name",
+    )
+
+
+def _column_mapping_rule_from_payload(
+    payload: Mapping[str, Any],
+    *,
+    column_name: str | None,
+    column_key: str | None,
+) -> ColumnMappingRule:
+    try:
+        generation_mode = ColumnGenerationMode(_required_text_from_payload(payload, "generation_mode"))
+    except ValueError as exc:
+        raise DashboardOperationError(
+            "perfil_colunas_regra_invalida",
+            f"Modo de geracao invalido para perfil de coluna: {payload.get('generation_mode')}.",
+            source="generation_mode",
+        ) from exc
+    enabled = _as_bool(payload["enabled"]) if "enabled" in payload else generation_mode != ColumnGenerationMode.IGNORE
+    rubrica_target = _stringify(payload.get("rubrica_target"))
+    rubricas_target = _rubricas_target_from_payload(payload)
+
+    if generation_mode == ColumnGenerationMode.IGNORE:
+        rubrica_target = None
+        rubricas_target = []
+
+    try:
+        return ColumnMappingRule(
+            column_key=column_key,
+            column_name=column_name,
+            enabled=enabled,
+            rubrica_target=rubrica_target,
+            rubricas_target=rubricas_target,
+            value_kind=_required_text_from_payload(payload, "value_kind"),
+            generation_mode=generation_mode,
+            ignore_zero=_required_bool_from_payload(payload, "ignore_zero"),
+            ignore_text=_required_bool_from_payload(payload, "ignore_text"),
+            notes=_stringify(payload.get("notes")),
+        )
+    except Exception as exc:
+        raise DashboardOperationError(
+            "perfil_colunas_regra_invalida",
+            f"Regra de perfil de coluna invalida: {exc}",
+            source=column_name or column_key,
+        ) from exc
+
+
+def _rubricas_target_from_payload(payload: Mapping[str, Any]) -> list[str]:
+    if "rubricas_target" not in payload:
+        return []
+    raw_targets = payload.get("rubricas_target")
+    if not isinstance(raw_targets, list):
+        raise DashboardOperationError(
+            "campo_obrigatorio_ausente",
+            "Campo rubricas_target deve ser informado como lista.",
+            source="rubricas_target",
+        )
+    return [_required_text("rubricas_target", target) for target in raw_targets]
+
+
+def _required_bool_from_payload(payload: Mapping[str, Any], field_name: str) -> bool:
+    if field_name not in payload:
+        raise DashboardOperationError(
+            "campo_obrigatorio_ausente",
+            f"Campo obrigatorio ausente para acao manual: {field_name}.",
+            source=field_name,
+        )
+    return _as_bool(payload[field_name])
+
+
+def _normalize_profile_action_token(value: str) -> str:
+    return " ".join(str(value).strip().lower().split())
 
 
 def _event_cells_for_row(worksheet, row_number: int) -> tuple[str | None, ...]:

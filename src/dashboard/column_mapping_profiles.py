@@ -146,6 +146,32 @@ def load_column_mapping_profile(
         ) from exc
 
 
+def upsert_column_mapping_rule(
+    profile: CompanyColumnMappingProfile,
+    rule: ColumnMappingRule,
+) -> CompanyColumnMappingProfile:
+    mappings = list(profile.mappings)
+    target_id = rule.source_column_id
+    updated = False
+    for index, existing in enumerate(mappings):
+        if existing.source_column_id == target_id:
+            mappings[index] = rule
+            updated = True
+            break
+
+    if not updated:
+        mappings.append(rule)
+
+    return CompanyColumnMappingProfile(
+        company_code=profile.company_code,
+        company_name=profile.company_name,
+        default_process=profile.default_process,
+        mappings=mappings,
+        profile_version=profile.profile_version,
+        notes=profile.notes,
+    )
+
+
 def column_mapping_profile_path(company_code: str, *, root: str | Path | None = None) -> Path:
     normalized_code = _safe_company_code(company_code)
     base = Path(root) if root is not None else DEFAULT_COLUMN_MAPPING_PROFILES_ROOT
@@ -183,4 +209,5 @@ __all__ = [
     "column_mapping_profile_path",
     "load_column_mapping_profile",
     "save_column_mapping_profile",
+    "upsert_column_mapping_rule",
 ]

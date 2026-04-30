@@ -23,6 +23,7 @@ from dashboard import (
     is_txt_download_enabled,
     load_company_employee_registry,
     load_company_rubric_catalog,
+    load_column_mapping_profile,
     load_dashboard_state,
     upsert_employee_mapping_override,
     upsert_event_mapping_override,
@@ -284,6 +285,57 @@ def _event_mapping_pending() -> DashboardPendingItem:
         ignore_mode="evento",
         ignore_label="Ignorar este evento nesta importacao",
     )
+
+
+def _column_profile_pending() -> DashboardPendingItem:
+    return DashboardPendingItem(
+        uid="perfil_colunas:incomplete",
+        stage="perfil_colunas",
+        pending_id="profile-incomplete",
+        code="column_mapping_profile_incomplete",
+        severity="bloqueante",
+        employee_name=None,
+        employee_key=None,
+        event_name=None,
+        field_label="perfil de mapeamento de colunas",
+        found_value="empresa=528 | competencia=03/2026 | coluna=EXTRA 100%",
+        problem="Perfil de mapeamento de colunas incompleto.",
+        recommended_action="Cadastrar regra de perfil para a coluna.",
+        source_sheet="mar 26",
+        source_cell=None,
+        source_row=None,
+        source_column_name="EXTRA 100%",
+        can_edit_workbook=False,
+        can_edit_employee_mapping=False,
+        can_edit_event_mapping=False,
+        can_ignore=False,
+    )
+
+
+def _persist_column_profile_pending_for_action(paths, pending: DashboardPendingItem) -> None:
+    state = load_dashboard_state(paths.state_path)
+    updated_state = state.model_copy(
+        update={
+            "last_analysis": {
+                "summary": {
+                    "company_code": "528",
+                    "company_name": "Empresa Mensal",
+                },
+                "profile_resolution": {
+                    "status": "incomplete",
+                    "status_label": "Perfil de mapeamento de colunas incompleto",
+                    "message": "Perfil incompleto.",
+                    "company_code": "528",
+                    "competence": "03/2026",
+                    "layout_id": "resumo_mensal_por_abas",
+                    "source_path": None,
+                    "missing_columns": ["EXTRA 100%"],
+                },
+                "pendings": [asdict(pending)],
+            }
+        }
+    )
+    write_dashboard_state(paths.state_path, updated_state)
 
 
 def test_txt_download_enabled_requires_success_and_serialized_lines() -> None:
@@ -571,6 +623,152 @@ def test_apply_dashboard_action_rejects_incomplete_rubric_catalog_payload(tmp_pa
         )
 
     assert exc_info.value.code == "campo_obrigatorio_ausente"
+
+
+def test_apply_dashboard_action_creates_column_mapping_profile_rule(tmp_path: Path) -> None:
+    workbook_path, config_path = _prepare_workbook_and_config(tmp_path)
+    paths = create_dashboard_run_from_paths(workbook_path, config_path, runs_root=tmp_path / "runs")
+    pending = _column_profile_pending()
+    _persist_column_profile_pending_for_action(paths, pending)
+
+    action = apply_dashboard_action(
+        paths,
+        action_type=DashboardActionType.COLUMN_MAPPING_PROFILE_UPDATE,
+        pending_uid=pending.uid,
+        payload={
+            "column_name": "EXTRA 100%",
+            "rubrica_target": "200",
+            "value_kind": "horas",
+            "generation_mode": "single_line",
+            "ignore_zero": True,
+            "ignore_text": True,
+        },
+        column_profile_root=tmp_path / "profiles",
+    )
+
+    profile = load_column_mapping_profile("528", root=tmp_path / "profiles")
+    assert profile.mappings[0].column_name == "EXTRA 100%"
+    assert profile.mappings[0].rubrica_target == "200"
+    assert action.action_type == DashboardActionType.COLUMN_MAPPING_PROFILE_UPDATE
+    assert action.payload["scope"] == "company_column_mapping_profile"
+    assert action.payload["column_profile_path"].endswith("528.json")
+
+
+def test_apply_dashboard_action_updates_column_mapping_profile_with_multi_rubrics(tmp_path: Path) -> None:
+    workbook_path, config_path = _prepare_workbook_and_config(tmp_path)
+    paths = create_dashboard_run_from_paths(workbook_path, config_path, runs_root=tmp_path / "runs")
+    pending = _column_profile_pending()
+    _persist_column_profile_pending_for_action(paths, pending)
+
+    apply_dashboard_action(
+        paths,
+        action_type=DashboardActionType.COLUMN_MAPPING_PROFILE_UPDATE,
+        pending_uid=pending.uid,
+        payload={
+            "column_name": "EXTRA 100%",
+            "rubrica_target": "200",
+            "value_kind": "horas",
+            "generation_mode": "single_line",
+            "ignore_zero": True,
+            "ignore_text": True,
+        },
+        column_profile_root=tmp_path / "profiles",
+    )
+    apply_dashboard_action(
+        paths,
+        action_type=DashboardActionType.COLUMN_MAPPING_PROFILE_UPDATE,
+        pending_uid=pending.uid,
+        payload={
+            "column_name": "EXTRA 100%",
+            "rubricas_target": ["8792", "8794"],
+            "value_kind": "quantidade",
+            "generation_mode": "multi_line",
+            "ignore_zero": True,
+            "ignore_text": True,
+        },
+        column_profile_root=tmp_path / "profiles",
+    )
+
+    profile = load_column_mapping_profile("528", root=tmp_path / "profiles")
+    assert len(profile.mappings) == 1
+    assert profile.mappings[0].rubricas_target == ["8792", "8794"]
+    assert profile.mappings[0].generation_mode.value == "multi_line"
+
+
+def test_apply_dashboard_action_marks_column_mapping_profile_rule_as_ignored(tmp_path: Path) -> None:
+    workbook_path, config_path = _prepare_workbook_and_config(tmp_path)
+    paths = create_dashboard_run_from_paths(workbook_path, config_path, runs_root=tmp_path / "runs")
+    pending = _column_profile_pending()
+    _persist_column_profile_pending_for_action(paths, pending)
+
+    apply_dashboard_action(
+        paths,
+        action_type=DashboardActionType.COLUMN_MAPPING_PROFILE_UPDATE,
+        pending_uid=pending.uid,
+        payload={
+            "column_name": "EXTRA 100%",
+            "value_kind": "monetario",
+            "generation_mode": "ignore",
+            "ignore_zero": True,
+            "ignore_text": True,
+        },
+        column_profile_root=tmp_path / "profiles",
+    )
+
+    profile = load_column_mapping_profile("528", root=tmp_path / "profiles")
+    assert profile.mappings[0].enabled is False
+    assert profile.mappings[0].generation_mode.value == "ignore"
+    assert profile.mappings[0].target_rubrics == ()
+
+
+def test_apply_dashboard_action_rejects_invalid_column_mapping_profile_payload(tmp_path: Path) -> None:
+    workbook_path, config_path = _prepare_workbook_and_config(tmp_path)
+    paths = create_dashboard_run_from_paths(workbook_path, config_path, runs_root=tmp_path / "runs")
+    pending = _column_profile_pending()
+    _persist_column_profile_pending_for_action(paths, pending)
+
+    with pytest.raises(DashboardOperationError) as exc_info:
+        apply_dashboard_action(
+            paths,
+            action_type=DashboardActionType.COLUMN_MAPPING_PROFILE_UPDATE,
+            pending_uid=pending.uid,
+            payload={
+                "column_name": "EXTRA 100%",
+                "rubrica_target": "200",
+                "value_kind": "horas",
+                "generation_mode": "automatico",
+                "ignore_zero": True,
+                "ignore_text": True,
+            },
+            column_profile_root=tmp_path / "profiles",
+        )
+
+    assert exc_info.value.code == "perfil_colunas_regra_invalida"
+
+
+def test_apply_dashboard_action_rejects_column_mapping_profile_action_for_other_pending(tmp_path: Path) -> None:
+    workbook_path, config_path = _prepare_workbook_and_config(tmp_path)
+    paths = create_dashboard_run_from_paths(workbook_path, config_path, runs_root=tmp_path / "runs")
+    pending = _event_mapping_pending()
+    _persist_pending_for_action(paths, pending)
+
+    with pytest.raises(DashboardOperationError) as exc_info:
+        apply_dashboard_action(
+            paths,
+            action_type=DashboardActionType.COLUMN_MAPPING_PROFILE_UPDATE,
+            pending_uid=pending.uid,
+            payload={
+                "column_name": "EXTRA 100%",
+                "rubrica_target": "200",
+                "value_kind": "horas",
+                "generation_mode": "single_line",
+                "ignore_zero": True,
+                "ignore_text": True,
+            },
+            column_profile_root=tmp_path / "profiles",
+        )
+
+    assert exc_info.value.code == "acao_incompativel_com_pendencia"
 
 
 def test_apply_dashboard_action_rejects_invalid_payload(tmp_path: Path) -> None:

@@ -618,3 +618,33 @@ def test_dashboard_blocks_monthly_layout_when_column_profile_is_incomplete(tmp_p
     pending = next(item for item in result.pendings if item.code == "column_mapping_profile_incomplete")
     assert pending.source_column_name == "CONSUMO              COD. 266"
     assert not paths.editable_workbook_path.exists()
+
+
+def test_dashboard_can_apply_column_profile_action_and_reprocess(tmp_path: Path) -> None:
+    profile_root = tmp_path / "profiles"
+    _write_monthly_column_profile(profile_root, omit_column="CONSUMO              COD. 266")
+    paths = create_dashboard_run_from_paths(MONTHLY_FIXTURE, runs_root=tmp_path / "runs")
+
+    initial = run_dashboard_analysis(paths, column_profile_root=profile_root)
+    pending = next(item for item in initial.pendings if item.code == "column_mapping_profile_incomplete")
+
+    action = apply_dashboard_action(
+        paths,
+        action_type=DashboardActionType.COLUMN_MAPPING_PROFILE_UPDATE,
+        pending_uid=pending.uid,
+        payload={
+            "column_name": "CONSUMO              COD. 266",
+            "rubrica_target": "266",
+            "value_kind": "monetario",
+            "generation_mode": "single_line",
+            "ignore_zero": True,
+            "ignore_text": True,
+        },
+        column_profile_root=profile_root,
+    )
+    updated = run_dashboard_analysis(paths, column_profile_root=profile_root)
+
+    assert action.action_type == DashboardActionType.COLUMN_MAPPING_PROFILE_UPDATE
+    assert updated.profile_resolution.status == "found"
+    assert not any(item.code == "column_mapping_profile_incomplete" for item in updated.pendings)
+    assert paths.normalization_path.exists()

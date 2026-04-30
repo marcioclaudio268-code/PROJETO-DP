@@ -15,6 +15,7 @@ from dashboard import (
     column_mapping_profile_path,
     load_column_mapping_profile,
     save_column_mapping_profile,
+    upsert_column_mapping_rule,
 )
 
 
@@ -208,3 +209,41 @@ def test_rejects_unsafe_company_code_for_profile_path() -> None:
         column_mapping_profile_path("../887")
 
     assert exc_info.value.code == "invalid_company_code"
+
+
+def test_upsert_column_mapping_rule_updates_existing_column() -> None:
+    profile = _sample_profile()
+    updated = upsert_column_mapping_rule(
+        profile,
+        ColumnMappingRule(
+            column_name="GRAT.",
+            enabled=True,
+            rubrica_target="21",
+            value_kind="monetario",
+            generation_mode="single_line",
+            ignore_zero=True,
+            ignore_text=True,
+        ),
+    )
+
+    assert len(updated.mappings) == len(profile.mappings)
+    assert updated.mappings[0].rubrica_target == "21"
+
+
+def test_upsert_column_mapping_rule_adds_new_column() -> None:
+    profile = _sample_profile()
+    updated = upsert_column_mapping_rule(
+        profile,
+        ColumnMappingRule(
+            column_name="EXTRA 100%",
+            enabled=True,
+            rubrica_target="200",
+            value_kind="horas",
+            generation_mode="single_line",
+            ignore_zero=True,
+            ignore_text=True,
+        ),
+    )
+
+    assert len(updated.mappings) == len(profile.mappings) + 1
+    assert updated.mappings[-1].column_name == "EXTRA 100%"
