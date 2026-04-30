@@ -22,6 +22,7 @@ from dashboard import (
     ignore_pending_for_import,
     is_txt_download_enabled,
     load_company_employee_registry,
+    load_company_rubric_catalog,
     load_dashboard_state,
     upsert_employee_mapping_override,
     upsert_event_mapping_override,
@@ -519,6 +520,57 @@ def test_apply_dashboard_action_registers_ignore_for_current_import(tmp_path: Pa
 
     state = load_dashboard_state(paths.state_path)
     assert state.actions[-1].action_id == action.action_id
+
+
+def test_apply_dashboard_action_persists_event_mapping_when_explicit(tmp_path: Path) -> None:
+    workbook_path, config_path = _prepare_workbook_and_config(tmp_path)
+    paths = create_dashboard_run_from_paths(workbook_path, config_path, runs_root=tmp_path / "runs")
+    pending = _event_mapping_pending()
+    _persist_pending_for_action(paths, pending)
+
+    action = apply_dashboard_action(
+        paths,
+        action_type=DashboardActionType.EVENT_MAPPING_UPDATE,
+        pending_uid=pending.uid,
+        payload={
+            "output_rubric": "350",
+            "description": "HORAS EXTRAS 50%",
+            "value_kind": "horas",
+            "nature": "provento",
+            "aliases": ["H. EXTRA 50"],
+            "persist_to_rubric_catalog": True,
+        },
+        rubric_catalog_root=tmp_path / "rubric_catalogs",
+    )
+
+    catalog = load_company_rubric_catalog("72", root=tmp_path / "rubric_catalogs")
+    assert catalog.rubrics[0].rubric_code == "350"
+    assert catalog.rubrics[0].canonical_event == "horas_extras_50"
+    assert catalog.rubrics[0].value_kind.value == "horas"
+    assert catalog.rubrics[0].aliases == ["H. EXTRA 50"]
+    assert action.payload["persist_to_rubric_catalog"] is True
+    assert action.payload["scopes"] == ["current_run_editable_config", "company_rubric_catalog"]
+
+
+def test_apply_dashboard_action_rejects_incomplete_rubric_catalog_payload(tmp_path: Path) -> None:
+    workbook_path, config_path = _prepare_workbook_and_config(tmp_path)
+    paths = create_dashboard_run_from_paths(workbook_path, config_path, runs_root=tmp_path / "runs")
+    pending = _event_mapping_pending()
+    _persist_pending_for_action(paths, pending)
+
+    with pytest.raises(DashboardOperationError) as exc_info:
+        apply_dashboard_action(
+            paths,
+            action_type=DashboardActionType.EVENT_MAPPING_UPDATE,
+            pending_uid=pending.uid,
+            payload={
+                "output_rubric": "350",
+                "persist_to_rubric_catalog": True,
+            },
+            rubric_catalog_root=tmp_path / "rubric_catalogs",
+        )
+
+    assert exc_info.value.code == "campo_obrigatorio_ausente"
 
 
 def test_apply_dashboard_action_rejects_invalid_payload(tmp_path: Path) -> None:

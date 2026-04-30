@@ -29,6 +29,7 @@ from .column_mapping_profiles import (
     load_column_mapping_profile,
 )
 from .company_employee_registry import apply_employee_registry_to_editable_config
+from .company_rubric_catalog import apply_rubric_catalog_to_editable_config
 from .config_resolver import ConfigResolutionResult, ConfigResolutionStatus, ConfigResolver
 from .models import (
     DashboardConfigResolution,
@@ -59,6 +60,7 @@ def run_dashboard_analysis(
     config_resolver: ConfigResolver | None = None,
     column_profile_root: str | Path | None = None,
     employee_registry_root: str | Path | None = None,
+    rubric_catalog_root: str | Path | None = None,
 ) -> DashboardRunResult:
     resolver = config_resolver or ConfigResolver()
     source_workbook_path = _resolve_source_workbook_path(paths)
@@ -120,6 +122,12 @@ def run_dashboard_analysis(
         company_code=str(snapshot_payload["parameters"]["company_code"]),
         snapshot_payload=snapshot_payload,
         root=employee_registry_root,
+    )
+    apply_rubric_catalog_to_editable_config(
+        paths.editable_config_path,
+        company_code=str(snapshot_payload["parameters"]["company_code"]),
+        snapshot_payload=snapshot_payload,
+        root=rubric_catalog_root,
     )
     replay_dashboard_action_overrides(paths, state)
     map_snapshot_with_company_config(

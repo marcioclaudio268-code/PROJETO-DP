@@ -18,6 +18,12 @@ from .company_employee_registry import (
     save_company_employee_registry,
     upsert_employee_record,
 )
+from .company_rubric_catalog import (
+    CompanyRubricRecord,
+    load_company_rubric_catalog,
+    save_company_rubric_catalog,
+    upsert_rubric_record,
+)
 from .errors import DashboardOperationError
 from .models import (
     DashboardActionRecord,
@@ -59,6 +65,7 @@ def apply_dashboard_action(
     pending_uid: str,
     payload: Mapping[str, Any] | None = None,
     employee_registry_root: str | Path | None = None,
+    rubric_catalog_root: str | Path | None = None,
 ) -> DashboardActionRecord:
     """Validate and apply one guided action against a persisted dashboard pending."""
 
@@ -84,7 +91,12 @@ def apply_dashboard_action(
         )
 
     if normalized_action_type == DashboardActionType.EVENT_MAPPING_UPDATE:
-        return _apply_event_mapping_action(paths, pending_item, action_payload)
+        return _apply_event_mapping_action(
+            paths,
+            pending_item,
+            action_payload,
+            rubric_catalog_root=rubric_catalog_root,
+        )
 
     if normalized_action_type == DashboardActionType.IGNORE_PENDING:
         return _apply_ignore_action(paths, pending_item)
@@ -180,6 +192,8 @@ def upsert_event_mapping_override(
     event_name: str,
     output_rubric: str,
     pending_uid: str | None = None,
+    scope: str = "current_run_editable_config",
+    extra_payload: Mapping[str, Any] | None = None,
 ) -> DashboardActionRecord:
     payload = _load_company_config_payload(paths.editable_config_path)
     _upsert_event_mapping_payload(
@@ -195,9 +209,10 @@ def upsert_event_mapping_override(
         pending_uid=pending_uid,
         description=f"Correcao de rubrica aplicada para o evento '{event_name}'.",
         payload={
-            "scope": "current_run_editable_config",
+            "scope": scope,
             "event_name": event_name,
             "output_rubric": output_rubric,
+            **dict(extra_payload or {}),
         },
     )
     _append_action(paths, action)
@@ -396,6 +411,8 @@ def _apply_event_mapping_action(
     paths: DashboardPaths,
     pending_item: DashboardPendingItem,
     payload: dict[str, Any],
+    *,
+    rubric_catalog_root: str | Path | None,
 ) -> DashboardActionRecord:
     if not pending_item.can_edit_event_mapping:
         raise DashboardOperationError(
@@ -411,18 +428,55 @@ def _apply_event_mapping_action(
             source=pending_item.uid,
         )
 
-    _require_editable_company_config(paths)
+    config_payload = _require_editable_company_config(paths)
     output_rubric = _required_text_from_payload(
         payload,
         "output_rubric",
         aliases=("rubrica_saida", "rubrica"),
     )
+    action_extra_payload: dict[str, Any]
+    scope = "current_run_editable_config"
+    if _as_bool(payload.get("persist_to_rubric_catalog")):
+        catalog_path = _persist_event_mapping_to_rubric_catalog(
+            company_code=_required_text("company_code", config_payload.get("company_code")),
+            company_name=_stringify(config_payload.get("company_name")),
+            rubric_code=output_rubric,
+            description=_required_text_from_payload(payload, "description"),
+            canonical_event=_required_text(
+                "canonical_event",
+                payload.get("canonical_event") or pending_item.event_name,
+            ),
+            value_kind=_required_text_from_payload(payload, "value_kind"),
+            nature=_stringify(payload.get("nature")) or "unknown",
+            aliases=_aliases_from_payload(payload),
+            root=rubric_catalog_root,
+        )
+        action_extra_payload = {
+            "persist_to_rubric_catalog": True,
+            "scopes": ["current_run_editable_config", "company_rubric_catalog"],
+            "rubric_catalog_path": str(catalog_path),
+            "description": _required_text_from_payload(payload, "description"),
+            "canonical_event": _required_text(
+                "canonical_event",
+                payload.get("canonical_event") or pending_item.event_name,
+            ),
+            "value_kind": _required_text_from_payload(payload, "value_kind"),
+            "nature": _stringify(payload.get("nature")) or "unknown",
+            "aliases": _aliases_from_payload(payload),
+        }
+    else:
+        action_extra_payload = {
+            "persist_to_rubric_catalog": False,
+            "scopes": ["current_run_editable_config"],
+        }
 
     return upsert_event_mapping_override(
         paths,
         event_name=pending_item.event_name,
         output_rubric=output_rubric,
         pending_uid=pending_item.uid,
+        scope=scope,
+        extra_payload=action_extra_payload,
     )
 
 
@@ -625,6 +679,44 @@ def _persist_employee_mapping_to_registry(
         raise DashboardOperationError(
             "cadastro_funcionario_invalido",
             f"Nao foi possivel salvar o cadastro persistente do funcionario: {exc}",
+            source=company_code,
+        ) from exc
+
+
+def _persist_event_mapping_to_rubric_catalog(
+    *,
+    company_code: str,
+    company_name: str | None,
+    rubric_code: str,
+    description: str,
+    canonical_event: str,
+    value_kind: str,
+    nature: str,
+    aliases: list[str],
+    root: str | Path | None,
+) -> Path:
+    try:
+        catalog = load_company_rubric_catalog(
+            company_code,
+            company_name=company_name,
+            root=root,
+        )
+        rubric = CompanyRubricRecord(
+            rubric_code=rubric_code,
+            description=description,
+            canonical_event=canonical_event,
+            value_kind=value_kind,
+            nature=nature,
+            aliases=aliases,
+            status="active",
+            source="dashboard_manual_action",
+        )
+        updated_catalog = upsert_rubric_record(catalog, rubric)
+        return save_company_rubric_catalog(updated_catalog, root=root)
+    except Exception as exc:
+        raise DashboardOperationError(
+            "catalogo_rubrica_invalido",
+            f"Nao foi possivel salvar o catalogo persistente de rubrica: {exc}",
             source=company_code,
         ) from exc
 

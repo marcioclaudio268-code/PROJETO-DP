@@ -13,6 +13,8 @@ from dashboard import (
     CompanyEmployeeRecord,
     CompanyEmployeeRegistry,
     CompanyColumnMappingProfile,
+    CompanyRubricCatalog,
+    CompanyRubricRecord,
     ConfigResolutionStatus,
     ConfigResolver,
     apply_dashboard_action,
@@ -23,6 +25,7 @@ from dashboard import (
     run_dashboard_analysis,
     save_column_mapping_profile,
     save_company_employee_registry,
+    save_company_rubric_catalog,
 )
 from ingestion import save_planilha_padrao_folha_v1
 
@@ -407,6 +410,113 @@ def test_dashboard_does_not_apply_ambiguous_employee_registry_match(tmp_path: Pa
 
     config_payload = json.loads(paths.editable_config_path.read_text(encoding="utf-8"))
     assert config_payload["employee_mappings"] == []
+
+
+def test_dashboard_applies_rubric_catalog_to_editable_config(tmp_path: Path) -> None:
+    workbook_path = _prepare_single_row_workbook(tmp_path)
+    workbook = load_workbook(workbook_path)
+    workbook["LANCAMENTOS_FACEIS"]["D2"] = "999"
+    workbook.save(workbook_path)
+
+    configs_root = tmp_path / "configs"
+    _write_internal_config(
+        configs_root,
+        company_code="72",
+        file_name="03-2024.json",
+        competence="03/2024",
+        payload_override={"event_mappings": []},
+    )
+    rubric_catalog_root = tmp_path / "rubric_catalogs"
+    save_company_rubric_catalog(
+        CompanyRubricCatalog(
+            company_code="72",
+            company_name="Dela More",
+            rubrics=[
+                CompanyRubricRecord(
+                    rubric_code="201",
+                    description="GRATIFICACAO",
+                    canonical_event="gratificacao",
+                    value_kind="monetario",
+                    nature="provento",
+                    aliases=["GRAT"],
+                    source="test",
+                )
+            ],
+        ),
+        root=rubric_catalog_root,
+    )
+    paths = create_dashboard_run_from_paths(workbook_path, runs_root=tmp_path / "runs")
+
+    result = run_dashboard_analysis(
+        paths,
+        config_resolver=ConfigResolver(registry_root=tmp_path / "master", legacy_root=configs_root),
+        rubric_catalog_root=rubric_catalog_root,
+    )
+
+    assert result.summary.txt_enabled is True
+    assert result.summary.serialized_line_count == 1
+    config_payload = json.loads(paths.editable_config_path.read_text(encoding="utf-8"))
+    assert config_payload["event_mappings"] == [
+        {
+            "active": True,
+            "event_negocio": "gratificacao",
+            "notes": "Preenchido a partir do catalogo persistente de rubricas.",
+            "rubrica_saida": "201",
+        }
+    ]
+
+
+def test_dashboard_does_not_apply_ambiguous_rubric_catalog_match(tmp_path: Path) -> None:
+    workbook_path = _prepare_single_row_workbook(tmp_path)
+    workbook = load_workbook(workbook_path)
+    workbook["LANCAMENTOS_FACEIS"]["D2"] = "999"
+    workbook.save(workbook_path)
+
+    configs_root = tmp_path / "configs"
+    _write_internal_config(
+        configs_root,
+        company_code="72",
+        file_name="03-2024.json",
+        competence="03/2024",
+        payload_override={"event_mappings": []},
+    )
+    rubric_catalog_root = tmp_path / "rubric_catalogs"
+    save_company_rubric_catalog(
+        CompanyRubricCatalog(
+            company_code="72",
+            company_name="Dela More",
+            rubrics=[
+                CompanyRubricRecord(
+                    rubric_code="201",
+                    description="GRATIFICACAO A",
+                    canonical_event="gratificacao",
+                    value_kind="monetario",
+                    nature="provento",
+                    source="test",
+                ),
+                CompanyRubricRecord(
+                    rubric_code="202",
+                    description="GRATIFICACAO B",
+                    canonical_event="gratificacao",
+                    value_kind="monetario",
+                    nature="provento",
+                    source="test",
+                ),
+            ],
+        ),
+        root=rubric_catalog_root,
+    )
+    paths = create_dashboard_run_from_paths(workbook_path, runs_root=tmp_path / "runs")
+
+    result = run_dashboard_analysis(
+        paths,
+        config_resolver=ConfigResolver(registry_root=tmp_path / "master", legacy_root=configs_root),
+        rubric_catalog_root=rubric_catalog_root,
+    )
+
+    config_payload = json.loads(paths.editable_config_path.read_text(encoding="utf-8"))
+    assert config_payload["event_mappings"] == []
+    assert any(item.code == "mapeamento_evento_ausente" for item in result.pendings)
 
 
 def test_dashboard_returns_internal_pending_when_config_is_missing(tmp_path: Path) -> None:
