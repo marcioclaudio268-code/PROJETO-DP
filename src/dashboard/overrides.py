@@ -697,8 +697,12 @@ def _column_mapping_rule_from_payload(
     rubricas_target = _rubricas_target_from_payload(payload)
 
     if generation_mode == ColumnGenerationMode.IGNORE:
-        rubrica_target = None
-        rubricas_target = []
+        if _has_text(rubrica_target) or rubricas_target:
+            raise DashboardOperationError(
+                "perfil_colunas_regra_invalida",
+                "Coluna ignorada nao pode informar rubrica_target ou rubricas_target.",
+                source=column_name or column_key,
+            )
 
     try:
         return ColumnMappingRule(
@@ -740,8 +744,12 @@ def _required_bool_from_payload(payload: Mapping[str, Any], field_name: str) -> 
             "campo_obrigatorio_ausente",
             f"Campo obrigatorio ausente para acao manual: {field_name}.",
             source=field_name,
-        )
+    )
     return _as_bool(payload[field_name])
+
+
+def _has_text(value: Any) -> bool:
+    return value is not None and str(value).strip() != ""
 
 
 def _normalize_profile_action_token(value: str) -> str:

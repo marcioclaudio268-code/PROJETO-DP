@@ -721,6 +721,60 @@ def test_apply_dashboard_action_marks_column_mapping_profile_rule_as_ignored(tmp
     assert profile.mappings[0].target_rubrics == ()
 
 
+def test_apply_dashboard_action_rejects_ignored_column_mapping_with_single_rubric(tmp_path: Path) -> None:
+    workbook_path, config_path = _prepare_workbook_and_config(tmp_path)
+    paths = create_dashboard_run_from_paths(workbook_path, config_path, runs_root=tmp_path / "runs")
+    pending = _column_profile_pending()
+    _persist_column_profile_pending_for_action(paths, pending)
+    profile_root = tmp_path / "profiles"
+
+    with pytest.raises(DashboardOperationError) as exc_info:
+        apply_dashboard_action(
+            paths,
+            action_type=DashboardActionType.COLUMN_MAPPING_PROFILE_UPDATE,
+            pending_uid=pending.uid,
+            payload={
+                "column_name": "EXTRA 100%",
+                "rubrica_target": "999",
+                "value_kind": "monetario",
+                "generation_mode": "ignore",
+                "ignore_zero": True,
+                "ignore_text": True,
+            },
+            column_profile_root=profile_root,
+        )
+
+    assert exc_info.value.code == "perfil_colunas_regra_invalida"
+    assert not (profile_root / "528.json").exists()
+
+
+def test_apply_dashboard_action_rejects_ignored_column_mapping_with_multiple_rubrics(tmp_path: Path) -> None:
+    workbook_path, config_path = _prepare_workbook_and_config(tmp_path)
+    paths = create_dashboard_run_from_paths(workbook_path, config_path, runs_root=tmp_path / "runs")
+    pending = _column_profile_pending()
+    _persist_column_profile_pending_for_action(paths, pending)
+    profile_root = tmp_path / "profiles"
+
+    with pytest.raises(DashboardOperationError) as exc_info:
+        apply_dashboard_action(
+            paths,
+            action_type=DashboardActionType.COLUMN_MAPPING_PROFILE_UPDATE,
+            pending_uid=pending.uid,
+            payload={
+                "column_name": "EXTRA 100%",
+                "rubricas_target": ["999", "998"],
+                "value_kind": "monetario",
+                "generation_mode": "ignore",
+                "ignore_zero": True,
+                "ignore_text": True,
+            },
+            column_profile_root=profile_root,
+        )
+
+    assert exc_info.value.code == "perfil_colunas_regra_invalida"
+    assert not (profile_root / "528.json").exists()
+
+
 def test_apply_dashboard_action_rejects_invalid_column_mapping_profile_payload(tmp_path: Path) -> None:
     workbook_path, config_path = _prepare_workbook_and_config(tmp_path)
     paths = create_dashboard_run_from_paths(workbook_path, config_path, runs_root=tmp_path / "runs")
