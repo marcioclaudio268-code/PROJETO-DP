@@ -1,0 +1,493 @@
+"""Read-only TXT audit view for the operational dashboard."""
+
+from __future__ import annotations
+
+from collections import Counter, defaultdict
+from dataclasses import dataclass
+from decimal import Decimal, InvalidOperation
+from typing import Any
+
+from .models import DashboardRunResult
+
+
+TXT_LINE_WIDTH = 43
+
+
+@dataclass(frozen=True, slots=True)
+class TxtAuditRubricTotal:
+    rubric_raw: str
+    rubric: str
+    line_count: int
+    value_total: str
+
+
+@dataclass(frozen=True, slots=True)
+class TxtAuditSummary:
+    total_lines: int
+    company_code: str
+    company_name: str
+    competence: str
+    process_codes: tuple[str, ...]
+    rubric_totals: tuple[TxtAuditRubricTotal, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class TxtAuditEmployeeRow:
+    line_number: int
+    canonical_movement_id: str | None
+    domain_registration_raw: str
+    domain_registration: str
+    employee_name: str | None
+    rubric_raw: str
+    rubric: str
+    description: str
+    value_type: str | None
+    launched_value: str
+    reference_raw: str
+    value_raw: str
+    txt_line: str
+    check_status: str
+
+
+@dataclass(frozen=True, slots=True)
+class TxtAuditDivergence:
+    code: str
+    message: str
+    line_number: int | None = None
+    canonical_movement_id: str | None = None
+    domain_registration: str | None = None
+    rubric: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class TxtAuditResult:
+    summary: TxtAuditSummary
+    employee_rows: tuple[TxtAuditEmployeeRow, ...]
+    divergences: tuple[TxtAuditDivergence, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class _ParsedTxtLine:
+    line_number: int
+    text: str
+    tipo_registro: str
+    domain_registration_raw: str
+    rubric_raw: str
+    company_code_raw: str
+    process_code_raw: str
+    reference_raw: str
+    value_raw: str
+
+    @property
+    def exact_key(self) -> tuple[str, str, str, str]:
+        return (
+            self.domain_registration_raw,
+            self.rubric_raw,
+            self.reference_raw,
+            self.value_raw,
+        )
+
+    @property
+    def employee_rubric_key(self) -> tuple[str, str]:
+        return (self.domain_registration_raw, self.rubric_raw)
+
+    @property
+    def employee_value_key(self) -> tuple[str, str, str]:
+        return (
+            self.domain_registration_raw,
+            self.reference_raw,
+            self.value_raw,
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class _ExpectedMovement:
+    canonical_movement_id: str
+    domain_registration_raw: str
+    rubric_raw: str
+    company_code_raw: str
+    process_code_raw: str
+    reference_raw: str
+    value_raw: str
+    employee_name: str | None
+    event_name: str
+    value_type: str
+    launched_value: str
+
+    @property
+    def exact_key(self) -> tuple[str, str, str, str]:
+        return (
+            self.domain_registration_raw,
+            self.rubric_raw,
+            self.reference_raw,
+            self.value_raw,
+        )
+
+    @property
+    def employee_rubric_key(self) -> tuple[str, str]:
+        return (self.domain_registration_raw, self.rubric_raw)
+
+    @property
+    def employee_value_key(self) -> tuple[str, str, str]:
+        return (
+            self.domain_registration_raw,
+            self.reference_raw,
+            self.value_raw,
+        )
+
+
+def build_txt_audit(result: DashboardRunResult) -> TxtAuditResult:
+    """Build an in-memory audit view from existing dashboard artifacts only."""
+
+    lines = _load_txt_lines(result)
+    parsed_lines = tuple(_parse_txt_line(index, text) for index, text in enumerate(lines, start=1))
+    expected_movements = tuple(_expected_movement(item) for item in result.mapped_payload.get("mapped_movements", ()))
+    expected_movements = tuple(item for item in expected_movements if item is not None)
+
+    expected_by_exact = _index_expected(expected_movements, "exact_key")
+    expected_by_employee_rubric = _index_expected(expected_movements, "employee_rubric_key")
+    expected_by_employee_value = _index_expected(expected_movements, "employee_value_key")
+    employee_name_by_registration = _employee_name_by_registration(expected_movements)
+    duplicate_counts = Counter(line.exact_key for line in parsed_lines)
+
+    rows: list[TxtAuditEmployeeRow] = []
+    divergences: list[TxtAuditDivergence] = []
+    used_movement_ids: set[str] = set()
+
+    for line in parsed_lines:
+        row, row_divergences = _audit_txt_line(
+            line,
+            expected_by_exact=expected_by_exact,
+            expected_by_employee_rubric=expected_by_employee_rubric,
+            expected_by_employee_value=expected_by_employee_value,
+            employee_name_by_registration=employee_name_by_registration,
+            duplicate_count=duplicate_counts[line.exact_key],
+            used_movement_ids=used_movement_ids,
+        )
+        rows.append(row)
+        divergences.extend(row_divergences)
+
+    return TxtAuditResult(
+        summary=TxtAuditSummary(
+            total_lines=len(parsed_lines),
+            company_code=result.summary.company_code,
+            company_name=result.summary.company_name,
+            competence=result.summary.competence,
+            process_codes=tuple(sorted({_display_code(line.process_code_raw) for line in parsed_lines})),
+            rubric_totals=_rubric_totals(parsed_lines),
+        ),
+        employee_rows=tuple(rows),
+        divergences=tuple(divergences),
+    )
+
+
+def _load_txt_lines(result: DashboardRunResult) -> tuple[str, ...]:
+    if not result.paths.txt_path.exists():
+        return ()
+    text = result.paths.txt_path.read_text(encoding="utf-8")
+    return tuple(line for line in text.splitlines() if line)
+
+
+def _parse_txt_line(line_number: int, text: str) -> _ParsedTxtLine:
+    return _ParsedTxtLine(
+        line_number=line_number,
+        text=text,
+        tipo_registro=text[0:1],
+        domain_registration_raw=text[1:12],
+        rubric_raw=text[12:18],
+        company_code_raw=text[18:22],
+        process_code_raw=text[22:24],
+        reference_raw=text[24:33],
+        value_raw=text[33:43],
+    )
+
+
+def _expected_movement(payload: dict[str, Any]) -> _ExpectedMovement | None:
+    if payload.get("status") != "pronto_para_serializer":
+        return None
+    domain_registration = payload.get("resolved_domain_registration")
+    output_rubric = payload.get("output_rubric")
+    if not domain_registration or not output_rubric:
+        return None
+
+    value_type = str(payload.get("value_type") or "")
+    reference_raw = _expected_reference_raw(payload, value_type)
+    value_raw = _expected_value_raw(payload, value_type)
+    if reference_raw is None or value_raw is None:
+        return None
+
+    return _ExpectedMovement(
+        canonical_movement_id=str(payload["canonical_movement_id"]),
+        domain_registration_raw=_encode_numeric_identifier(domain_registration, width=11),
+        rubric_raw=_encode_numeric_identifier(output_rubric, width=6),
+        company_code_raw=_encode_numeric_identifier(payload.get("company_code"), width=4),
+        process_code_raw=_encode_numeric_identifier(payload.get("default_process"), width=2),
+        reference_raw=reference_raw,
+        value_raw=value_raw,
+        employee_name=_optional_text(payload.get("employee_name")),
+        event_name=str(payload.get("event_name") or ""),
+        value_type=value_type,
+        launched_value=_movement_launched_value(payload, value_type),
+    )
+
+
+def _expected_reference_raw(payload: dict[str, Any], value_type: str) -> str | None:
+    if value_type == "monetario":
+        return "0" * 9
+    if value_type == "horas":
+        hours_payload = payload.get("hours") or {}
+        hours_text = hours_payload.get("text")
+        if not hours_text:
+            return None
+        parts = str(hours_text).split(":")
+        if len(parts) != 2:
+            return None
+        return f"{int(parts[0]):02d}{int(parts[1]):02d}".zfill(9)
+    if value_type == "dias":
+        return _encode_implied_decimal(payload.get("quantity"), width=9)
+    return None
+
+
+def _expected_value_raw(payload: dict[str, Any], value_type: str) -> str | None:
+    if value_type == "monetario":
+        return _encode_implied_decimal(payload.get("amount"), width=10)
+    if value_type in {"horas", "dias"}:
+        return "0" * 10
+    return None
+
+
+def _movement_launched_value(payload: dict[str, Any], value_type: str) -> str:
+    if value_type == "monetario":
+        return _decimal_display(payload.get("amount"))
+    if value_type == "horas":
+        hours_payload = payload.get("hours") or {}
+        return str(hours_payload.get("text") or "")
+    if value_type == "dias":
+        return _decimal_display(payload.get("quantity"))
+    return "-"
+
+
+def _audit_txt_line(
+    line: _ParsedTxtLine,
+    *,
+    expected_by_exact: dict[tuple, list[_ExpectedMovement]],
+    expected_by_employee_rubric: dict[tuple, list[_ExpectedMovement]],
+    expected_by_employee_value: dict[tuple, list[_ExpectedMovement]],
+    employee_name_by_registration: dict[str, str],
+    duplicate_count: int,
+    used_movement_ids: set[str],
+) -> tuple[TxtAuditEmployeeRow, list[TxtAuditDivergence]]:
+    divergences: list[TxtAuditDivergence] = []
+    status = "OK"
+    expected = _pick_unique_unused(expected_by_exact.get(line.exact_key, ()), used_movement_ids)
+
+    if expected is None:
+        exact_candidates = expected_by_exact.get(line.exact_key, ())
+        if len(exact_candidates) > 1:
+            status = "MULTIPLA_CORRESPONDENCIA"
+            expected = exact_candidates[0]
+            divergences.append(
+                _divergence(
+                    "MULTIPLA_CORRESPONDENCIA",
+                    "Linha do TXT possui mais de um movimento esperado compativel.",
+                    line,
+                    expected,
+                )
+            )
+        else:
+            expected, status = _classify_unmatched_line(
+                line,
+                expected_by_employee_rubric=expected_by_employee_rubric,
+                expected_by_employee_value=expected_by_employee_value,
+            )
+            divergences.append(_divergence(status, _message_for_status(status), line, expected))
+
+    if expected is not None:
+        used_movement_ids.add(expected.canonical_movement_id)
+
+    if duplicate_count > 1:
+        status = "DUPLICADO"
+        divergences.append(
+            _divergence(
+                "DUPLICADO",
+                "Mesma combinacao matricula + rubrica + referencia + valor aparece mais de uma vez no TXT.",
+                line,
+                expected,
+            )
+        )
+
+    employee_name = expected.employee_name if expected is not None else employee_name_by_registration.get(line.domain_registration_raw)
+    if expected is not None and not employee_name:
+        if status == "OK":
+            status = "MATRICULA_SEM_NOME"
+        divergences.append(
+            _divergence(
+                "MATRICULA_SEM_NOME",
+                "Movimento reconciliado, mas a matricula nao possui nome associado no artefato mapeado.",
+                line,
+                expected,
+            )
+        )
+
+    return (
+        TxtAuditEmployeeRow(
+            line_number=line.line_number,
+            canonical_movement_id=(expected.canonical_movement_id if expected is not None else None),
+            domain_registration_raw=line.domain_registration_raw,
+            domain_registration=_display_code(line.domain_registration_raw),
+            employee_name=employee_name,
+            rubric_raw=line.rubric_raw,
+            rubric=_display_code(line.rubric_raw),
+            description=(expected.event_name if expected is not None else "Nao reconciliado"),
+            value_type=(expected.value_type if expected is not None else None),
+            launched_value=(expected.launched_value if expected is not None else _line_launched_value(line)),
+            reference_raw=line.reference_raw,
+            value_raw=line.value_raw,
+            txt_line=line.text,
+            check_status=status,
+        ),
+        divergences,
+    )
+
+
+def _classify_unmatched_line(
+    line: _ParsedTxtLine,
+    *,
+    expected_by_employee_rubric: dict[tuple, list[_ExpectedMovement]],
+    expected_by_employee_value: dict[tuple, list[_ExpectedMovement]],
+) -> tuple[_ExpectedMovement | None, str]:
+    value_candidates = expected_by_employee_rubric.get(line.employee_rubric_key, ())
+    if value_candidates:
+        return value_candidates[0], "VALOR_DIVERGENTE"
+
+    rubric_candidates = expected_by_employee_value.get(line.employee_value_key, ())
+    if rubric_candidates:
+        return rubric_candidates[0], "RUBRICA_DIVERGENTE"
+
+    return None, "NAO_LOCALIZADO_NA_FOLHA"
+
+
+def _pick_unique_unused(
+    candidates: list[_ExpectedMovement] | tuple[_ExpectedMovement, ...],
+    used_movement_ids: set[str],
+) -> _ExpectedMovement | None:
+    unused = [item for item in candidates if item.canonical_movement_id not in used_movement_ids]
+    if len(unused) == 1:
+        return unused[0]
+    return None
+
+
+def _index_expected(expected_movements: tuple[_ExpectedMovement, ...], attribute: str) -> dict[tuple, list[_ExpectedMovement]]:
+    index: dict[tuple, list[_ExpectedMovement]] = defaultdict(list)
+    for movement in expected_movements:
+        index[getattr(movement, attribute)].append(movement)
+    return index
+
+
+def _employee_name_by_registration(expected_movements: tuple[_ExpectedMovement, ...]) -> dict[str, str]:
+    names: dict[str, str] = {}
+    for movement in expected_movements:
+        if movement.employee_name:
+            names.setdefault(movement.domain_registration_raw, movement.employee_name)
+    return names
+
+
+def _rubric_totals(lines: tuple[_ParsedTxtLine, ...]) -> tuple[TxtAuditRubricTotal, ...]:
+    grouped: dict[str, list[_ParsedTxtLine]] = defaultdict(list)
+    for line in lines:
+        grouped[line.rubric_raw].append(line)
+
+    totals: list[TxtAuditRubricTotal] = []
+    for rubric_raw, rubric_lines in sorted(grouped.items()):
+        total = sum((_decode_implied_decimal(line.value_raw) for line in rubric_lines), Decimal("0"))
+        totals.append(
+            TxtAuditRubricTotal(
+                rubric_raw=rubric_raw,
+                rubric=_display_code(rubric_raw),
+                line_count=len(rubric_lines),
+                value_total=_decimal_display(total),
+            )
+        )
+    return tuple(totals)
+
+
+def _divergence(
+    code: str,
+    message: str,
+    line: _ParsedTxtLine,
+    expected: _ExpectedMovement | None,
+) -> TxtAuditDivergence:
+    return TxtAuditDivergence(
+        code=code,
+        message=message,
+        line_number=line.line_number,
+        canonical_movement_id=(expected.canonical_movement_id if expected is not None else None),
+        domain_registration=_display_code(line.domain_registration_raw),
+        rubric=_display_code(line.rubric_raw),
+    )
+
+
+def _message_for_status(status: str) -> str:
+    if status == "VALOR_DIVERGENTE":
+        return "Matricula e rubrica existem no movimento esperado, mas referencia/valor do TXT diverge."
+    if status == "RUBRICA_DIVERGENTE":
+        return "Matricula e referencia/valor existem no movimento esperado, mas rubrica do TXT diverge."
+    return "Linha do TXT nao foi localizada entre os movimentos mapeados esperados."
+
+
+def _line_launched_value(line: _ParsedTxtLine) -> str:
+    if line.value_raw != "0" * 10:
+        return _decimal_display(_decode_implied_decimal(line.value_raw))
+    return f"referencia={line.reference_raw}"
+
+
+def _encode_numeric_identifier(value: object, *, width: int) -> str:
+    text = str(value or "").strip()
+    return text.zfill(width)
+
+
+def _encode_implied_decimal(value: object, *, width: int) -> str | None:
+    try:
+        decimal_value = Decimal(str(value))
+    except (InvalidOperation, ValueError):
+        return None
+    scaled = decimal_value * 100
+    if scaled != scaled.to_integral_value():
+        return None
+    return str(int(scaled)).zfill(width)
+
+
+def _decode_implied_decimal(value: str) -> Decimal:
+    return Decimal(int(value or "0")) / Decimal("100")
+
+
+def _display_code(value: str) -> str:
+    return value.lstrip("0") or "0"
+
+
+def _decimal_display(value: object) -> str:
+    try:
+        decimal_value = Decimal(str(value))
+    except (InvalidOperation, ValueError):
+        return str(value or "")
+    normalized = format(decimal_value, "f")
+    if "." not in normalized:
+        return normalized
+    return normalized.rstrip("0").rstrip(".") or "0"
+
+
+def _optional_text(value: object) -> str | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
+
+
+__all__ = [
+    "TxtAuditDivergence",
+    "TxtAuditEmployeeRow",
+    "TxtAuditResult",
+    "TxtAuditRubricTotal",
+    "TxtAuditSummary",
+    "build_txt_audit",
+]
