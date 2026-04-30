@@ -136,11 +136,10 @@ def _render_summary(result) -> None:
 
 
 def _render_txt_audit(result) -> None:
-    st.subheader("Auditoria visual do TXT")
-    if not result.paths.txt_path.exists():
-        st.info("TXT ainda nao foi gerado para esta analise.")
+    if not result.paths.txt_path.exists() or result.summary.serialized_line_count == 0:
         return
 
+    st.subheader("Auditoria visual do TXT")
     try:
         audit = build_txt_audit(result)
     except Exception as exc:  # pragma: no cover - defensive visual path
@@ -164,7 +163,8 @@ def _render_txt_audit(result) -> None:
                     "Rubrica": item.rubric,
                     "Rubrica TXT": item.rubric_raw,
                     "Linhas": item.line_count,
-                    "Total campo valor": item.value_total,
+                    "Tipo": item.value_type,
+                    "Total": item.display_total,
                 }
                 for item in audit.summary.rubric_totals
             ]

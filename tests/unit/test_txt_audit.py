@@ -39,7 +39,11 @@ def _movement(
     registration: str = "123",
     rubric: str = "201",
     employee_name: str | None = "Ana Lima",
+    value_type: str = "monetario",
     amount: str = "150",
+    hours_text: str | None = None,
+    hours_total_minutes: int | None = None,
+    quantity: str | None = None,
 ) -> dict:
     return {
         "canonical_movement_id": movement_id,
@@ -50,10 +54,14 @@ def _movement(
         "employee_key": "col-001",
         "employee_name": employee_name,
         "event_name": "gratificacao",
-        "value_type": "monetario",
-        "quantity": None,
-        "hours": None,
-        "amount": amount,
+        "value_type": value_type,
+        "quantity": quantity,
+        "hours": (
+            {"text": hours_text, "total_minutes": hours_total_minutes}
+            if hours_text is not None and hours_total_minutes is not None
+            else None
+        ),
+        "amount": amount if value_type == "monetario" else None,
         "source": {
             "sheet_name": "LANCAMENTOS_FACEIS",
             "row_number": 2,
@@ -158,10 +166,65 @@ def test_txt_audit_summarizes_ok_txt_lines(tmp_path: Path) -> None:
     assert audit.summary.process_codes == ("11",)
     assert audit.summary.rubric_totals[0].rubric == "201"
     assert audit.summary.rubric_totals[0].line_count == 1
-    assert audit.summary.rubric_totals[0].value_total == "150"
+    assert audit.summary.rubric_totals[0].value_type == "monetario"
+    assert audit.summary.rubric_totals[0].total_value == "150"
+    assert audit.summary.rubric_totals[0].display_total == "150"
     assert audit.employee_rows[0].check_status == "OK"
     assert audit.employee_rows[0].employee_name == "Ana Lima"
     assert audit.divergences == ()
+
+
+def test_txt_audit_totals_hours_by_reference(tmp_path: Path) -> None:
+    result = _result(
+        tmp_path,
+        lines=[
+            _txt_line(rubric="200", reference="000000800", value="0000000000"),
+            _txt_line(registration="124", rubric="200", reference="000001630", value="0000000000"),
+        ],
+        movements=[
+            _movement("mov-001", rubric="200", value_type="horas", hours_text="08:00", hours_total_minutes=480),
+            _movement(
+                "mov-002",
+                registration="124",
+                rubric="200",
+                value_type="horas",
+                hours_text="16:30",
+                hours_total_minutes=990,
+            ),
+        ],
+    )
+
+    audit = build_txt_audit(result)
+
+    total = audit.summary.rubric_totals[0]
+    assert total.rubric == "200"
+    assert total.value_type == "horas"
+    assert total.total_reference == "24:30"
+    assert total.display_total == "24:30"
+    assert {row.check_status for row in audit.employee_rows} == {"OK"}
+
+
+def test_txt_audit_totals_days_by_reference(tmp_path: Path) -> None:
+    result = _result(
+        tmp_path,
+        lines=[
+            _txt_line(rubric="8792", reference="000000100", value="0000000000"),
+            _txt_line(registration="124", rubric="8792", reference="000000200", value="0000000000"),
+        ],
+        movements=[
+            _movement("mov-001", rubric="8792", value_type="dias", quantity="1"),
+            _movement("mov-002", registration="124", rubric="8792", value_type="dias", quantity="2"),
+        ],
+    )
+
+    audit = build_txt_audit(result)
+
+    total = audit.summary.rubric_totals[0]
+    assert total.rubric == "8792"
+    assert total.value_type == "dias"
+    assert total.total_reference == "3"
+    assert total.display_total == "3 dia(s)"
+    assert {row.check_status for row in audit.employee_rows} == {"OK"}
 
 
 def test_txt_audit_flags_value_and_rubric_divergences(tmp_path: Path) -> None:
@@ -209,3 +272,23 @@ def test_txt_audit_flags_line_not_found_in_sheet(tmp_path: Path) -> None:
 
     assert audit.employee_rows[0].check_status == "NAO_LOCALIZADO_NA_FOLHA"
     assert audit.divergences[0].code == "NAO_LOCALIZADO_NA_FOLHA"
+
+
+def test_txt_audit_flags_invalid_txt_line_without_raising(tmp_path: Path) -> None:
+    result = _result(tmp_path, lines=["1" + "123".zfill(11)], movements=[])
+
+    audit = build_txt_audit(result)
+
+    assert audit.employee_rows[0].check_status == "LINHA_TXT_INVALIDA"
+    assert audit.divergences[0].code == "LINHA_TXT_INVALIDA"
+
+
+def test_txt_audit_handles_empty_txt(tmp_path: Path) -> None:
+    result = _result(tmp_path, lines=[], movements=[])
+
+    audit = build_txt_audit(result)
+
+    assert audit.summary.total_lines == 0
+    assert audit.summary.rubric_totals == ()
+    assert audit.employee_rows == ()
+    assert audit.divergences == ()

@@ -18,7 +18,10 @@ class TxtAuditRubricTotal:
     rubric_raw: str
     rubric: str
     line_count: int
-    value_total: str
+    value_type: str
+    total_value: str | None
+    total_reference: str | None
+    display_total: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -174,7 +177,7 @@ def build_txt_audit(result: DashboardRunResult) -> TxtAuditResult:
             company_name=result.summary.company_name,
             competence=result.summary.competence,
             process_codes=tuple(sorted({_display_code(line.process_code_raw) for line in parsed_lines})),
-            rubric_totals=_rubric_totals(parsed_lines),
+            rubric_totals=_rubric_totals(tuple(rows)),
         ),
         employee_rows=tuple(rows),
         divergences=tuple(divergences),
@@ -280,6 +283,36 @@ def _audit_txt_line(
     divergences: list[TxtAuditDivergence] = []
     status = "OK"
     expected = _pick_unique_unused(expected_by_exact.get(line.exact_key, ()), used_movement_ids)
+
+    if len(line.text) != TXT_LINE_WIDTH:
+        status = "LINHA_TXT_INVALIDA"
+        divergences.append(
+            _divergence(
+                "LINHA_TXT_INVALIDA",
+                "Linha do TXT possui tamanho diferente de 43 posicoes.",
+                line,
+                None,
+            )
+        )
+        return (
+            TxtAuditEmployeeRow(
+                line_number=line.line_number,
+                canonical_movement_id=None,
+                domain_registration_raw=line.domain_registration_raw,
+                domain_registration=_display_code(line.domain_registration_raw),
+                employee_name=employee_name_by_registration.get(line.domain_registration_raw),
+                rubric_raw=line.rubric_raw,
+                rubric=_display_code(line.rubric_raw),
+                description="Linha TXT invalida",
+                value_type=None,
+                launched_value=_line_launched_value(line),
+                reference_raw=line.reference_raw,
+                value_raw=line.value_raw,
+                txt_line=line.text,
+                check_status=status,
+            ),
+            divergences,
+        )
 
     if expected is None:
         exact_candidates = expected_by_exact.get(line.exact_key, ())
@@ -392,20 +425,44 @@ def _employee_name_by_registration(expected_movements: tuple[_ExpectedMovement, 
     return names
 
 
-def _rubric_totals(lines: tuple[_ParsedTxtLine, ...]) -> tuple[TxtAuditRubricTotal, ...]:
-    grouped: dict[str, list[_ParsedTxtLine]] = defaultdict(list)
-    for line in lines:
-        grouped[line.rubric_raw].append(line)
+def _rubric_totals(rows: tuple[TxtAuditEmployeeRow, ...]) -> tuple[TxtAuditRubricTotal, ...]:
+    grouped: dict[str, list[TxtAuditEmployeeRow]] = defaultdict(list)
+    for row in rows:
+        grouped[row.rubric_raw].append(row)
 
     totals: list[TxtAuditRubricTotal] = []
-    for rubric_raw, rubric_lines in sorted(grouped.items()):
-        total = sum((_decode_implied_decimal(line.value_raw) for line in rubric_lines), Decimal("0"))
+    for rubric_raw, rubric_rows in sorted(grouped.items()):
+        value_types = {row.value_type for row in rubric_rows if row.value_type is not None}
+        value_type = next(iter(value_types)) if len(value_types) == 1 else ("misto" if value_types else "nao_classificado")
+        total_value: str | None = None
+        total_reference: str | None = None
+
+        if value_type == "monetario":
+            total = sum((_decode_implied_decimal(row.value_raw) for row in rubric_rows), Decimal("0"))
+            total_value = _decimal_display(total)
+            display_total = total_value
+        elif value_type == "horas":
+            total_minutes = sum(_decode_hours_reference(row.reference_raw) for row in rubric_rows)
+            total_reference = _minutes_to_hhmm(total_minutes)
+            display_total = total_reference
+        elif value_type == "dias":
+            total = sum((_decode_implied_decimal(row.reference_raw) for row in rubric_rows), Decimal("0"))
+            total_reference = _decimal_display(total)
+            display_total = f"{total_reference} dia(s)"
+        elif value_type == "misto":
+            display_total = "misto; revisar linhas"
+        else:
+            display_total = "nao classificado"
+
         totals.append(
             TxtAuditRubricTotal(
                 rubric_raw=rubric_raw,
                 rubric=_display_code(rubric_raw),
-                line_count=len(rubric_lines),
-                value_total=_decimal_display(total),
+                line_count=len(rubric_rows),
+                value_type=value_type,
+                total_value=total_value,
+                total_reference=total_reference,
+                display_total=display_total,
             )
         )
     return tuple(totals)
@@ -459,6 +516,19 @@ def _encode_implied_decimal(value: object, *, width: int) -> str | None:
 
 def _decode_implied_decimal(value: str) -> Decimal:
     return Decimal(int(value or "0")) / Decimal("100")
+
+
+def _decode_hours_reference(value: str) -> int:
+    text = (value or "").zfill(9)
+    hour_minute = text[-4:]
+    if not hour_minute.isdigit():
+        return 0
+    return int(hour_minute[:2]) * 60 + int(hour_minute[2:])
+
+
+def _minutes_to_hhmm(total_minutes: int) -> str:
+    hours, minutes = divmod(total_minutes, 60)
+    return f"{hours:02d}:{minutes:02d}"
 
 
 def _display_code(value: str) -> str:

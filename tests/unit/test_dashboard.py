@@ -51,6 +51,7 @@ class _FakeStreamlit:
         self.errors: list[str] = []
         self.infos: list[str] = []
         self.markdowns: list[str] = []
+        self.subheaders: list[str] = []
         self.tables: list[object] = []
         self.uploaded_workbook = uploaded_workbook
         self.button_result = button_result
@@ -70,8 +71,8 @@ class _FakeStreamlit:
     def caption(self, *args, **kwargs) -> None:
         return None
 
-    def subheader(self, *args, **kwargs) -> None:
-        return None
+    def subheader(self, message: str, *args, **kwargs) -> None:
+        self.subheaders.append(message)
 
     def write(self, *args, **kwargs) -> None:
         return None
@@ -1000,6 +1001,25 @@ def test_render_pendings_displays_operational_columns(tmp_path: Path) -> None:
     assert fake_st.tables[0][0]["Etapa"] == "mapeamento"
     assert fake_st.tables[0][0]["Codigo"] == "mapeamento_evento_ausente"
     assert fake_st.tables[0][0]["Evento"] == "horas_extras_50"
+
+
+def test_render_txt_audit_is_hidden_when_no_serialized_lines(tmp_path: Path) -> None:
+    module = _load_dashboard_v1_module()
+    fake_st = _FakeStreamlit()
+    module.st = fake_st
+    txt_path = tmp_path / "input.txt"
+    txt_path.write_text("", encoding="utf-8")
+
+    module._render_txt_audit(
+        SimpleNamespace(
+            paths=SimpleNamespace(txt_path=txt_path),
+            summary=SimpleNamespace(serialized_line_count=0),
+        )
+    )
+
+    assert fake_st.subheaders == []
+    assert fake_st.infos == []
+    assert fake_st.tables == []
 
 
 def test_render_pendings_employee_form_calls_manual_action_and_reprocesses(tmp_path: Path) -> None:
