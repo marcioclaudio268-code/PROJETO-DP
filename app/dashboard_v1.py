@@ -32,6 +32,7 @@ from dashboard.txt_audit import build_txt_audit
 RUN_ROOT_KEY = "dashboard_v1_run_root"
 ERROR_KEY = "dashboard_v1_last_error"
 ASSISTED_IMPORT_RESULT_KEY = "dashboard_v1_assisted_import_result"
+RUBRIC_EDIT_INDEX_KEY = "dashboard_v1_rubric_edit_index"
 COLUMN_MAPPING_PROFILE_CODES = {
     "column_mapping_profile_missing",
     "column_mapping_profile_incomplete",
@@ -614,14 +615,42 @@ def _render_rubrics_tab() -> None:
     else:
         st.info("Nenhuma rubrica ativa cadastrada para esta empresa.")
 
+    if catalog.rubrics:
+        st.markdown("**Editar rubrica cadastrada**")
+        for index, rubric in enumerate(catalog.rubrics):
+            code_column, description_column, kind_column, nature_column, status_column, action_column = st.columns(6)
+            code_column.write(rubric.rubric_code)
+            description_column.write(rubric.description)
+            kind_column.write(rubric.value_kind.value)
+            nature_column.write(rubric.nature.value)
+            status_column.write(rubric.status.value)
+            if action_column.button(
+                "Editar",
+                key=f"editar-rubrica-{index}-{rubric.rubric_code}",
+            ):
+                st.session_state[RUBRIC_EDIT_INDEX_KEY] = index
+                st.rerun()
+
     rubric_options = ["Nova rubrica"] + [
         f"{rubric.rubric_code} - {rubric.description}" for rubric in catalog.rubrics
     ]
-    selected_label = st.selectbox("Registro de rubrica", options=rubric_options)
+    edit_index = _session_rubric_edit_index(catalog)
+    selected_option_index = edit_index + 1 if edit_index is not None else 0
+    selected_label = st.selectbox(
+        "Registro de rubrica",
+        options=rubric_options,
+        index=selected_option_index,
+    )
     selected_rubric = None
     if selected_label != "Nova rubrica":
         selected_index = rubric_options.index(selected_label) - 1
         selected_rubric = catalog.rubrics[selected_index]
+        st.session_state[RUBRIC_EDIT_INDEX_KEY] = selected_index
+    else:
+        st.session_state.pop(RUBRIC_EDIT_INDEX_KEY, None)
+
+    if selected_rubric is not None:
+        st.info(f"Editando rubrica {selected_rubric.rubric_code} - {selected_rubric.description}.")
 
     with st.form("form-rubrica"):
         rubric_code = st.text_input("Codigo da rubrica", value=selected_rubric.rubric_code if selected_rubric else "")
@@ -630,12 +659,12 @@ def _render_rubrics_tab() -> None:
         value_kind = st.selectbox(
             "Tipo do valor",
             options=VALUE_KIND_OPTIONS,
-            index=VALUE_KIND_OPTIONS.index(selected_rubric.value_kind.value) if selected_rubric else 0,
+            index=_option_index(VALUE_KIND_OPTIONS, selected_rubric.value_kind.value if selected_rubric else None),
         )
         nature = st.selectbox(
             "Natureza",
             options=RUBRIC_NATURE_OPTIONS,
-            index=RUBRIC_NATURE_OPTIONS.index(selected_rubric.nature.value) if selected_rubric else 0,
+            index=_option_index(RUBRIC_NATURE_OPTIONS, selected_rubric.nature.value if selected_rubric else None),
         )
         aliases = st.text_input(
             "Aliases separados por virgula",
@@ -644,12 +673,27 @@ def _render_rubrics_tab() -> None:
         status = st.selectbox(
             "Status",
             options=RECORD_STATUS_OPTIONS,
-            index=RECORD_STATUS_OPTIONS.index(selected_rubric.status.value) if selected_rubric else 0,
+            index=_option_index(RECORD_STATUS_OPTIONS, selected_rubric.status.value if selected_rubric else None),
         )
         notes = st.text_input("Observacoes", value=selected_rubric.notes or "" if selected_rubric else "")
-        submitted = st.form_submit_button("Salvar rubrica")
-        if submitted:
+        save_submitted = st.form_submit_button("Salvar rubrica")
+        inactivate_submitted = st.form_submit_button(
+            "Inativar rubrica",
+            disabled=selected_rubric is None,
+        )
+        if save_submitted or inactivate_submitted:
             try:
+                target_status = "inactive" if inactivate_submitted else status
+                if _has_active_rubric_code_duplicate(
+                    catalog,
+                    rubric_code=rubric_code,
+                    selected_rubric=selected_rubric,
+                    target_status=target_status,
+                ):
+                    raise ValueError(
+                        "Ja existe uma rubrica ativa com este codigo para esta empresa. "
+                        "Inative a rubrica existente ou use outro codigo."
+                    )
                 save_rubric_catalog_record(
                     company_code=selected_company.company_code,
                     company_name=selected_company.company_name,
@@ -659,13 +703,64 @@ def _render_rubrics_tab() -> None:
                     value_kind=value_kind,
                     nature=nature,
                     aliases=aliases,
-                    status=status,
+                    status=target_status,
                     notes=notes,
                 )
-                st.success("Rubrica salva no catalogo persistente da empresa.")
+                if inactivate_submitted:
+                    st.success("Rubrica inativada no catalogo persistente da empresa.")
+                else:
+                    st.success("Rubrica salva no catalogo persistente da empresa.")
+                st.session_state.pop(RUBRIC_EDIT_INDEX_KEY, None)
                 st.rerun()
             except Exception as exc:  # pragma: no cover - visual feedback path
                 st.error(f"Nao foi possivel salvar a rubrica: {exc}")
+
+
+def _session_rubric_edit_index(catalog) -> int | None:
+    raw_index = st.session_state.get(RUBRIC_EDIT_INDEX_KEY)
+    if raw_index is None:
+        return None
+    try:
+        index = int(raw_index)
+    except (TypeError, ValueError):
+        st.session_state.pop(RUBRIC_EDIT_INDEX_KEY, None)
+        return None
+    if index < 0 or index >= len(catalog.rubrics):
+        st.session_state.pop(RUBRIC_EDIT_INDEX_KEY, None)
+        return None
+    return index
+
+
+def _option_index(options: tuple[str, ...], value: str | None) -> int:
+    if value in options:
+        return options.index(value)
+    return 0
+
+
+def _has_active_rubric_code_duplicate(
+    catalog,
+    *,
+    rubric_code: str,
+    selected_rubric,
+    target_status: str,
+) -> bool:
+    if str(target_status).strip() != "active":
+        return False
+    normalized_code = _normalize_rubric_code(rubric_code)
+    if not normalized_code:
+        return False
+    for rubric in catalog.rubrics:
+        if selected_rubric is not None and rubric is selected_rubric:
+            continue
+        if getattr(rubric.status, "value", rubric.status) != "active":
+            continue
+        if _normalize_rubric_code(rubric.rubric_code) == normalized_code:
+            return True
+    return False
+
+
+def _normalize_rubric_code(value: object) -> str:
+    return "".join(ch for ch in str(value or "").strip() if ch.isalnum()).upper()
 
 
 def _render_column_profile_tab() -> None:

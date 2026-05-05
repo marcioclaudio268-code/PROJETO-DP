@@ -12,6 +12,8 @@ from openpyxl import load_workbook
 
 from dashboard import (
     CompanyAdminEntry,
+    CompanyRubricCatalog,
+    CompanyRubricRecord,
     ConfigResolutionStatus,
     ConfigResolver,
     DashboardActionType,
@@ -61,6 +63,7 @@ class _FakeStreamlit:
         self.tables: list[object] = []
         self.expanders: list[str] = []
         self.text_areas: list[dict[str, object]] = []
+        self.text_input_calls: list[dict[str, object]] = []
         self.warnings: list[str] = []
         self.tab_labels: list[str] = []
         self.selectbox_calls: list[dict[str, object]] = []
@@ -144,7 +147,12 @@ class _FakeStreamlit:
         self.event_log.append(f"selectbox:{label}")
         if label == "Corrigir item selecionado" and self.selected_label is not None:
             return self.selected_label
-        return self.selectboxes.get(label, options[0] if options else "Selecione um item")
+        if label in self.selectboxes:
+            return self.selectboxes[label]
+        if not options:
+            return "Selecione um item"
+        index = kwargs.get("index", 0)
+        return options[index]
 
     def form(self, *args, **kwargs):
         class _FormContext:
@@ -157,9 +165,12 @@ class _FakeStreamlit:
         return _FormContext()
 
     def form_submit_button(self, *args, **kwargs):
+        if kwargs.get("disabled"):
+            return False
         return self.form_submit_result
 
     def text_input(self, label, value="", *args, **kwargs):
+        self.text_input_calls.append({"label": label, "value": value, "kwargs": kwargs})
         return self.text_inputs.get(label, value)
 
     def text_area(self, label, value="", *args, **kwargs):
@@ -1080,6 +1091,118 @@ def test_dashboard_main_renders_registration_tabs() -> None:
 
     assert tuple(fake_st.tab_labels) == module.TAB_LABELS
     assert "Importador assistido de relatorios" in module.TAB_LABELS
+
+
+def test_render_rubrics_tab_shows_edit_button() -> None:
+    module = _load_dashboard_v1_module()
+    fake_st = _FakeStreamlit()
+    module.st = fake_st
+    selected_company = CompanyAdminEntry(
+        company_code="755",
+        company_name="GUSTAVO LOPES LACERDA",
+        status="active",
+        is_active=True,
+        company_id="company:755",
+    )
+    catalog = CompanyRubricCatalog(
+        company_code="755",
+        company_name="GUSTAVO LOPES LACERDA",
+        rubrics=[
+            CompanyRubricRecord(
+                rubric_code="13",
+                description="SAL.RESCISAO",
+                canonical_event="13",
+                value_kind="monetario",
+                nature="provento",
+                status="active",
+                source="test",
+            )
+        ],
+    )
+    module._render_company_selector = lambda *args, **kwargs: selected_company
+    module.load_company_rubric_catalog = lambda *args, **kwargs: catalog
+
+    module._render_rubrics_tab()
+
+    assert "Editar" in [call["args"][0] for call in fake_st.button_calls]
+
+
+def test_render_rubrics_tab_edit_form_has_expected_fields() -> None:
+    module = _load_dashboard_v1_module()
+    fake_st = _FakeStreamlit()
+    fake_st.session_state[module.RUBRIC_EDIT_INDEX_KEY] = 0
+    module.st = fake_st
+    selected_company = CompanyAdminEntry(
+        company_code="755",
+        company_name="GUSTAVO LOPES LACERDA",
+        status="active",
+        is_active=True,
+        company_id="company:755",
+    )
+    catalog = CompanyRubricCatalog(
+        company_code="755",
+        company_name="GUSTAVO LOPES LACERDA",
+        rubrics=[
+            CompanyRubricRecord(
+                rubric_code="13",
+                description="SAL.RESCISAO",
+                canonical_event="13",
+                value_kind="monetario",
+                nature="provento",
+                status="active",
+                source="test",
+            )
+        ],
+    )
+    module._render_company_selector = lambda *args, **kwargs: selected_company
+    module.load_company_rubric_catalog = lambda *args, **kwargs: catalog
+
+    module._render_rubrics_tab()
+
+    text_labels = {call["label"] for call in fake_st.text_input_calls}
+    select_labels = {call["label"] for call in fake_st.selectbox_calls}
+    assert {"Codigo da rubrica", "Descricao"}.issubset(text_labels)
+    assert {"Tipo do valor", "Natureza", "Status"}.issubset(select_labels)
+
+
+def test_rubrics_tab_blocks_active_duplicate_code_on_edit() -> None:
+    module = _load_dashboard_v1_module()
+    catalog = CompanyRubricCatalog(
+        company_code="755",
+        rubrics=[
+            CompanyRubricRecord(
+                rubric_code="13",
+                description="SAL.RESCISAO",
+                canonical_event="13",
+                value_kind="monetario",
+                nature="provento",
+                status="active",
+                source="test",
+            ),
+            CompanyRubricRecord(
+                rubric_code="989",
+                description="INSS 13 SAL.RESCISAO",
+                canonical_event="989",
+                value_kind="monetario",
+                nature="desconto",
+                status="active",
+                source="test",
+            ),
+        ],
+    )
+
+    assert module._has_active_rubric_code_duplicate(
+        catalog,
+        rubric_code="989",
+        selected_rubric=catalog.rubrics[0],
+        target_status="active",
+    )
+    assert not module._has_active_rubric_code_duplicate(
+        catalog,
+        rubric_code="989",
+        selected_rubric=catalog.rubrics[0],
+        target_status="inactive",
+    )
 
 
 def test_render_assisted_report_importer_requires_company_before_upload() -> None:

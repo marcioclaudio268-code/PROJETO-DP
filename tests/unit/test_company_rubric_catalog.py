@@ -106,6 +106,43 @@ def test_company_rubric_catalog_upserts_rubric_by_code() -> None:
     assert updated.rubrics[0].description == "EXTRA 70 ATUAL"
 
 
+def test_company_rubric_catalog_edits_existing_rubric_fields() -> None:
+    catalog = CompanyRubricCatalog(company_code="887", rubrics=[_rubric(rubric_code="8907")])
+    updated = upsert_rubric_record(
+        catalog,
+        _rubric(
+            rubric_code="8907",
+            description="QUEBRA DE CAIXA",
+            canonical_event="8907",
+            value_kind="monetario",
+            nature="provento",
+            status="active",
+        ),
+    )
+
+    assert len(updated.rubrics) == 1
+    assert updated.rubrics[0].description == "QUEBRA DE CAIXA"
+    assert updated.rubrics[0].value_kind.value == "monetario"
+    assert updated.rubrics[0].nature.value == "provento"
+    assert updated.rubrics[0].status.value == "active"
+
+
+def test_company_rubric_catalog_inactivates_existing_rubric() -> None:
+    catalog = CompanyRubricCatalog(company_code="887", rubrics=[_rubric(rubric_code="13")])
+    updated = upsert_rubric_record(
+        catalog,
+        _rubric(
+            rubric_code="13",
+            description="SAL.RESCISAO",
+            canonical_event="13",
+            status="inactive",
+        ),
+    )
+
+    assert updated.rubrics[0].status.value == "inactive"
+    assert list_active_rubrics(updated) == ()
+
+
 def test_company_rubric_catalog_lists_only_active_rubrics() -> None:
     catalog = CompanyRubricCatalog(
         company_code="887",
@@ -116,6 +153,18 @@ def test_company_rubric_catalog_lists_only_active_rubrics() -> None:
     )
 
     assert [rubric.rubric_code for rubric in list_active_rubrics(catalog)] == ["201"]
+
+
+def test_company_rubric_catalog_allows_same_code_when_one_is_inactive() -> None:
+    catalog = CompanyRubricCatalog(
+        company_code="887",
+        rubrics=[
+            _rubric(rubric_code="989", canonical_event="inss_13", status="active"),
+            _rubric(rubric_code="989", canonical_event="legacy_wrong_entry", status="inactive"),
+        ],
+    )
+
+    assert [rubric.rubric_code for rubric in list_active_rubrics(catalog)] == ["989"]
 
 
 def test_rubric_catalog_applies_event_mapping_on_safe_match() -> None:

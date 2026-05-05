@@ -10,6 +10,7 @@ from dashboard import (
     CompanyRubricCatalog,
     CompanyRubricRecord,
     RUBRIC_REVIEW_INCOMPLETE,
+    RUBRIC_REVIEW_NEW,
     analyze_report_import,
     apply_report_employee_suggestions,
     apply_report_rubric_suggestions,
@@ -585,6 +586,40 @@ def test_report_importer_flags_existing_conflicts_without_auto_update(tmp_path: 
     assert analysis.rubric_reviews[0].status == "divergente"
     assert registry.employees[0].employee_name == "Ana Antiga"
     assert catalog.rubrics[0].description == "HORA EXTRA ANTIGA"
+
+
+def test_report_importer_ignores_inactive_rubric_catalog_records(tmp_path: Path) -> None:
+    rubric_root = tmp_path / "rubrics"
+    save_company_rubric_catalog(
+        CompanyRubricCatalog(
+            company_code="900",
+            company_name="Empresa Relatorio",
+            rubrics=[
+                CompanyRubricRecord(
+                    rubric_code="350",
+                    description="HORAS EXTRAS 50",
+                    canonical_event="horas_extras_50",
+                    value_kind="horas",
+                    nature="provento",
+                    status="inactive",
+                    source="test",
+                )
+            ],
+        ),
+        root=rubric_root,
+    )
+
+    analysis = analyze_report_import(
+        file_name="resumo.txt",
+        file_bytes=_report_text(),
+        selected_company_code="900",
+        selected_company_name="Empresa Relatorio",
+        employee_registry_root=tmp_path / "employees",
+        rubric_catalog_root=rubric_root,
+    )
+
+    assert analysis.rubric_reviews[0].status == RUBRIC_REVIEW_NEW
+    assert analysis.rubric_reviews[0].current_record is None
 
 
 def test_report_importer_parses_csv_rows_and_column_profile_suggestion(tmp_path: Path) -> None:

@@ -201,7 +201,7 @@ def save_rubric_catalog_record(
     company_code: str,
     rubric_code: str,
     description: str,
-    canonical_event: str,
+    canonical_event: str | None,
     value_kind: str,
     nature: str,
     aliases: str | list[str] | tuple[str, ...] | None = None,
@@ -218,7 +218,7 @@ def save_rubric_catalog_record(
     rubric = CompanyRubricRecord(
         rubric_code=_required_text("rubric_code", rubric_code),
         description=_required_text("description", description),
-        canonical_event=_required_text("canonical_event", canonical_event),
+        canonical_event=_optional_text(canonical_event) or _required_text("rubric_code", rubric_code),
         value_kind=_required_text("value_kind", value_kind),
         nature=_required_text("nature", nature),
         aliases=_aliases(aliases),
