@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import dashboard.report_importer as report_importer
 from dashboard import (
     CompanyEmployeeRecord,
     CompanyEmployeeRegistry,
@@ -126,6 +127,37 @@ def test_report_importer_reconstructs_fragmented_dominio_metadata_and_employee()
     assert employees["304"] == "ADILSON RAFAEL DE SOUSA"
 
 
+def test_report_importer_diagnostics_for_dominio_monthly_text() -> None:
+    parsed = parse_report_file(
+        file_name="extrato-mensal.txt",
+        file_bytes=_dominio_monthly_text(),
+        selected_company_code="755",
+    )
+
+    diagnostics = parsed.diagnostics
+    assert diagnostics.contains_extrato_mensal is True
+    assert diagnostics.contains_empr is True
+    assert diagnostics.contains_selected_company_code is True
+    assert diagnostics.contains_competence_pattern is True
+    assert diagnostics.raw_line_count > 0
+    assert "EXTRATO MENSAL" in diagnostics.raw_sample
+
+
+def test_report_importer_diagnostics_for_fragmented_dominio_text() -> None:
+    parsed = parse_report_file(
+        file_name="extrato-fragmentado.txt",
+        file_bytes=_dominio_monthly_fragmented_text(),
+        selected_company_code="755",
+    )
+
+    diagnostics = parsed.diagnostics
+    assert diagnostics.reconstructed_text_length > 0
+    assert diagnostics.reconstructed_line_count == 1
+    assert diagnostics.contains_extrato_mensal is True
+    assert diagnostics.contains_empr is True
+    assert diagnostics.contains_selected_company_code is True
+
+
 def test_report_importer_reconstructs_fragmented_dominio_rubrics() -> None:
     parsed = parse_report_file(
         file_name="extrato-fragmentado.txt",
@@ -221,6 +253,60 @@ def test_report_importer_fragmented_dominio_divergent_company_blocks(tmp_path: P
 
     assert analysis.is_blocked is True
     assert "diverge" in (analysis.blocked_reason or "")
+
+
+def test_report_importer_pdf_fallback_diagnostics_when_extraction_has_no_text(monkeypatch) -> None:
+    monkeypatch.setattr(
+        report_importer,
+        "_extract_pdf_text",
+        lambda file_bytes: report_importer._PdfTextExtraction(
+            text=None,
+            extractor=None,
+            extracted=False,
+            warning="PDF de teste sem texto util.",
+        ),
+    )
+
+    parsed = report_importer.parse_report_file(
+        file_name="sem-texto.pdf",
+        file_bytes=b"%PDF-1.4\nbinary-only",
+        selected_company_code="755",
+    )
+
+    diagnostics = parsed.diagnostics
+    assert diagnostics.file_extension == ".pdf"
+    assert diagnostics.pdf_text_extractor == "binary_decode_fallback"
+    assert diagnostics.pdf_text_extracted is False
+    assert diagnostics.extraction_warning is not None
+    assert "fallback binario" in diagnostics.extraction_warning
+    assert diagnostics.contains_extrato_mensal is False
+    assert diagnostics.contains_empr is False
+    assert diagnostics.contains_selected_company_code is False
+
+
+def test_report_importer_pdf_diagnostics_when_extractor_returns_text(monkeypatch) -> None:
+    monkeypatch.setattr(
+        report_importer,
+        "_extract_pdf_text",
+        lambda file_bytes: report_importer._PdfTextExtraction(
+            text=_dominio_monthly_text().decode("utf-8"),
+            extractor="pypdf",
+            extracted=True,
+        ),
+    )
+
+    parsed = report_importer.parse_report_file(
+        file_name="extrato.pdf",
+        file_bytes=b"%PDF-1.4",
+        selected_company_code="755",
+    )
+
+    diagnostics = parsed.diagnostics
+    assert diagnostics.pdf_text_extractor == "pypdf"
+    assert diagnostics.pdf_text_extracted is True
+    assert diagnostics.extraction_warning is None
+    assert diagnostics.contains_extrato_mensal is True
+    assert diagnostics.contains_empr is True
 
 
 def test_report_importer_parses_dominio_monthly_metadata_and_employees() -> None:

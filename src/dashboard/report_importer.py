@@ -51,6 +51,7 @@ RUBRIC_REVIEW_EXISTING = "existente"
 RUBRIC_REVIEW_DIVERGENT = "divergente"
 RUBRIC_REVIEW_INCOMPLETE = "incompleto"
 REPORT_IMPORTER_SOURCE = "dashboard_report_importer"
+REPORT_DIAGNOSTIC_SAMPLE_LIMIT = 3000
 
 _EMPLOYEE_CODE_HEADERS = {
     "matricula",
@@ -171,6 +172,24 @@ class ReportColumnProfileSuggestion:
 
 
 @dataclass(frozen=True, slots=True)
+class ReportParseDiagnostics:
+    file_extension: str
+    pdf_text_extractor: str | None
+    pdf_text_extracted: bool
+    raw_text_length: int
+    raw_line_count: int
+    reconstructed_text_length: int
+    reconstructed_line_count: int
+    contains_extrato_mensal: bool
+    contains_empr: bool
+    contains_selected_company_code: bool
+    contains_competence_pattern: bool
+    raw_sample: str
+    reconstructed_sample: str
+    extraction_warning: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class ParsedPayrollReport:
     file_name: str
     parsed_at: datetime
@@ -182,6 +201,7 @@ class ParsedPayrollReport:
     rubric_totals: tuple[ReportRubricTotal, ...]
     column_profiles: tuple[ReportColumnProfileSuggestion, ...]
     text_line_count: int
+    diagnostics: ReportParseDiagnostics
 
 
 @dataclass(frozen=True, slots=True)
@@ -255,6 +275,25 @@ class ReportApplyResult:
     target_path: str | None = None
 
 
+@dataclass(frozen=True, slots=True)
+class _PdfTextExtraction:
+    text: str | None
+    extractor: str | None
+    extracted: bool
+    warning: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class _ReportTextExtraction:
+    rows: list[list[str]]
+    lines: list[str]
+    raw_text: str
+    file_extension: str
+    pdf_text_extractor: str | None = None
+    pdf_text_extracted: bool = False
+    extraction_warning: str | None = None
+
+
 def analyze_report_import(
     *,
     file_name: str,
@@ -266,8 +305,12 @@ def analyze_report_import(
 ) -> ReportImportAnalysis:
     """Parse an uploaded report and compare suggestions with current registries."""
 
-    parsed = parse_report_file(file_name=file_name, file_bytes=file_bytes)
     normalized_selected_code = _clean_text(selected_company_code)
+    parsed = parse_report_file(
+        file_name=file_name,
+        file_bytes=file_bytes,
+        selected_company_code=normalized_selected_code,
+    )
     blocked_reason = _report_block_reason(
         parsed,
         selected_company_code=normalized_selected_code,
@@ -294,10 +337,17 @@ def analyze_report_import(
     )
 
 
-def parse_report_file(*, file_name: str, file_bytes: bytes) -> ParsedPayrollReport:
+def parse_report_file(
+    *,
+    file_name: str,
+    file_bytes: bytes,
+    selected_company_code: str | None = None,
+) -> ParsedPayrollReport:
     parsed_at = datetime.now(timezone.utc)
     extension = Path(file_name).suffix.lower()
-    rows, lines = _extract_rows_and_lines(file_bytes, extension=extension)
+    extraction = _extract_rows_and_lines(file_bytes, extension=extension)
+    rows = extraction.rows
+    lines = extraction.lines
     dominio_lines = _reconstruct_dominio_monthly_lines(lines)
     detected_company_code, detected_company_name = _extract_company_metadata(rows, lines)
     competence = _extract_competence(rows, lines)
@@ -333,6 +383,11 @@ def parse_report_file(*, file_name: str, file_bytes: bytes) -> ParsedPayrollRepo
     column_profiles = _dedupe_column_profiles(
         _extract_column_profiles_from_rows(rows, base_origin)
     )
+    diagnostics = _build_parse_diagnostics(
+        extraction=extraction,
+        reconstructed_lines=dominio_lines,
+        selected_company_code=selected_company_code,
+    )
     return ParsedPayrollReport(
         file_name=file_name,
         parsed_at=parsed_at,
@@ -344,6 +399,7 @@ def parse_report_file(*, file_name: str, file_bytes: bytes) -> ParsedPayrollRepo
         rubric_totals=rubric_totals,
         column_profiles=column_profiles,
         text_line_count=len(lines),
+        diagnostics=diagnostics,
     )
 
 
@@ -640,16 +696,51 @@ def _report_block_reason(
     return None
 
 
-def _extract_rows_and_lines(file_bytes: bytes, *, extension: str) -> tuple[list[list[str]], list[str]]:
+def _extract_rows_and_lines(file_bytes: bytes, *, extension: str) -> _ReportTextExtraction:
     if extension == ".xlsx":
-        return _extract_xlsx_rows_and_lines(file_bytes)
+        rows, lines = _extract_xlsx_rows_and_lines(file_bytes)
+        raw_text = "\n".join(lines)
+        return _ReportTextExtraction(
+            rows=rows,
+            lines=lines,
+            raw_text=raw_text,
+            file_extension=extension,
+        )
     if extension == ".csv":
         text = _decode_text(file_bytes)
         rows = [[_clean_text(cell) or "" for cell in row] for row in csv.reader(io.StringIO(text))]
-        return rows, _non_empty_lines(text)
+        return _ReportTextExtraction(
+            rows=rows,
+            lines=_non_empty_lines(text),
+            raw_text=text,
+            file_extension=extension,
+        )
     if extension == ".pdf":
-        text = _extract_pdf_text(file_bytes) or _decode_text(file_bytes)
-        return [], _non_empty_lines(text)
+        pdf_extraction = _extract_pdf_text(file_bytes)
+        if pdf_extraction.text is not None:
+            text = pdf_extraction.text
+            extractor = pdf_extraction.extractor
+            warning = pdf_extraction.warning
+        else:
+            text = _decode_text(file_bytes)
+            extractor = "binary_decode_fallback"
+            fallback_warning = (
+                "PDF nao teve texto extraido por pypdf/PyPDF2; fallback binario pode nao representar texto util."
+            )
+            warning = (
+                f"{pdf_extraction.warning} {fallback_warning}"
+                if pdf_extraction.warning
+                else fallback_warning
+            )
+        return _ReportTextExtraction(
+            rows=[],
+            lines=_non_empty_lines(text),
+            raw_text=text,
+            file_extension=extension,
+            pdf_text_extractor=extractor,
+            pdf_text_extracted=pdf_extraction.extracted,
+            extraction_warning=warning,
+        )
 
     text = _decode_text(file_bytes)
     rows = []
@@ -657,7 +748,12 @@ def _extract_rows_and_lines(file_bytes: bytes, *, extension: str) -> tuple[list[
         delimiter = ";" if ";" in line else "|" if "|" in line else None
         if delimiter:
             rows.append([_clean_text(cell) or "" for cell in line.split(delimiter)])
-    return rows, _non_empty_lines(text)
+    return _ReportTextExtraction(
+        rows=rows,
+        lines=_non_empty_lines(text),
+        raw_text=text,
+        file_extension=extension,
+    )
 
 
 def _extract_xlsx_rows_and_lines(file_bytes: bytes) -> tuple[list[list[str]], list[str]]:
@@ -674,21 +770,37 @@ def _extract_xlsx_rows_and_lines(file_bytes: bytes) -> tuple[list[list[str]], li
     return rows, lines
 
 
-def _extract_pdf_text(file_bytes: bytes) -> str | None:
+def _extract_pdf_text(file_bytes: bytes) -> _PdfTextExtraction:
+    attempts: list[str] = []
     for module_name in ("pypdf", "PyPDF2"):
         try:
             module = importlib.import_module(module_name)
         except ModuleNotFoundError:
+            attempts.append(f"{module_name}: indisponivel")
             continue
         try:
             reader = module.PdfReader(io.BytesIO(file_bytes))
             parts = [page.extract_text() or "" for page in reader.pages]
             text = "\n".join(part for part in parts if part.strip())
             if text.strip():
-                return text
-        except Exception:
+                return _PdfTextExtraction(
+                    text=text,
+                    extractor=module_name,
+                    extracted=True,
+                )
+            attempts.append(f"{module_name}: sem texto")
+        except Exception as exc:
+            attempts.append(f"{module_name}: falhou ({exc})")
             continue
-    return None
+    warning = "PDF nao teve texto extraido por pypdf/PyPDF2."
+    if attempts:
+        warning = f"{warning} Tentativas: {'; '.join(attempts)}."
+    return _PdfTextExtraction(
+        text=None,
+        extractor=None,
+        extracted=False,
+        warning=warning,
+    )
 
 
 def _extract_company_metadata(
@@ -1148,6 +1260,38 @@ def _extract_dominio_monthly_rubric_totals_from_text(
     return tuple(totals)
 
 
+def _build_parse_diagnostics(
+    *,
+    extraction: _ReportTextExtraction,
+    reconstructed_lines: list[str],
+    selected_company_code: str | None,
+) -> ReportParseDiagnostics:
+    reconstructed_text = _join_dominio_monthly_fragments(reconstructed_lines)
+    raw_text = extraction.raw_text
+    search_text = f"{raw_text} {reconstructed_text}"
+    selected_code = _clean_text(selected_company_code)
+    return ReportParseDiagnostics(
+        file_extension=extraction.file_extension,
+        pdf_text_extractor=extraction.pdf_text_extractor,
+        pdf_text_extracted=extraction.pdf_text_extracted,
+        raw_text_length=len(raw_text),
+        raw_line_count=len(extraction.lines),
+        reconstructed_text_length=len(reconstructed_text),
+        reconstructed_line_count=len(reconstructed_lines),
+        contains_extrato_mensal=_contains_extrato_mensal(search_text),
+        contains_empr=bool(re.search(r"\bEmpr\.\s*:", search_text, flags=re.IGNORECASE)),
+        contains_selected_company_code=bool(
+            selected_code and re.search(rf"(?<!\d){re.escape(selected_code)}(?!\d)", search_text)
+        ),
+        contains_competence_pattern=bool(
+            re.search(r"\b\d{1,2}[/-]\d{4}\b", search_text)
+        ),
+        raw_sample=_sample_text(raw_text),
+        reconstructed_sample=_sample_text(reconstructed_text),
+        extraction_warning=extraction.extraction_warning,
+    )
+
+
 def _extract_column_profiles_from_rows(
     rows: list[list[str]],
     origin: ReportSuggestionOrigin,
@@ -1257,13 +1401,24 @@ def _looks_like_dominio_monthly_report(lines: list[str]) -> bool:
     return False
 
 
+def _contains_extrato_mensal(value: str) -> bool:
+    return "extrato mensal" in _normalize_lookup_token(value)
+
+
+def _sample_text(value: str) -> str:
+    text = value.strip()
+    if len(text) <= REPORT_DIAGNOSTIC_SAMPLE_LIMIT:
+        return text
+    return text[:REPORT_DIAGNOSTIC_SAMPLE_LIMIT]
+
+
 def _reconstruct_dominio_monthly_lines(lines: list[str]) -> list[str]:
     if not lines or not _looks_like_dominio_monthly_report(lines):
         return lines
     joined_text = _join_dominio_monthly_fragments(lines)
     if not joined_text or joined_text in lines:
         return lines
-    return [*lines, joined_text]
+    return [joined_text]
 
 
 def _join_dominio_monthly_fragments(lines: list[str]) -> str:
@@ -1538,6 +1693,7 @@ __all__ = [
     "ReportEmployeeReview",
     "ReportEmployeeSuggestion",
     "ReportImportAnalysis",
+    "ReportParseDiagnostics",
     "ReportRubricReview",
     "ReportRubricSuggestion",
     "ReportRubricTotal",

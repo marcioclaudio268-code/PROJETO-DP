@@ -225,18 +225,29 @@ def _render_assisted_import_analysis(analysis) -> None:
             }
         ]
     )
+    diagnostics = getattr(report, "diagnostics", None)
+    if diagnostics is not None:
+        _render_report_extraction_diagnostics(diagnostics)
+    else:
+        st.warning("Esta pre-analise nao tem diagnostico tecnico. Limpe a analise do relatorio e envie o arquivo novamente.")
 
     if analysis.employee_reviews:
         st.markdown("**Funcionarios encontrados**")
         st.table(_assisted_employee_rows(analysis.employee_reviews))
     else:
-        st.info("Nenhum funcionario com matricula e nome explicitos foi encontrado.")
+        st.info(
+            "Nenhum funcionario com matricula e nome explicitos foi encontrado. "
+            "Abra o Diagnostico tecnico da extracao para verificar se o texto do PDF foi extraido corretamente."
+        )
 
     if analysis.rubric_reviews:
         st.markdown("**Rubricas encontradas**")
         st.table(_assisted_rubric_rows(analysis.rubric_reviews))
     else:
-        st.info("Nenhuma rubrica com codigo e descricao explicitos foi encontrada.")
+        st.info(
+            "Nenhuma rubrica com codigo e descricao explicitos foi encontrada. "
+            "Abra o Diagnostico tecnico da extracao para verificar se o texto do PDF foi extraido corretamente."
+        )
 
     if report.rubric_totals:
         st.markdown("**Totais por rubrica encontrados**")
@@ -279,6 +290,43 @@ def _render_assisted_import_analysis(analysis) -> None:
     _render_apply_employee_suggestions(analysis)
     _render_apply_rubric_suggestions(analysis)
     _render_assisted_import_cancel_buttons()
+
+
+def _render_report_extraction_diagnostics(diagnostics) -> None:
+    with st.expander("Diagnostico tecnico da extracao"):
+        if diagnostics.extraction_warning:
+            st.warning(diagnostics.extraction_warning)
+        st.table(
+            [
+                {
+                    "Extensao": diagnostics.file_extension or "-",
+                    "Extrator PDF": diagnostics.pdf_text_extractor or "-",
+                    "Texto extraido do PDF": "sim" if diagnostics.pdf_text_extracted else "nao",
+                    "Caracteres brutos": diagnostics.raw_text_length,
+                    "Linhas brutas": diagnostics.raw_line_count,
+                    "Caracteres reconstruidos": diagnostics.reconstructed_text_length,
+                    "Linhas reconstruidas": diagnostics.reconstructed_line_count,
+                    "Contem EXTRATO MENSAL": "sim" if diagnostics.contains_extrato_mensal else "nao",
+                    "Contem Empr.": "sim" if diagnostics.contains_empr else "nao",
+                    "Contem codigo empresa selecionada": (
+                        "sim" if diagnostics.contains_selected_company_code else "nao"
+                    ),
+                    "Contem competencia": "sim" if diagnostics.contains_competence_pattern else "nao",
+                }
+            ]
+        )
+        st.text_area(
+            "Amostra do texto bruto extraido",
+            value=diagnostics.raw_sample,
+            height=180,
+            disabled=True,
+        )
+        st.text_area(
+            "Amostra do texto reconstruido",
+            value=diagnostics.reconstructed_sample,
+            height=180,
+            disabled=True,
+        )
 
 
 def _assisted_employee_rows(employee_reviews) -> list[dict[str, str]]:
@@ -408,6 +456,9 @@ def _render_apply_result(label: str, result) -> None:
 
 
 def _render_assisted_import_cancel_buttons() -> None:
+    if st.button("Limpar analise do relatorio"):
+        st.session_state.pop(ASSISTED_IMPORT_RESULT_KEY, None)
+        st.rerun()
     if st.button("Ignorar sugestao"):
         st.session_state.pop(ASSISTED_IMPORT_RESULT_KEY, None)
         st.rerun()

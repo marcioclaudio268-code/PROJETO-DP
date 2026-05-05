@@ -59,6 +59,9 @@ class _FakeStreamlit:
         self.markdowns: list[str] = []
         self.subheaders: list[str] = []
         self.tables: list[object] = []
+        self.expanders: list[str] = []
+        self.text_areas: list[dict[str, object]] = []
+        self.warnings: list[str] = []
         self.tab_labels: list[str] = []
         self.selectbox_calls: list[dict[str, object]] = []
         self.button_calls: list[dict[str, object]] = []
@@ -94,8 +97,8 @@ class _FakeStreamlit:
     def success(self, *args, **kwargs) -> None:
         return None
 
-    def warning(self, *args, **kwargs) -> None:
-        return None
+    def warning(self, message: str, *args, **kwargs) -> None:
+        self.warnings.append(message)
 
     def info(self, message: str, *args, **kwargs) -> None:
         self.infos.append(message)
@@ -105,6 +108,18 @@ class _FakeStreamlit:
 
     def table(self, data, *args, **kwargs) -> None:
         self.tables.append(data)
+
+    def expander(self, label, *args, **kwargs):
+        self.expanders.append(label)
+
+        class _ExpanderContext:
+            def __enter__(self_inner):
+                return self
+
+            def __exit__(self_inner, exc_type, exc, tb):
+                return False
+
+        return _ExpanderContext()
 
     def tabs(self, labels):
         self.tab_labels = list(labels)
@@ -146,6 +161,10 @@ class _FakeStreamlit:
 
     def text_input(self, label, value="", *args, **kwargs):
         return self.text_inputs.get(label, value)
+
+    def text_area(self, label, value="", *args, **kwargs):
+        self.text_areas.append({"label": label, "value": value, "kwargs": kwargs})
+        return value
 
     def checkbox(self, label, value=False, *args, **kwargs):
         return self.checkboxes.get(label, value)
@@ -1092,6 +1111,54 @@ def test_render_assisted_report_importer_shows_report_upload_after_company_selec
     module._render_assisted_report_importer_tab()
 
     assert fake_st.file_uploader_calls[0]["args"][0] == "Relatorio de folha/resumo (.pdf, .txt, .csv, .xlsx)"
+
+
+def test_render_assisted_report_importer_shows_extraction_diagnostics() -> None:
+    module = _load_dashboard_v1_module()
+    fake_st = _FakeStreamlit()
+    module.st = fake_st
+    diagnostics = SimpleNamespace(
+        file_extension=".pdf",
+        pdf_text_extractor="pypdf",
+        pdf_text_extracted=True,
+        raw_text_length=120,
+        raw_line_count=12,
+        reconstructed_text_length=180,
+        reconstructed_line_count=1,
+        contains_extrato_mensal=True,
+        contains_empr=True,
+        contains_selected_company_code=True,
+        contains_competence_pattern=True,
+        raw_sample="EXTRATO MENSAL\nEmpr.: 304",
+        reconstructed_sample="EXTRATO MENSAL Empr.: 304",
+        extraction_warning=None,
+    )
+    analysis = SimpleNamespace(
+        report=SimpleNamespace(
+            file_name="folha.pdf",
+            detected_company_code="755",
+            detected_company_name="GUSTAVO LOPES LACERDA",
+            competence="03/2026",
+            text_line_count=12,
+            diagnostics=diagnostics,
+            rubric_totals=[],
+            column_profiles=[],
+        ),
+        employee_reviews=(),
+        rubric_reviews=(),
+        is_blocked=False,
+    )
+
+    module._render_assisted_import_analysis(analysis)
+
+    assert "Diagnostico tecnico da extracao" in fake_st.expanders
+    assert any(row["Extrator PDF"] == "pypdf" for table in fake_st.tables for row in table if "Extrator PDF" in row)
+    assert {item["label"] for item in fake_st.text_areas} == {
+        "Amostra do texto bruto extraido",
+        "Amostra do texto reconstruido",
+    }
+    assert any("Diagnostico tecnico" in message for message in fake_st.infos)
+    assert any(call["args"][0] == "Limpar analise do relatorio" for call in fake_st.button_calls)
 
 
 def test_render_upload_area_shows_company_selector_before_upload(tmp_path: Path) -> None:
