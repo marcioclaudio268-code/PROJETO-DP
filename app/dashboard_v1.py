@@ -3,13 +3,25 @@ from __future__ import annotations
 import streamlit as st
 
 from dashboard import (
+    ColumnMappingProfileError,
     DashboardActionType,
     apply_dashboard_action,
     apply_workbook_cell_correction,
     build_dashboard_paths,
     create_dashboard_run_from_uploads,
+    get_company_admin_entry,
+    list_active_employees,
+    list_active_rubrics,
+    list_company_admin_entries,
+    load_column_mapping_profile,
+    load_company_employee_registry,
+    load_company_rubric_catalog,
     load_dashboard_run,
     run_dashboard_analysis,
+    save_column_mapping_profile_rule,
+    save_company_admin_entry,
+    save_employee_registry_record,
+    save_rubric_catalog_record,
 )
 from dashboard.txt_audit import build_txt_audit
 
@@ -23,6 +35,15 @@ COLUMN_MAPPING_PROFILE_CODES = {
 VALUE_KIND_OPTIONS = ("monetario", "horas", "quantidade")
 GENERATION_MODE_OPTIONS = ("single_line", "multi_line", "ignore")
 RUBRIC_NATURE_OPTIONS = ("unknown", "provento", "desconto", "informativo")
+RECORD_STATUS_OPTIONS = ("active", "inactive", "unknown")
+TAB_LABELS = (
+    "Importar planilha",
+    "Cadastro da empresa",
+    "Funcionarios",
+    "Rubricas",
+    "Perfil de colunas",
+    "Auditoria TXT",
+)
 
 
 def main() -> None:
@@ -36,28 +57,20 @@ def main() -> None:
         "Use esta tela para importar a planilha, revisar pendencias, aplicar correcoes guiadas e baixar o TXT apenas quando ele estiver liberado."
     )
 
-    _render_upload_area()
-    _render_last_error()
-
-    run_root = st.session_state.get(RUN_ROOT_KEY)
-    if not run_root:
-        return
-
-    paths = build_dashboard_paths(run_root)
-    if not paths.state_path.exists():
-        return
-
-    try:
-        result = load_dashboard_run(paths)
-    except Exception as exc:  # pragma: no cover - fallback visual only
-        st.error(f"Nao foi possivel carregar a ultima analise: {exc}")
-        return
-
-    _render_summary(result)
-    _render_txt_audit(result)
-    _render_pendings(result)
-    _render_actions_history(result)
-    _render_downloads(result)
+    result = _load_current_result()
+    tabs = st.tabs(TAB_LABELS)
+    with tabs[0]:
+        _render_import_tab(result)
+    with tabs[1]:
+        _render_company_registration_tab()
+    with tabs[2]:
+        _render_employees_tab()
+    with tabs[3]:
+        _render_rubrics_tab()
+    with tabs[4]:
+        _render_column_profile_tab()
+    with tabs[5]:
+        _render_txt_audit_tab(result)
 
 
 def _render_last_error() -> None:
@@ -66,10 +79,46 @@ def _render_last_error() -> None:
         st.error(last_error)
 
 
+def _load_current_result():
+    run_root = st.session_state.get(RUN_ROOT_KEY)
+    if not run_root:
+        return None
+
+    paths = build_dashboard_paths(run_root)
+    if not paths.state_path.exists():
+        return None
+
+    try:
+        return load_dashboard_run(paths)
+    except Exception as exc:  # pragma: no cover - fallback visual only
+        st.error(f"Nao foi possivel carregar a ultima analise: {exc}")
+        return None
+
+
+def _render_import_tab(result) -> None:
+    _render_upload_area()
+    _render_last_error()
+    if result is None:
+        return
+    _render_summary(result)
+    _render_pendings(result)
+    _render_actions_history(result)
+    _render_downloads(result)
+
+
 def _render_upload_area() -> None:
     st.subheader("Importar planilha")
     st.write(
-        "Envie apenas a planilha preenchida. O sistema detecta empresa e competencia e tenta resolver internamente a configuracao da empresa."
+        "Selecione a empresa antes de enviar a planilha. A deteccao automatica continua sendo usada como conferencia."
+    )
+
+    selected_company = _render_company_selector(
+        "Empresa para esta importacao",
+        key="empresa-importacao",
+    )
+    selected_competence = st.text_input(
+        "Competencia informada (opcional)",
+        value="",
     )
 
     uploaded_workbook = st.file_uploader(
@@ -84,20 +133,350 @@ def _render_upload_area() -> None:
     if st.button(
         "Iniciar analise",
         type="primary",
-        disabled=uploaded_workbook is None,
+        disabled=uploaded_workbook is None or selected_company is None,
     ):
         try:
+            if selected_company is None:
+                raise ValueError("Selecione a empresa antes de importar a planilha.")
             paths = create_dashboard_run_from_uploads(
                 workbook_name=uploaded_workbook.name,
                 workbook_bytes=uploaded_workbook.getvalue(),
             )
-            run_dashboard_analysis(paths)
+            run_dashboard_analysis(
+                paths,
+                selected_company_code=selected_company.company_code,
+                selected_company_name=selected_company.company_name,
+                selected_competence=selected_competence,
+            )
             st.session_state[RUN_ROOT_KEY] = str(paths.run_root)
             st.session_state[ERROR_KEY] = None
             st.rerun()
         except Exception as exc:  # pragma: no cover - visual feedback path
             st.session_state[ERROR_KEY] = f"A analise nao conseguiu ser concluida: {exc}"
             st.rerun()
+
+
+def _render_company_registration_tab() -> None:
+    st.subheader("Cadastro da empresa")
+    entries = _company_entries()
+    selected = _render_company_selector(
+        "Empresa existente",
+        key="empresa-cadastro",
+        include_new=True,
+    )
+
+    with st.form("form-cadastro-empresa"):
+        company_code = st.text_input("Codigo da empresa", value=selected.company_code if selected else "")
+        company_name = st.text_input("Nome da empresa", value=selected.company_name if selected else "")
+        default_process = st.text_input("Processo padrao", value=selected.default_process if selected and selected.default_process else "")
+        competence = st.text_input("Competencia opcional", value=selected.competence if selected and selected.competence else "")
+        is_active = st.checkbox("Status ativo", value=True if selected is None else selected.is_active)
+        submitted = st.form_submit_button("Salvar empresa")
+        if submitted:
+            try:
+                saved = save_company_admin_entry(
+                    company_code=company_code,
+                    company_name=company_name,
+                    default_process=default_process,
+                    competence=competence,
+                    is_active=is_active,
+                )
+                st.success(f"Empresa salva: {saved.selection_label()}")
+                st.rerun()
+            except Exception as exc:  # pragma: no cover - visual feedback path
+                st.error(f"Nao foi possivel salvar a empresa: {exc}")
+
+    if entries:
+        st.markdown("**Empresas cadastradas**")
+        st.table(
+            [
+                {
+                    "Codigo": entry.company_code,
+                    "Nome": entry.company_name,
+                    "Processo": entry.default_process or "-",
+                    "Competencia": entry.competence or "-",
+                    "Status": entry.status,
+                    "Config": entry.config_version or "-",
+                }
+                for entry in entries
+            ]
+        )
+
+
+def _render_employees_tab() -> None:
+    st.subheader("Funcionarios")
+    selected_company = _render_company_selector("Empresa dos funcionarios", key="empresa-funcionarios")
+    if selected_company is None:
+        return
+
+    registry = load_company_employee_registry(
+        selected_company.company_code,
+        company_name=selected_company.company_name,
+    )
+    active_employees = list_active_employees(registry)
+    if active_employees:
+        st.table(
+            [
+                {
+                    "Codigo/matricula Dominio": employee.domain_registration,
+                    "Nome": employee.employee_name,
+                    "Aliases": ", ".join(employee.aliases),
+                    "Status": employee.status.value,
+                    "Observacoes": employee.notes or "-",
+                }
+                for employee in active_employees
+            ]
+        )
+    else:
+        st.info("Nenhum funcionario ativo cadastrado para esta empresa.")
+
+    employee_options = ["Novo funcionario"] + [
+        f"{employee.domain_registration} - {employee.employee_name}" for employee in registry.employees
+    ]
+    selected_label = st.selectbox("Registro de funcionario", options=employee_options)
+    selected_employee = None
+    if selected_label != "Novo funcionario":
+        selected_index = employee_options.index(selected_label) - 1
+        selected_employee = registry.employees[selected_index]
+
+    with st.form("form-funcionario"):
+        domain_registration = st.text_input(
+            "Codigo/matricula Dominio",
+            value=selected_employee.domain_registration if selected_employee else "",
+        )
+        employee_name = st.text_input("Nome", value=selected_employee.employee_name if selected_employee else "")
+        aliases = st.text_input(
+            "Aliases separados por virgula",
+            value=", ".join(selected_employee.aliases) if selected_employee else "",
+        )
+        status = st.selectbox(
+            "Status",
+            options=RECORD_STATUS_OPTIONS,
+            index=RECORD_STATUS_OPTIONS.index(selected_employee.status.value) if selected_employee else 0,
+        )
+        notes = st.text_input("Observacoes", value=selected_employee.notes or "" if selected_employee else "")
+        submitted = st.form_submit_button("Salvar funcionario")
+        if submitted:
+            try:
+                save_employee_registry_record(
+                    company_code=selected_company.company_code,
+                    company_name=selected_company.company_name,
+                    employee_key=selected_employee.employee_key if selected_employee else None,
+                    domain_registration=domain_registration,
+                    employee_name=employee_name,
+                    aliases=aliases,
+                    status=status,
+                    notes=notes,
+                )
+                st.success("Funcionario salvo no cadastro persistente da empresa.")
+                st.rerun()
+            except Exception as exc:  # pragma: no cover - visual feedback path
+                st.error(f"Nao foi possivel salvar o funcionario: {exc}")
+
+
+def _render_rubrics_tab() -> None:
+    st.subheader("Rubricas")
+    selected_company = _render_company_selector("Empresa das rubricas", key="empresa-rubricas")
+    if selected_company is None:
+        return
+
+    catalog = load_company_rubric_catalog(
+        selected_company.company_code,
+        company_name=selected_company.company_name,
+    )
+    active_rubrics = list_active_rubrics(catalog)
+    if active_rubrics:
+        st.table(
+            [
+                {
+                    "Rubrica": rubric.rubric_code,
+                    "Descricao": rubric.description,
+                    "Evento canonico": rubric.canonical_event,
+                    "Tipo": rubric.value_kind.value,
+                    "Natureza": rubric.nature.value,
+                    "Aliases": ", ".join(rubric.aliases),
+                    "Status": rubric.status.value,
+                }
+                for rubric in active_rubrics
+            ]
+        )
+    else:
+        st.info("Nenhuma rubrica ativa cadastrada para esta empresa.")
+
+    rubric_options = ["Nova rubrica"] + [
+        f"{rubric.rubric_code} - {rubric.description}" for rubric in catalog.rubrics
+    ]
+    selected_label = st.selectbox("Registro de rubrica", options=rubric_options)
+    selected_rubric = None
+    if selected_label != "Nova rubrica":
+        selected_index = rubric_options.index(selected_label) - 1
+        selected_rubric = catalog.rubrics[selected_index]
+
+    with st.form("form-rubrica"):
+        rubric_code = st.text_input("Codigo da rubrica", value=selected_rubric.rubric_code if selected_rubric else "")
+        description = st.text_input("Descricao", value=selected_rubric.description if selected_rubric else "")
+        canonical_event = st.text_input("Evento canonico", value=selected_rubric.canonical_event if selected_rubric else "")
+        value_kind = st.selectbox(
+            "Tipo do valor",
+            options=VALUE_KIND_OPTIONS,
+            index=VALUE_KIND_OPTIONS.index(selected_rubric.value_kind.value) if selected_rubric else 0,
+        )
+        nature = st.selectbox(
+            "Natureza",
+            options=RUBRIC_NATURE_OPTIONS,
+            index=RUBRIC_NATURE_OPTIONS.index(selected_rubric.nature.value) if selected_rubric else 0,
+        )
+        aliases = st.text_input(
+            "Aliases separados por virgula",
+            value=", ".join(selected_rubric.aliases) if selected_rubric else "",
+        )
+        status = st.selectbox(
+            "Status",
+            options=RECORD_STATUS_OPTIONS,
+            index=RECORD_STATUS_OPTIONS.index(selected_rubric.status.value) if selected_rubric else 0,
+        )
+        notes = st.text_input("Observacoes", value=selected_rubric.notes or "" if selected_rubric else "")
+        submitted = st.form_submit_button("Salvar rubrica")
+        if submitted:
+            try:
+                save_rubric_catalog_record(
+                    company_code=selected_company.company_code,
+                    company_name=selected_company.company_name,
+                    rubric_code=rubric_code,
+                    description=description,
+                    canonical_event=canonical_event,
+                    value_kind=value_kind,
+                    nature=nature,
+                    aliases=aliases,
+                    status=status,
+                    notes=notes,
+                )
+                st.success("Rubrica salva no catalogo persistente da empresa.")
+                st.rerun()
+            except Exception as exc:  # pragma: no cover - visual feedback path
+                st.error(f"Nao foi possivel salvar a rubrica: {exc}")
+
+
+def _render_column_profile_tab() -> None:
+    st.subheader("Perfil de colunas")
+    selected_company = _render_company_selector("Empresa do perfil", key="empresa-perfil-colunas")
+    if selected_company is None:
+        return
+
+    try:
+        profile = load_column_mapping_profile(selected_company.company_code)
+        mappings = profile.mappings
+    except ColumnMappingProfileError as exc:
+        if exc.code != "profile_not_found":
+            st.error(f"Nao foi possivel carregar o perfil de colunas: {exc}")
+            return
+        profile = None
+        mappings = []
+
+    if mappings:
+        st.table(
+            [
+                {
+                    "Coluna": rule.column_name or rule.column_key or "-",
+                    "Modo": rule.generation_mode.value,
+                    "Tipo": rule.value_kind.value,
+                    "Rubrica unica": rule.rubrica_target or "-",
+                    "Rubricas multiplas": ", ".join(rule.rubricas_target),
+                    "Ignorar zero": "sim" if rule.ignore_zero else "nao",
+                    "Ignorar texto": "sim" if rule.ignore_text else "nao",
+                    "Ativa": "sim" if rule.enabled else "nao",
+                }
+                for rule in mappings
+            ]
+        )
+    else:
+        st.info("Nenhuma regra de perfil de colunas cadastrada para esta empresa.")
+
+    rule_options = ["Nova regra"] + [rule.column_name or rule.column_key or "" for rule in mappings]
+    selected_label = st.selectbox("Regra de coluna", options=rule_options)
+    selected_rule = None
+    if selected_label != "Nova regra":
+        selected_index = rule_options.index(selected_label) - 1
+        selected_rule = mappings[selected_index]
+
+    with st.form("form-perfil-colunas"):
+        column_name = st.text_input("Nome da coluna", value=selected_rule.column_name if selected_rule else "")
+        value_kind = st.selectbox(
+            "Tipo do valor da coluna",
+            options=VALUE_KIND_OPTIONS,
+            index=VALUE_KIND_OPTIONS.index(selected_rule.value_kind.value) if selected_rule else 0,
+        )
+        generation_mode = st.selectbox(
+            "Modo de geracao",
+            options=GENERATION_MODE_OPTIONS,
+            index=GENERATION_MODE_OPTIONS.index(selected_rule.generation_mode.value) if selected_rule else 0,
+        )
+        rubrica_target = ""
+        rubricas_target = ""
+        if generation_mode == "single_line":
+            rubrica_target = st.text_input("Rubrica unica", value=selected_rule.rubrica_target or "" if selected_rule else "")
+        elif generation_mode == "multi_line":
+            rubricas_target = st.text_input(
+                "Rubricas multiplas separadas por virgula",
+                value=", ".join(selected_rule.rubricas_target) if selected_rule else "",
+            )
+        else:
+            st.info("Coluna ignorada nao envia rubrica.")
+        ignore_zero = st.checkbox("Ignorar valores zerados", value=selected_rule.ignore_zero if selected_rule else True)
+        ignore_text = st.checkbox("Ignorar textos sem valor numerico", value=selected_rule.ignore_text if selected_rule else True)
+        enabled = False if generation_mode == "ignore" else st.checkbox("Regra habilitada", value=selected_rule.enabled if selected_rule else True)
+        notes = st.text_input("Observacoes", value=selected_rule.notes or "" if selected_rule else "")
+        submitted = st.form_submit_button("Salvar regra de coluna")
+        if submitted:
+            try:
+                save_column_mapping_profile_rule(
+                    company_code=selected_company.company_code,
+                    company_name=selected_company.company_name,
+                    default_process=selected_company.default_process,
+                    column_name=column_name,
+                    value_kind=value_kind,
+                    generation_mode=generation_mode,
+                    rubrica_target=rubrica_target,
+                    rubricas_target=rubricas_target,
+                    ignore_zero=ignore_zero,
+                    ignore_text=ignore_text,
+                    enabled=enabled,
+                    notes=notes,
+                )
+                st.success("Regra salva no perfil persistente da empresa.")
+                st.rerun()
+            except Exception as exc:  # pragma: no cover - visual feedback path
+                st.error(f"Nao foi possivel salvar a regra de coluna: {exc}")
+
+
+def _render_txt_audit_tab(result) -> None:
+    st.subheader("Auditoria TXT")
+    if result is None:
+        st.info("Nenhuma analise carregada para auditoria TXT.")
+        return
+    _render_txt_audit(result)
+
+
+def _company_entries():
+    try:
+        return list_company_admin_entries()
+    except Exception as exc:  # pragma: no cover - visual feedback path
+        st.error(f"Nao foi possivel listar empresas cadastradas: {exc}")
+        return ()
+
+
+def _render_company_selector(label: str, *, key: str, include_new: bool = False):
+    entries = _company_entries()
+    labels = []
+    if include_new:
+        labels.append("Nova empresa")
+    labels.append("Selecione uma empresa")
+    labels.extend(entry.selection_label() for entry in entries)
+    selected_label = st.selectbox(label, options=labels, key=key)
+    if selected_label in {"Nova empresa", "Selecione uma empresa"}:
+        return None
+    selected_code = selected_label.split(" - ", 1)[0]
+    return get_company_admin_entry(selected_code)
 
 
 def _render_summary(result) -> None:

@@ -220,6 +220,23 @@ def test_dashboard_default_master_data_allows_xlsx_only_flow(tmp_path: Path) -> 
     assert result.profile_resolution.status == "not_required"
 
 
+def test_dashboard_blocks_when_selected_company_differs_from_detected_company(tmp_path: Path) -> None:
+    workbook_path = REPO_ROOT / "data" / "golden" / "v1" / "happy_path" / "input.xlsx"
+    paths = create_dashboard_run_from_paths(workbook_path, runs_root=tmp_path / "runs")
+
+    result = run_dashboard_analysis(
+        paths,
+        selected_company_code="528",
+        selected_company_name="FRIED FISH VILAREJO",
+    )
+
+    assert result.summary.txt_enabled is False
+    assert result.summary.validation_status == "blocked"
+    assert result.config_resolution.status == "empresa_selecionada_divergente"
+    assert any(item.code == "empresa_selecionada_divergente" for item in result.pendings)
+    assert result.summary.company_code == "72"
+
+
 def test_dashboard_can_fix_missing_registration_and_reprocess(tmp_path: Path) -> None:
     workbook_path = _prepare_single_row_workbook(tmp_path)
     configs_root = tmp_path / "configs"
@@ -595,6 +612,27 @@ def test_dashboard_normalizes_monthly_layout_before_canonical_ingestion(tmp_path
     normalization_payload = json.loads(paths.normalization_path.read_text(encoding="utf-8"))
     assert normalization_payload["manifest"]["normalizer"] == "profile_column_mapping"
     assert normalization_payload["manifest"]["counts"]["source_cells_converted"] > 0
+
+
+def test_dashboard_selected_company_context_preserves_company_528_flow(tmp_path: Path) -> None:
+    profile_root = tmp_path / "profiles"
+    _write_monthly_column_profile(profile_root)
+    paths = create_dashboard_run_from_paths(MONTHLY_FIXTURE, runs_root=tmp_path / "runs")
+
+    result = run_dashboard_analysis(
+        paths,
+        column_profile_root=profile_root,
+        selected_company_code="528",
+        selected_company_name="FRIED FISH VILAREJO",
+        selected_competence="03/2026",
+    )
+
+    assert result.summary.company_code == "528"
+    assert result.summary.competence == "03/2026"
+    assert result.profile_resolution.status == "found"
+    assert result.summary.config_status == ConfigResolutionStatus.FOUND.value
+    assert result.config_resolution.status == ConfigResolutionStatus.FOUND.value
+    assert not any(item.code == "empresa_selecionada_divergente" for item in result.pendings)
 
 
 def test_dashboard_blocks_monthly_layout_when_column_profile_is_missing(tmp_path: Path) -> None:

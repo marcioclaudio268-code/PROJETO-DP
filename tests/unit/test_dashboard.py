@@ -11,6 +11,7 @@ import pytest
 from openpyxl import load_workbook
 
 from dashboard import (
+    CompanyAdminEntry,
     ConfigResolutionStatus,
     ConfigResolver,
     DashboardActionType,
@@ -25,8 +26,13 @@ from dashboard import (
     load_company_rubric_catalog,
     load_column_mapping_profile,
     load_dashboard_state,
+    list_company_admin_entries,
+    save_column_mapping_profile_rule,
+    save_company_admin_entry,
     upsert_employee_mapping_override,
     upsert_event_mapping_override,
+    save_employee_registry_record,
+    save_rubric_catalog_record,
     write_dashboard_state,
 )
 from ingestion import save_planilha_padrao_folha_v1
@@ -53,6 +59,11 @@ class _FakeStreamlit:
         self.markdowns: list[str] = []
         self.subheaders: list[str] = []
         self.tables: list[object] = []
+        self.tab_labels: list[str] = []
+        self.selectbox_calls: list[dict[str, object]] = []
+        self.button_calls: list[dict[str, object]] = []
+        self.file_uploader_calls: list[dict[str, object]] = []
+        self.event_log: list[str] = []
         self.uploaded_workbook = uploaded_workbook
         self.button_result = button_result
         self.selected_label = selected_label
@@ -95,6 +106,18 @@ class _FakeStreamlit:
     def table(self, data, *args, **kwargs) -> None:
         self.tables.append(data)
 
+    def tabs(self, labels):
+        self.tab_labels = list(labels)
+
+        class _TabContext:
+            def __enter__(self_inner):
+                return self
+
+            def __exit__(self_inner, exc_type, exc, tb):
+                return False
+
+        return [_TabContext() for _label in labels]
+
     def metric(self, *args, **kwargs) -> None:
         return None
 
@@ -102,6 +125,8 @@ class _FakeStreamlit:
         return [self for _ in range(count)]
 
     def selectbox(self, label, options=None, *args, **kwargs):
+        self.selectbox_calls.append({"label": label, "options": list(options or [])})
+        self.event_log.append(f"selectbox:{label}")
         if label == "Corrigir item selecionado" and self.selected_label is not None:
             return self.selected_label
         return self.selectboxes.get(label, options[0] if options else "Selecione um item")
@@ -126,9 +151,14 @@ class _FakeStreamlit:
         return self.checkboxes.get(label, value)
 
     def file_uploader(self, *args, **kwargs):
+        self.file_uploader_calls.append({"args": args, "kwargs": kwargs})
+        self.event_log.append("file_uploader")
         return self.uploaded_workbook
 
     def button(self, *args, **kwargs):
+        self.button_calls.append({"args": args, "kwargs": kwargs})
+        if kwargs.get("disabled"):
+            return False
         return self.button_result
 
     def rerun(self):
@@ -372,6 +402,99 @@ def _fake_dashboard_result(*, paths, pendings: list[DashboardPendingItem]):
         state=SimpleNamespace(actions=[]),
         summary=SimpleNamespace(),
     )
+
+
+def test_company_admin_entry_can_save_minimal_company_config(tmp_path: Path) -> None:
+    saved = save_company_admin_entry(
+        company_code="900",
+        company_name="Empresa Teste",
+        default_process="11",
+        competence="04/2026",
+        is_active=True,
+        root=tmp_path / "master",
+    )
+
+    entries = list_company_admin_entries(root=tmp_path / "master")
+    config_payload = json.loads((tmp_path / "master" / "company_configs.json").read_text(encoding="utf-8"))[0][
+        "config_payload_internal"
+    ]
+
+    assert saved.company_code == "900"
+    assert entries[0].company_name == "Empresa Teste"
+    assert entries[0].default_process == "11"
+    assert config_payload["event_mappings"] == []
+    assert config_payload["employee_mappings"] == []
+
+
+def test_dashboard_company_employee_helper_saves_registry(tmp_path: Path) -> None:
+    save_employee_registry_record(
+        company_code="900",
+        company_name="Empresa Teste",
+        domain_registration="123",
+        employee_name="Ana Lima",
+        aliases="ANA, A LIMA",
+        root=tmp_path,
+    )
+
+    registry = load_company_employee_registry("900", root=tmp_path)
+    assert registry.employees[0].domain_registration == "123"
+    assert registry.employees[0].employee_name == "Ana Lima"
+    assert registry.employees[0].aliases == ["ANA", "A LIMA"]
+
+
+def test_dashboard_rubric_helper_saves_catalog(tmp_path: Path) -> None:
+    save_rubric_catalog_record(
+        company_code="900",
+        company_name="Empresa Teste",
+        rubric_code="201",
+        description="GRATIFICACAO",
+        canonical_event="gratificacao",
+        value_kind="monetario",
+        nature="provento",
+        aliases="GRAT",
+        root=tmp_path,
+    )
+
+    catalog = load_company_rubric_catalog("900", root=tmp_path)
+    assert catalog.rubrics[0].rubric_code == "201"
+    assert catalog.rubrics[0].canonical_event == "gratificacao"
+    assert catalog.rubrics[0].aliases == ["GRAT"]
+
+
+def test_dashboard_column_profile_helper_saves_ignore_rule_without_rubric(tmp_path: Path) -> None:
+    save_column_mapping_profile_rule(
+        company_code="900",
+        company_name="Empresa Teste",
+        default_process="11",
+        column_name="ADIANTAMENTO",
+        value_kind="monetario",
+        generation_mode="ignore",
+        ignore_zero=True,
+        ignore_text=True,
+        root=tmp_path,
+    )
+
+    profile = load_column_mapping_profile("900", root=tmp_path)
+    rule = profile.mappings[0]
+    assert rule.column_name == "ADIANTAMENTO"
+    assert rule.enabled is False
+    assert rule.generation_mode.value == "ignore"
+    assert rule.rubrica_target is None
+    assert rule.rubricas_target == []
+
+
+def test_dashboard_column_profile_helper_rejects_ignore_rule_with_rubric(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="ignore mappings cannot define rubrica targets"):
+        save_column_mapping_profile_rule(
+            company_code="900",
+            column_name="ADIANTAMENTO",
+            value_kind="monetario",
+            generation_mode="ignore",
+            rubrica_target="981",
+            ignore_zero=True,
+            ignore_text=True,
+            root=tmp_path,
+        )
 
 
 def test_txt_download_enabled_requires_success_and_serialized_lines() -> None:
@@ -901,6 +1024,11 @@ def test_dashboard_main_shows_last_error_before_run_root_guard(tmp_path: Path) -
     fake_st.session_state[module.ERROR_KEY] = "A analise nao conseguiu ser concluida: boom"
     module.st = fake_st
     module._render_upload_area = lambda: None
+    module._render_company_registration_tab = lambda: None
+    module._render_employees_tab = lambda: None
+    module._render_rubrics_tab = lambda: None
+    module._render_column_profile_tab = lambda: None
+    module._render_txt_audit_tab = lambda result: None
 
     build_called = {"count": 0}
 
@@ -916,14 +1044,82 @@ def test_dashboard_main_shows_last_error_before_run_root_guard(tmp_path: Path) -
     assert build_called["count"] == 0
 
 
+def test_dashboard_main_renders_registration_tabs() -> None:
+    module = _load_dashboard_v1_module()
+    fake_st = _FakeStreamlit()
+    module.st = fake_st
+    module._render_import_tab = lambda result: None
+    module._render_company_registration_tab = lambda: None
+    module._render_employees_tab = lambda: None
+    module._render_rubrics_tab = lambda: None
+    module._render_column_profile_tab = lambda: None
+    module._render_txt_audit_tab = lambda result: None
+
+    module.main()
+
+    assert tuple(fake_st.tab_labels) == module.TAB_LABELS
+
+
+def test_render_upload_area_shows_company_selector_before_upload(tmp_path: Path) -> None:
+    module = _load_dashboard_v1_module()
+    fake_st = _FakeStreamlit()
+    module.st = fake_st
+    entry = CompanyAdminEntry(
+        company_code="72",
+        company_name="Dela More",
+        status="active",
+        is_active=True,
+        company_id="company:72",
+        default_process="11",
+        competence="03/2024",
+    )
+    module.list_company_admin_entries = lambda: (entry,)
+    module.get_company_admin_entry = lambda company_code: entry
+
+    module._render_upload_area()
+
+    assert fake_st.selectbox_calls[0]["label"] == "Empresa para esta importacao"
+    assert fake_st.event_log.index("selectbox:Empresa para esta importacao") < fake_st.event_log.index("file_uploader")
+
+
+def test_render_upload_area_blocks_import_without_selected_company(tmp_path: Path) -> None:
+    module = _load_dashboard_v1_module()
+    fake_st = _FakeStreamlit(
+        uploaded_workbook=SimpleNamespace(name="entrada.xlsx", getvalue=lambda: b"conteudo"),
+        button_result=True,
+        text_inputs={"Competencia informada (opcional)": "03/2024"},
+    )
+    module.st = fake_st
+    module._render_company_selector = lambda *args, **kwargs: None
+
+    calls = {"create": 0}
+    module.create_dashboard_run_from_uploads = lambda *args, **kwargs: calls.__setitem__("create", calls["create"] + 1)
+
+    module._render_upload_area()
+
+    assert calls["create"] == 0
+    assert fake_st.button_calls[-1]["kwargs"]["disabled"] is True
+
+
 def test_render_upload_area_clears_previous_error_after_successful_analysis(tmp_path: Path) -> None:
     module = _load_dashboard_v1_module()
     fake_st = _FakeStreamlit(
         uploaded_workbook=SimpleNamespace(name="entrada.xlsx", getvalue=lambda: b"conteudo"),
         button_result=True,
+        text_inputs={"Competencia informada (opcional)": "03/2024"},
     )
     fake_st.session_state[module.ERROR_KEY] = "erro antigo"
     module.st = fake_st
+    selected_company = CompanyAdminEntry(
+        company_code="72",
+        company_name="Dela More",
+        status="active",
+        is_active=True,
+        company_id="company:72",
+        default_process="11",
+        competence="03/2024",
+    )
+    module._render_company_selector = lambda *args, **kwargs: selected_company
 
     calls: dict[str, object] = {}
 
@@ -934,8 +1130,9 @@ def test_render_upload_area_clears_previous_error_after_successful_analysis(tmp_
         }
         return SimpleNamespace(run_root=tmp_path / "runs" / "run-001")
 
-    def _run_dashboard_analysis(paths):
+    def _run_dashboard_analysis(paths, **kwargs):
         calls["run"] = paths
+        calls["run_kwargs"] = kwargs
 
     module.create_dashboard_run_from_uploads = _create_dashboard_run_from_uploads
     module.run_dashboard_analysis = _run_dashboard_analysis
@@ -944,6 +1141,9 @@ def test_render_upload_area_clears_previous_error_after_successful_analysis(tmp_
 
     assert calls["create"] == {"workbook_name": "entrada.xlsx", "workbook_bytes": b"conteudo"}
     assert calls["run"].run_root == tmp_path / "runs" / "run-001"
+    assert calls["run_kwargs"]["selected_company_code"] == "72"
+    assert calls["run_kwargs"]["selected_company_name"] == "Dela More"
+    assert calls["run_kwargs"]["selected_competence"] == "03/2024"
     assert fake_st.session_state[module.RUN_ROOT_KEY] == str(tmp_path / "runs" / "run-001")
     assert fake_st.session_state[module.ERROR_KEY] is None
     assert fake_st.rerun_called is True
@@ -954,6 +1154,10 @@ def test_dashboard_main_continues_normal_flow_when_run_root_exists(tmp_path: Pat
     fake_st = _FakeStreamlit()
     module.st = fake_st
     module._render_upload_area = lambda: None
+    module._render_company_registration_tab = lambda: None
+    module._render_employees_tab = lambda: None
+    module._render_rubrics_tab = lambda: None
+    module._render_column_profile_tab = lambda: None
 
     state_path = tmp_path / "state.json"
     state_path.write_text("{}", encoding="utf-8")

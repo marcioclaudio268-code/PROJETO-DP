@@ -11,6 +11,7 @@ from pathlib import Path
 from openpyxl import load_workbook
 from pydantic import ValidationError
 
+from config.master_data import normalize_competence
 from mapping.pipeline import map_snapshot_with_company_config
 from serialization.pipeline import serialize_mapped_artifact_to_txt
 from validation.pipeline import validate_pipeline_v1
@@ -64,10 +65,28 @@ def run_dashboard_analysis(
     column_profile_root: str | Path | None = None,
     employee_registry_root: str | Path | None = None,
     rubric_catalog_root: str | Path | None = None,
+    selected_company_code: str | None = None,
+    selected_company_name: str | None = None,
+    selected_competence: str | None = None,
 ) -> DashboardRunResult:
     resolver = config_resolver or ConfigResolver()
     source_workbook_path = _resolve_source_workbook_path(paths)
     inspection = inspect_input_workbook(source_workbook_path, registry_root=resolver.registry_root)
+    selected_context = _normalize_selected_context(
+        selected_company_code=selected_company_code,
+        selected_company_name=selected_company_name,
+        selected_competence=selected_competence,
+    )
+    mismatch = _selected_context_mismatch(inspection, selected_context)
+    if mismatch is not None:
+        return _build_blocked_run_for_selected_context_mismatch(
+            paths=paths,
+            state=load_dashboard_state(paths.state_path),
+            inspection=inspection,
+            selected_context=selected_context,
+            mismatch=mismatch,
+        )
+
     profile_resolution, column_profile = _resolve_column_mapping_profile(
         inspection=inspection,
         source_workbook_path=source_workbook_path,
@@ -117,9 +136,11 @@ def run_dashboard_analysis(
     )
     snapshot_payload = _load_json(paths.snapshot_path)
     state = load_dashboard_state(paths.state_path)
+    analysis_company_code = selected_context["company_code"] or str(snapshot_payload["parameters"]["company_code"])
+    analysis_competence = selected_context["competence"] or str(snapshot_payload["parameters"]["competence"])
     resolution = resolver.resolve(
-        company_code=str(snapshot_payload["parameters"]["company_code"]),
-        competence=str(snapshot_payload["parameters"]["competence"]),
+        company_code=analysis_company_code,
+        competence=analysis_competence,
     )
 
     if resolution.status != ConfigResolutionStatus.FOUND:
@@ -134,13 +155,13 @@ def run_dashboard_analysis(
     resolver.write_resolved_config(resolution, target_path=paths.editable_config_path)
     apply_employee_registry_to_editable_config(
         paths.editable_config_path,
-        company_code=str(snapshot_payload["parameters"]["company_code"]),
+        company_code=analysis_company_code,
         snapshot_payload=snapshot_payload,
         root=employee_registry_root,
     )
     apply_rubric_catalog_to_editable_config(
         paths.editable_config_path,
-        company_code=str(snapshot_payload["parameters"]["company_code"]),
+        company_code=analysis_company_code,
         snapshot_payload=snapshot_payload,
         root=rubric_catalog_root,
     )
@@ -205,6 +226,154 @@ def run_dashboard_analysis(
         pendings=pendings,
         snapshot_payload=snapshot_payload,
         mapped_payload=mapped_payload,
+        serialization_payload=serialization_payload,
+        validation_payload=validation_payload,
+    )
+
+
+def _normalize_selected_context(
+    *,
+    selected_company_code: str | None,
+    selected_company_name: str | None,
+    selected_competence: str | None,
+) -> dict[str, str | None]:
+    return {
+        "company_code": _normalize_optional_text(selected_company_code),
+        "company_name": _normalize_optional_text(selected_company_name),
+        "competence": _normalize_optional_competence(selected_competence),
+    }
+
+
+def _selected_context_mismatch(
+    inspection: InputWorkbookInspection,
+    selected_context: dict[str, str | None],
+) -> tuple[str, str] | None:
+    selected_company_code = selected_context.get("company_code")
+    if selected_company_code and selected_company_code != inspection.company_code:
+        return (
+            "empresa_selecionada_divergente",
+            (
+                "A empresa selecionada antes da importacao diverge da empresa detectada "
+                f"na planilha. selecionada={selected_company_code}; detectada={inspection.company_code}."
+            ),
+        )
+
+    selected_competence = selected_context.get("competence")
+    if selected_competence and selected_competence != inspection.competence:
+        return (
+            "competencia_selecionada_divergente",
+            (
+                "A competencia informada antes da importacao diverge da competencia detectada "
+                f"na planilha. informada={selected_competence}; detectada={inspection.competence}."
+            ),
+        )
+
+    return None
+
+
+def _build_blocked_run_for_selected_context_mismatch(
+    *,
+    paths: DashboardPaths,
+    state,
+    inspection: InputWorkbookInspection,
+    selected_context: dict[str, str | None],
+    mismatch: tuple[str, str],
+) -> DashboardRunResult:
+    _cleanup_profile_block_artifacts(paths)
+    code, message = mismatch
+    snapshot_payload = _inspection_to_snapshot_payload(inspection)
+    config_resolution = DashboardConfigResolution(
+        status=code,
+        status_label="Contexto selecionado diverge da planilha",
+        message=message,
+        company_code=inspection.company_code,
+        competence=inspection.competence,
+        config_source=None,
+        config_version=None,
+        source_path=None,
+    )
+    profile_resolution = DashboardProfileResolution(
+        status="not_run",
+        status_label="Perfil de colunas nao avaliado",
+        message="A analise foi bloqueada antes de avaliar o perfil de colunas.",
+        company_code=inspection.company_code,
+        competence=inspection.competence,
+        layout_id=inspection.layout_id,
+        source_path=None,
+    )
+    pending = DashboardPendingItem(
+        uid=f"importacao:{code}",
+        stage="importacao",
+        pending_id=code,
+        code=code,
+        severity="bloqueante",
+        employee_name=None,
+        employee_key=None,
+        event_name=None,
+        field_label="empresa selecionada",
+        found_value=(
+            f"selecionada={selected_context.get('company_code') or '-'} | "
+            f"detectada={inspection.company_code} | "
+            f"competencia_informada={selected_context.get('competence') or '-'} | "
+            f"competencia_detectada={inspection.competence}"
+        ),
+        problem=message,
+        recommended_action=(
+            "Selecione a empresa/competencia correta na aba Importar planilha ou corrija "
+            "o cadastro/arquivo de origem antes de repetir a analise."
+        ),
+        source_sheet=inspection.selected_sheet_name,
+        source_cell=None,
+        source_row=None,
+        source_column_name=None,
+        can_edit_workbook=False,
+        can_edit_employee_mapping=False,
+        can_edit_event_mapping=False,
+        can_ignore=False,
+    )
+    serialization_payload = {
+        "counts": {
+            "serialized": 0,
+            "non_serialized": 0,
+            "blocked_or_non_serialized": 0,
+            "total_mapped_movements": 0,
+        }
+    }
+    validation_payload = {
+        "execution": {"status": "blocked"},
+        "fatal_errors": [],
+        "inconsistencies": [],
+        "recommendation": message,
+    }
+    summary = build_dashboard_summary(
+        state=state,
+        snapshot_payload=snapshot_payload,
+        serialization_payload=serialization_payload,
+        validation_payload=validation_payload,
+        pending_count=1,
+        config_resolution=config_resolution,
+    )
+    updated_state = state.model_copy(
+        update={
+            "source_config_name": None,
+            "last_analysis": {
+                "summary": _serialize_summary(summary),
+                "config_resolution": _serialize_config_resolution(config_resolution),
+                "profile_resolution": _serialize_profile_resolution(profile_resolution),
+                "pendings": [_serialize_pending_item(pending)],
+            },
+        }
+    )
+    write_dashboard_state(paths.state_path, updated_state)
+    return DashboardRunResult(
+        paths=paths,
+        state=updated_state,
+        summary=summary,
+        config_resolution=config_resolution,
+        profile_resolution=profile_resolution,
+        pendings=(pending,),
+        snapshot_payload=snapshot_payload,
+        mapped_payload={},
         serialization_payload=serialization_payload,
         validation_payload=validation_payload,
     )
@@ -694,7 +863,7 @@ def _build_config_resolution_pending(
         found_value=f"empresa={parameters['company_code']} | competencia={parameters['competence']}",
         problem=config_resolution.message,
         recommended_action=(
-            "Cadastrar ou corrigir a configuracao interna da empresa no backend antes de repetir a analise."
+            "Cadastrar ou corrigir a configuracao minima na aba Cadastro da empresa antes de repetir a analise."
         ),
         source_sheet=None,
         source_cell=None,
@@ -945,7 +1114,7 @@ def _build_profile_resolution_pending(
         found_value=found_value,
         problem=profile_resolution.message,
         recommended_action=(
-            "Cadastrar ou corrigir o perfil de mapeamento de colunas da empresa antes de repetir a analise."
+            "Cadastrar ou corrigir o perfil de mapeamento de colunas na aba Perfil de colunas antes de repetir a analise."
         ),
         source_sheet=inspection.selected_sheet_name,
         source_cell=None,
@@ -1171,6 +1340,21 @@ def _deserialize_profile_resolution(payload: dict | None) -> DashboardProfileRes
 
 def _load_json(path: str | Path) -> dict:
     return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def _normalize_optional_text(value) -> str | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
+
+
+def _normalize_optional_competence(value) -> str | None:
+    text = _normalize_optional_text(value)
+    if text is None:
+        return None
+    normalized = normalize_competence(text)
+    return normalized or text
 
 
 def _stringify(value) -> str | None:
