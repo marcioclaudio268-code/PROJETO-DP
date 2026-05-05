@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from openpyxl import load_workbook
+from openpyxl import Workbook, load_workbook
 
 from dashboard import (
     DashboardActionType,
@@ -134,6 +134,49 @@ def _write_monthly_column_profile(
         mappings=mappings,
     )
     return save_column_mapping_profile(profile, root=root)
+
+
+def _write_position_column_profile(root: Path) -> Path:
+    profile = CompanyColumnMappingProfile(
+        company_code="755",
+        company_name="GUSTAVO LOPES LACERDA",
+        default_process="11",
+        mappings=[
+            ColumnMappingRule(
+                sheet_name="abril",
+                header_row=2,
+                data_start_row=3,
+                employee_code_column="A",
+                employee_name_column="B",
+                value_column="T",
+                expected_header="HORA 50%",
+                enabled=True,
+                rubrica_target="201",
+                value_kind=ColumnValueKind.HOURS,
+                nature="provento",
+                generation_mode=ColumnGenerationMode.SINGLE_LINE,
+                ignore_zero=True,
+                ignore_text=True,
+                status="active",
+            )
+        ],
+    )
+    return save_column_mapping_profile(profile, root=root)
+
+
+def _write_position_profile_workbook(path: Path, *, header: str = "HORA 50%") -> Path:
+    workbook = Workbook()
+    worksheet = workbook.active
+    worksheet.title = "abril"
+    worksheet["A2"] = "CODIGO"
+    worksheet["B2"] = "NOME"
+    worksheet["T2"] = header
+    worksheet["A3"] = "304"
+    worksheet["B3"] = "ADILSON RAFAEL DE SOUSA"
+    worksheet["T3"] = "01:30"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    workbook.save(path)
+    return path
 
 
 def _prepare_single_row_workbook(tmp_path: Path) -> Path:
@@ -691,6 +734,56 @@ def test_dashboard_selected_company_context_preserves_company_528_flow(tmp_path:
     assert result.summary.config_status == ConfigResolutionStatus.FOUND.value
     assert result.config_resolution.status == ConfigResolutionStatus.FOUND.value
     assert not any(item.code == "empresa_selecionada_divergente" for item in result.pendings)
+
+
+def test_dashboard_uses_position_profile_when_monthly_contract_is_invalid(tmp_path: Path) -> None:
+    workbook_path = _write_position_profile_workbook(tmp_path / "fechamento-gustavo.xlsx")
+    profile_root = tmp_path / "profiles"
+    _write_position_column_profile(profile_root)
+    configs_root = tmp_path / "configs"
+    _write_internal_config(
+        configs_root,
+        company_code="755",
+        file_name="04-2026.json",
+        competence="04/2026",
+        payload_override={
+            "company_name": "GUSTAVO LOPES LACERDA",
+            "event_mappings": [
+                {
+                    "event_negocio": "horas_extras_70",
+                    "rubrica_saida": "201",
+                }
+            ],
+            "employee_mappings": [
+                {
+                    "source_employee_key": "304",
+                    "source_employee_name": "ADILSON RAFAEL DE SOUSA",
+                    "domain_registration": "304",
+                }
+            ],
+        },
+    )
+    paths = create_dashboard_run_from_paths(workbook_path, runs_root=tmp_path / "runs")
+
+    result = run_dashboard_analysis(
+        paths,
+        config_resolver=ConfigResolver(registry_root=tmp_path / "master", legacy_root=configs_root),
+        column_profile_root=profile_root,
+        selected_company_code="755",
+        selected_company_name="GUSTAVO LOPES LACERDA",
+        selected_competence="042026",
+    )
+
+    normalization_payload = json.loads(paths.normalization_path.read_text(encoding="utf-8"))
+    mapped_payload = json.loads(paths.mapped_artifact_path.read_text(encoding="utf-8"))
+
+    assert result.profile_resolution.status == "found"
+    assert result.summary.company_code == "755"
+    assert result.summary.competence == "04/2026"
+    assert result.summary.serialized_line_count == 1
+    assert normalization_payload["manifest"]["normalizer"] == "profile_column_mapping"
+    assert normalization_payload["manifest"]["columns"][0]["source_column_letter"] == "T"
+    assert mapped_payload["mapped_movements"][0]["output_rubric"] == "201"
 
 
 def test_dashboard_blocks_monthly_layout_when_column_profile_is_missing(tmp_path: Path) -> None:

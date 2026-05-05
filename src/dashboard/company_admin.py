@@ -233,11 +233,20 @@ def save_rubric_catalog_record(
 def save_column_mapping_profile_rule(
     *,
     company_code: str,
-    column_name: str,
+    column_name: str | None = None,
     value_kind: str,
     generation_mode: str,
     rubrica_target: str | None = None,
     rubricas_target: str | list[str] | tuple[str, ...] | None = None,
+    sheet_name: str | None = None,
+    header_row: int | str | None = None,
+    data_start_row: int | str | None = None,
+    employee_code_column: str | None = None,
+    employee_name_column: str | None = None,
+    value_column: str | None = None,
+    expected_header: str | None = None,
+    nature: str | None = None,
+    status: str = "active",
     ignore_zero: bool = True,
     ignore_text: bool = True,
     enabled: bool | None = None,
@@ -248,7 +257,10 @@ def save_column_mapping_profile_rule(
 ) -> Path:
     code = _required_text("company_code", company_code)
     mode = ColumnGenerationMode(_required_text("generation_mode", generation_mode))
-    column = _required_text("column_name", column_name)
+    column = _optional_text(column_name)
+    event_column = _optional_text(value_column)
+    if not column and not event_column:
+        raise ValueError("column_name or value_column is required.")
 
     if mode == ColumnGenerationMode.IGNORE:
         if _optional_text(rubrica_target) or _target_list(rubricas_target):
@@ -271,13 +283,22 @@ def save_column_mapping_profile_rule(
 
     rule = ColumnMappingRule(
         column_name=column,
+        sheet_name=_optional_text(sheet_name),
+        header_row=_optional_int(header_row),
+        data_start_row=_optional_int(data_start_row),
+        employee_code_column=_optional_text(employee_code_column),
+        employee_name_column=_optional_text(employee_name_column),
+        value_column=event_column,
+        expected_header=_optional_text(expected_header),
         enabled=rule_enabled,
         rubrica_target=single_target,
         rubricas_target=multiple_targets,
         value_kind=_required_text("value_kind", value_kind),
+        nature=_optional_text(nature) or "unknown",
         generation_mode=mode,
         ignore_zero=bool(ignore_zero),
         ignore_text=bool(ignore_text),
+        status=_required_text("status", status),
         notes=_optional_text(notes),
     )
 
@@ -480,6 +501,16 @@ def _required_text(field_name: str, value: Any) -> str:
 def _optional_text(value: Any) -> str | None:
     text = normalize_text(value)
     return text if text else None
+
+
+def _optional_int(value: Any) -> int | None:
+    text = _optional_text(value)
+    if text is None:
+        return None
+    try:
+        return int(text)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"integer value expected: {value}.") from exc
 
 
 def _optional_competence(value: str | None) -> str | None:

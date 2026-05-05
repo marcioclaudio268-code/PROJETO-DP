@@ -16,6 +16,7 @@ from openpyxl.worksheet.worksheet import Worksheet
 from domain import NormalizedHours, decimal_to_plain_string
 from ingestion import (
     InputColumnMetadata,
+    InputLayoutDetection,
     InputLayoutNormalizationError,
     InputNormalizationResult,
     InputWorkbookInspection,
@@ -38,6 +39,7 @@ from .column_mapping_profiles import (
     ColumnMappingRule,
     ColumnValueKind,
     CompanyColumnMappingProfile,
+    excel_column_to_index,
 )
 
 
@@ -176,13 +178,16 @@ def build_canonical_workbook_from_column_profile(
         )
 
     selected_sheet = workbook[inspection.selected_sheet_name]
+    _validate_position_profile_headers(selected_sheet, profile)
     normalized_workbook = create_planilha_padrao_folha_v1(max_data_rows=max_data_rows)
     _populate_parameters(normalized_workbook, inspection, profile)
 
     funcionarios = normalized_workbook["FUNCIONARIOS"]
     lancamentos = normalized_workbook["LANCAMENTOS_FACEIS"]
     column_mappings = _match_profile_mappings_to_columns(profile, inspection.columns)
-    identity_column = _find_domain_registration_column(inspection.columns)
+    employee_code_column_index = _profile_employee_code_column_index(profile)
+    employee_name_column_index = _profile_employee_name_column_index(profile)
+    identity_column = None if employee_code_column_index is not None else _find_domain_registration_column(inspection.columns)
 
     employee_rows_written = 0
     canonical_rows_written = 0
@@ -193,7 +198,10 @@ def build_canonical_workbook_from_column_profile(
     generated_movements = 0
 
     header_row = min((column.header_row for column in inspection.columns), default=4)
-    for source_row in range(header_row + 1, selected_sheet.max_row + 1):
+    data_start_row = _profile_data_start_row(profile) or header_row + 1
+    employee_code_index = employee_code_column_index or 1
+    employee_name_index = employee_name_column_index or 2
+    for source_row in range(data_start_row, selected_sheet.max_row + 1):
         row_values = {
             column_index: selected_sheet.cell(row=source_row, column=column_index).value
             for column_index in range(1, selected_sheet.max_column + 1)
@@ -201,12 +209,16 @@ def build_canonical_workbook_from_column_profile(
         if _row_is_empty(row_values):
             continue
 
-        employee_key = normalized_optional_text(row_values.get(1))
-        employee_name = normalized_optional_text(row_values.get(2))
+        employee_key = normalized_optional_text(row_values.get(employee_code_index))
+        employee_name = normalized_optional_text(row_values.get(employee_name_index))
         domain_registration = (
+            normalized_optional_text(row_values.get(employee_code_column_index))
+            if employee_code_column_index is not None
+            else (
             normalized_optional_text(row_values.get(identity_column.column_index))
             if identity_column is not None
             else None
+            )
         )
         if employee_key is None and employee_name is None:
             if _row_has_profile_data(row_values, column_mappings):
@@ -325,7 +337,9 @@ def _match_profile_mappings_to_columns(
 ) -> tuple[tuple[InputColumnMetadata, ColumnMappingRule], ...]:
     mapping_index: dict[str, ColumnMappingRule] = {}
     for mapping in profile.mappings:
-        for token in (mapping.column_key, mapping.column_name):
+        if not mapping.is_active:
+            continue
+        for token in (mapping.column_key, mapping.column_name, mapping.value_column):
             if token:
                 mapping_index[_normalize_token(token)] = mapping
 
@@ -341,6 +355,61 @@ def _match_profile_mappings_to_columns(
         if mapping is not None:
             matches.append((column, mapping))
     return tuple(matches)
+
+
+def inspect_workbook_with_position_profile(
+    input_path: str | Path,
+    *,
+    profile: CompanyColumnMappingProfile,
+    selected_company_code: str | None = None,
+    selected_company_name: str | None = None,
+    selected_competence: str | None = None,
+) -> InputWorkbookInspection:
+    workbook = load_workbook(input_path, data_only=False)
+    selected_sheet = _select_position_profile_sheet(workbook, profile)
+    active_position_rules = tuple(rule for rule in profile.mappings if rule.is_active and rule.value_column)
+    header_row = _profile_header_row(profile) or 1
+    columns: list[InputColumnMetadata] = []
+    for rule in active_position_rules:
+        assert rule.value_column is not None
+        column_index = excel_column_to_index(rule.value_column)
+        actual_header = normalized_optional_text(selected_sheet.cell(row=rule.header_row or header_row, column=column_index).value)
+        column_name = actual_header or rule.expected_header or rule.column_name or rule.value_column
+        columns.append(
+            InputColumnMetadata(
+                column_index=column_index,
+                column_letter=rule.value_column,
+                column_name=column_name,
+                normalized_column_name=_normalize_token(column_name),
+                header_row=rule.header_row or header_row,
+            )
+        )
+
+    detection = InputLayoutDetection(
+        layout_id=MONTHLY_LAYOUT_ID,
+        active_sheet_name=workbook.active.title if workbook.active is not None else None,
+        selected_sheet_name=selected_sheet.title,
+        selected_sheet_reason="position_column_profile",
+        company_code=selected_company_code or profile.company_code,
+        company_name=selected_company_name or profile.company_name or "",
+        competence=selected_competence or _infer_competence_from_sheet_name(selected_sheet.title) or "",
+        source_company_name=selected_company_name or profile.company_name or "",
+        source_title_text=normalized_optional_text(selected_sheet["A1"].value),
+        source_sheet_names=tuple(workbook.sheetnames),
+        rules_applied=("position_column_profile",),
+        warnings=(),
+    )
+    return InputWorkbookInspection(
+        layout_id=detection.layout_id,
+        company_code=detection.company_code,
+        company_name=detection.company_name,
+        competence=detection.competence,
+        selected_sheet_name=detection.selected_sheet_name,
+        source_sheet_names=detection.source_sheet_names,
+        columns=tuple(columns),
+        warnings=detection.warnings,
+        detection=detection,
+    )
 
 
 def is_profile_identity_column(column: InputColumnMetadata) -> bool:
@@ -361,6 +430,134 @@ def _find_domain_registration_column(
         ),
         None,
     )
+
+
+def _profile_header_row(profile: CompanyColumnMappingProfile) -> int | None:
+    rows = [rule.header_row for rule in profile.mappings if rule.is_active and rule.header_row is not None]
+    return min(rows) if rows else None
+
+
+def _profile_data_start_row(profile: CompanyColumnMappingProfile) -> int | None:
+    rows = [rule.data_start_row for rule in profile.mappings if rule.is_active and rule.data_start_row is not None]
+    return min(rows) if rows else None
+
+
+def _profile_employee_code_column_index(profile: CompanyColumnMappingProfile) -> int | None:
+    for rule in profile.mappings:
+        if rule.is_active and rule.employee_code_column:
+            return excel_column_to_index(rule.employee_code_column)
+    return None
+
+
+def _profile_employee_name_column_index(profile: CompanyColumnMappingProfile) -> int | None:
+    for rule in profile.mappings:
+        if rule.is_active and rule.employee_name_column:
+            return excel_column_to_index(rule.employee_name_column)
+    return None
+
+
+def _select_position_profile_sheet(workbook: Workbook, profile: CompanyColumnMappingProfile) -> Worksheet:
+    configured_names = [
+        rule.sheet_name
+        for rule in profile.mappings
+        if rule.is_active and rule.sheet_name
+    ]
+    for configured_name in configured_names:
+        for worksheet in workbook.worksheets:
+            if _normalize_token(worksheet.title) == _normalize_token(configured_name):
+                return worksheet
+        raise InputLayoutNormalizationError(
+            "aba_perfil_colunas_ausente",
+            f"A aba configurada no perfil de colunas nao existe no workbook: {configured_name}.",
+            source=configured_name,
+        )
+    if workbook.active is not None:
+        return workbook.active
+    return workbook.worksheets[0]
+
+
+def _validate_position_profile_headers(
+    worksheet: Worksheet,
+    profile: CompanyColumnMappingProfile,
+) -> None:
+    for rule in profile.mappings:
+        if not rule.is_active or not rule.value_column or not rule.expected_header:
+            continue
+        if rule.sheet_name and _normalize_token(rule.sheet_name) != _normalize_token(worksheet.title):
+            continue
+        column_index = excel_column_to_index(rule.value_column)
+        actual = normalized_optional_text(worksheet.cell(row=rule.header_row or 1, column=column_index).value)
+        expected = rule.expected_header
+        if _header_matches_expected(actual, expected):
+            continue
+        found = actual or "[vazio]"
+        raise InputLayoutNormalizationError(
+            "cabecalho_perfil_divergente",
+            (
+                f"A coluna {rule.value_column} esperava {expected}, mas encontrou {found}. "
+                "Revise o perfil de colunas."
+            ),
+            source=f"{worksheet.title}!{rule.value_column}{rule.header_row or 1}",
+            details={
+                "expected_header": expected,
+                "actual_header": actual,
+                "value_column": rule.value_column,
+            },
+        )
+
+
+def _header_matches_expected(actual: str | None, expected: str) -> bool:
+    actual_token = _normalize_token(actual or "")
+    expected_token = _normalize_token(expected)
+    if not actual_token or not expected_token:
+        return False
+    return expected_token in actual_token or actual_token in expected_token
+
+
+def _infer_competence_from_sheet_name(sheet_name: str) -> str | None:
+    match = re.search(r"\b(0?[1-9]|1[0-2])[-_/ ]?(20\d{2}|\d{2})\b", sheet_name)
+    if match:
+        month = int(match.group(1))
+        year = match.group(2)
+        if len(year) == 2:
+            year = f"20{year}"
+        return f"{month:02d}/{year}"
+
+    month_names = {
+        "jan": 1,
+        "janeiro": 1,
+        "fev": 2,
+        "fevereiro": 2,
+        "mar": 3,
+        "marco": 3,
+        "abr": 4,
+        "abril": 4,
+        "mai": 5,
+        "maio": 5,
+        "jun": 6,
+        "junho": 6,
+        "jul": 7,
+        "julho": 7,
+        "ago": 8,
+        "agosto": 8,
+        "set": 9,
+        "setembro": 9,
+        "out": 10,
+        "outubro": 10,
+        "nov": 11,
+        "novembro": 11,
+        "dez": 12,
+        "dezembro": 12,
+    }
+    normalized = _normalize_token(sheet_name)
+    for name, month in month_names.items():
+        year_match = re.search(rf"\b{name}\b\D*(20\d{{2}}|\d{{2}})", normalized)
+        if year_match:
+            year = year_match.group(1)
+            if len(year) == 2:
+                year = f"20{year}"
+            return f"{month:02d}/{year}"
+    return None
 
 
 def _parse_profile_value(
@@ -538,6 +735,7 @@ def _normalize_token(value: object) -> str:
 
 __all__ = [
     "build_canonical_workbook_from_column_profile",
+    "inspect_workbook_with_position_profile",
     "is_profile_identity_column",
     "normalize_workbook_with_column_profile",
 ]

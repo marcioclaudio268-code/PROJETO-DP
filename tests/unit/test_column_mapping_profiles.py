@@ -8,11 +8,14 @@ from pydantic import ValidationError
 
 from dashboard import (
     ColumnGenerationMode,
+    ColumnMappingNature,
     ColumnMappingProfileError,
     ColumnMappingRule,
+    ColumnMappingStatus,
     ColumnValueKind,
     CompanyColumnMappingProfile,
     column_mapping_profile_path,
+    excel_column_to_index,
     load_column_mapping_profile,
     save_column_mapping_profile,
     upsert_column_mapping_rule,
@@ -70,6 +73,40 @@ def test_creates_valid_company_column_mapping_profile() -> None:
     assert profile.company_code == "887"
     assert profile.company_name == "BERBELLA LTDA"
     assert len(profile.mappings) == 4
+
+
+def test_excel_column_letter_converts_to_one_based_index() -> None:
+    assert excel_column_to_index("A") == 1
+    assert excel_column_to_index("B") == 2
+    assert excel_column_to_index("T") == 20
+    assert excel_column_to_index("AA") == 27
+
+
+def test_position_column_mapping_rule_targets_rubric() -> None:
+    rule = ColumnMappingRule(
+        sheet_name="abr 26",
+        header_row=2,
+        data_start_row=3,
+        employee_code_column="A",
+        employee_name_column="B",
+        value_column="T",
+        expected_header="HORA 50%",
+        enabled=True,
+        rubrica_target="201",
+        value_kind="horas",
+        nature="provento",
+        generation_mode="single_line",
+        ignore_zero=True,
+        ignore_text=True,
+        status="active",
+    )
+
+    assert rule.value_column == "T"
+    assert rule.employee_code_column == "A"
+    assert rule.rubrica_target == "201"
+    assert rule.value_kind == ColumnValueKind.HOURS
+    assert rule.nature == ColumnMappingNature.PROVENTO
+    assert rule.status == ColumnMappingStatus.ACTIVE
 
 
 def test_serializes_profile_to_dict_and_json() -> None:
@@ -152,6 +189,85 @@ def test_rejects_invalid_profile_with_duplicate_column_mapping() -> None:
                 ),
             ],
         )
+
+
+def test_rejects_duplicate_active_position_column_mapping() -> None:
+    with pytest.raises(ValidationError):
+        CompanyColumnMappingProfile(
+            company_code="755",
+            mappings=[
+                ColumnMappingRule(
+                    header_row=2,
+                    data_start_row=3,
+                    employee_code_column="A",
+                    value_column="T",
+                    expected_header="HORA 50%",
+                    enabled=True,
+                    rubrica_target="201",
+                    value_kind="horas",
+                    nature="provento",
+                    generation_mode="single_line",
+                    ignore_zero=True,
+                    ignore_text=True,
+                    status="active",
+                ),
+                ColumnMappingRule(
+                    header_row=2,
+                    data_start_row=3,
+                    employee_code_column="A",
+                    value_column="T",
+                    expected_header="HORAS 100%",
+                    enabled=True,
+                    rubrica_target="200",
+                    value_kind="horas",
+                    nature="provento",
+                    generation_mode="single_line",
+                    ignore_zero=True,
+                    ignore_text=True,
+                    status="active",
+                ),
+            ],
+        )
+
+
+def test_allows_duplicate_position_column_when_one_rule_is_inactive() -> None:
+    profile = CompanyColumnMappingProfile(
+        company_code="755",
+        mappings=[
+            ColumnMappingRule(
+                header_row=2,
+                data_start_row=3,
+                employee_code_column="A",
+                value_column="T",
+                expected_header="HORA 50%",
+                enabled=True,
+                rubrica_target="201",
+                value_kind="horas",
+                nature="provento",
+                generation_mode="single_line",
+                ignore_zero=True,
+                ignore_text=True,
+                status="active",
+            ),
+            ColumnMappingRule(
+                header_row=2,
+                data_start_row=3,
+                employee_code_column="A",
+                value_column="T",
+                expected_header="HORA 50%",
+                enabled=False,
+                rubrica_target="999",
+                value_kind="horas",
+                nature="provento",
+                generation_mode="single_line",
+                ignore_zero=True,
+                ignore_text=True,
+                status="inactive",
+            ),
+        ],
+    )
+
+    assert len(profile.mappings) == 2
 
 
 def test_rejects_mapping_without_required_fields() -> None:

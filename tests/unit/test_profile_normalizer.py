@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 from openpyxl import Workbook, load_workbook
 
 from dashboard.column_mapping_profiles import (
@@ -12,11 +13,13 @@ from dashboard.column_mapping_profiles import (
 )
 from dashboard.profile_normalizer import (
     build_canonical_workbook_from_column_profile,
+    inspect_workbook_with_position_profile,
     normalize_workbook_with_column_profile,
 )
 from ingestion import (
     InputColumnMetadata,
     InputLayoutDetection,
+    InputLayoutNormalizationError,
     InputWorkbookInspection,
     MONTHLY_LAYOUT_ID,
     ingest_template_v1_workbook,
@@ -370,3 +373,90 @@ def test_profile_normalizer_routes_critical_rubrics_to_distinct_canonical_column
     assert lancamentos["X4"].value == "03:00"
     assert lancamentos["P5"].value == "10"
     assert lancamentos["H2"].value is None
+
+
+def _build_position_profile(header: str = "HORA 50%") -> CompanyColumnMappingProfile:
+    return CompanyColumnMappingProfile(
+        company_code="755",
+        company_name="GUSTAVO LOPES LACERDA",
+        default_process="11",
+        mappings=[
+            ColumnMappingRule(
+                sheet_name="abril",
+                header_row=2,
+                data_start_row=3,
+                employee_code_column="A",
+                employee_name_column="B",
+                value_column="T",
+                expected_header=header,
+                enabled=True,
+                rubrica_target="201",
+                value_kind="horas",
+                nature="provento",
+                generation_mode="single_line",
+                ignore_zero=True,
+                ignore_text=True,
+                status="active",
+            )
+        ],
+    )
+
+
+def _build_position_workbook(header: str = "HORA 50%") -> Workbook:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "abril"
+    sheet["A2"] = "CODIGO"
+    sheet["B2"] = "NOME"
+    sheet["T2"] = header
+    sheet["A3"] = "304"
+    sheet["B3"] = "ADILSON RAFAEL DE SOUSA"
+    sheet["T3"] = "01:30"
+    return workbook
+
+
+def test_position_profile_validates_expected_header_and_generates_rubric_column(tmp_path: Path) -> None:
+    workbook_path = tmp_path / "fechamento.xlsx"
+    _build_position_workbook().save(workbook_path)
+    profile = _build_position_profile()
+    inspection = inspect_workbook_with_position_profile(
+        workbook_path,
+        profile=profile,
+        selected_company_code="755",
+        selected_company_name="GUSTAVO LOPES LACERDA",
+        selected_competence="04/2026",
+    )
+
+    normalized, manifest = build_canonical_workbook_from_column_profile(
+        load_workbook(workbook_path),
+        inspection=inspection,
+        profile=profile,
+    )
+
+    assert inspection.columns[0].column_letter == "T"
+    assert manifest["counts"]["generated_movements"] == 1
+    assert normalized["FUNCIONARIOS"]["E2"].value == "304"
+    assert normalized["LANCAMENTOS_FACEIS"]["V2"].value == "01:30"
+
+
+def test_position_profile_blocks_when_expected_header_differs(tmp_path: Path) -> None:
+    workbook_path = tmp_path / "fechamento.xlsx"
+    _build_position_workbook(header="HORAS 100%").save(workbook_path)
+    profile = _build_position_profile(header="HORA 50%")
+    inspection = inspect_workbook_with_position_profile(
+        workbook_path,
+        profile=profile,
+        selected_company_code="755",
+        selected_company_name="GUSTAVO LOPES LACERDA",
+        selected_competence="04/2026",
+    )
+
+    with pytest.raises(InputLayoutNormalizationError) as exc_info:
+        build_canonical_workbook_from_column_profile(
+            load_workbook(workbook_path),
+            inspection=inspection,
+            profile=profile,
+        )
+
+    assert exc_info.value.code == "cabecalho_perfil_divergente"
+    assert "A coluna T esperava HORA 50%" in str(exc_info.value)

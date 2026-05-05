@@ -19,8 +19,10 @@ from validation.pipeline import validate_pipeline_v1
 from ingestion.input_layout import (
     CANONICAL_LAYOUT_ID,
     InputColumnMetadata,
+    InputLayoutDetection,
     InputLayoutNormalizationError,
     InputWorkbookInspection,
+    MONTHLY_LAYOUT_ID,
     inspect_input_workbook,
     normalize_input_workbook,
 )
@@ -44,7 +46,11 @@ from .models import (
     DashboardSummary,
 )
 from .overrides import describe_ignore_strategy, replay_dashboard_action_overrides
-from .profile_normalizer import is_profile_identity_column, normalize_workbook_with_column_profile
+from .profile_normalizer import (
+    inspect_workbook_with_position_profile,
+    is_profile_identity_column,
+    normalize_workbook_with_column_profile,
+)
 from .storage import load_dashboard_state, write_dashboard_state
 
 
@@ -71,12 +77,35 @@ def run_dashboard_analysis(
 ) -> DashboardRunResult:
     resolver = config_resolver or ConfigResolver()
     source_workbook_path = _resolve_source_workbook_path(paths)
-    inspection = inspect_input_workbook(source_workbook_path, registry_root=resolver.registry_root)
     selected_context = _normalize_selected_context(
         selected_company_code=selected_company_code,
         selected_company_name=selected_company_name,
         selected_competence=selected_competence,
     )
+    preloaded_profile_resolution: DashboardProfileResolution | None = None
+    preloaded_column_profile: CompanyColumnMappingProfile | None = None
+    try:
+        inspection = inspect_input_workbook(source_workbook_path, registry_root=resolver.registry_root)
+    except InputLayoutNormalizationError as exc:
+        if exc.code not in {"layout_mensal_invalido", "layout_desconhecido"} or not selected_context.get("company_code"):
+            raise
+        preloaded_profile_resolution, preloaded_column_profile = _resolve_column_mapping_profile_for_selected_context(
+            selected_context=selected_context,
+            profile_root=column_profile_root,
+        )
+        inspection = _build_selected_context_inspection(
+            source_workbook_path=source_workbook_path,
+            selected_context=selected_context,
+            profile=preloaded_column_profile,
+        )
+        if preloaded_profile_resolution.status == "found" and preloaded_column_profile is not None:
+            inspection = inspect_workbook_with_position_profile(
+                source_workbook_path,
+                profile=preloaded_column_profile,
+                selected_company_code=inspection.company_code,
+                selected_company_name=inspection.company_name,
+                selected_competence=inspection.competence,
+            )
     mismatch = _selected_context_mismatch(inspection, selected_context)
     if mismatch is not None:
         return _build_blocked_run_for_selected_context_mismatch(
@@ -87,11 +116,15 @@ def run_dashboard_analysis(
             mismatch=mismatch,
         )
 
-    profile_resolution, column_profile = _resolve_column_mapping_profile(
-        inspection=inspection,
-        source_workbook_path=source_workbook_path,
-        profile_root=column_profile_root,
-    )
+    if preloaded_profile_resolution is None:
+        profile_resolution, column_profile = _resolve_column_mapping_profile(
+            inspection=inspection,
+            source_workbook_path=source_workbook_path,
+            profile_root=column_profile_root,
+        )
+    else:
+        profile_resolution = preloaded_profile_resolution
+        column_profile = preloaded_column_profile
     if profile_resolution.status != "found" and profile_resolution.status != "not_required":
         return _build_blocked_run_without_profile(
             paths=paths,
@@ -117,7 +150,7 @@ def run_dashboard_analysis(
                 registry_root=resolver.registry_root,
             )
     except InputLayoutNormalizationError as exc:
-        if exc.code != "linha_orfa_com_dado_critico":
+        if exc.code not in {"linha_orfa_com_dado_critico", "cabecalho_perfil_divergente"}:
             raise
         return _build_blocked_run_for_recoverable_normalization_error(
             paths=paths,
@@ -946,6 +979,23 @@ def _resolve_column_mapping_profile(
             None,
         )
 
+    if _profile_has_position_rules(profile):
+        return (
+            DashboardProfileResolution(
+                status="found",
+                status_label="Perfil de mapeamento de colunas encontrado",
+                message=(
+                    f"Perfil de mapeamento de colunas encontrado para a empresa {inspection.company_code} "
+                    "com regras por posicao da planilha."
+                ),
+                company_code=inspection.company_code,
+                competence=inspection.competence,
+                layout_id=inspection.layout_id,
+                source_path=str(profile_path),
+            ),
+            profile,
+        )
+
     relevant_columns = _relevant_profile_columns(
         inspection=inspection,
         source_workbook_path=source_workbook_path,
@@ -984,6 +1034,116 @@ def _resolve_column_mapping_profile(
             source_path=str(profile_path),
         ),
         profile,
+    )
+
+
+def _resolve_column_mapping_profile_for_selected_context(
+    *,
+    selected_context: dict[str, str | None],
+    profile_root: str | Path | None,
+) -> tuple[DashboardProfileResolution, CompanyColumnMappingProfile | None]:
+    company_code = selected_context.get("company_code") or ""
+    competence = selected_context.get("competence") or ""
+    profile_path = column_mapping_profile_path(company_code, root=profile_root)
+    try:
+        profile = load_column_mapping_profile(company_code, root=profile_root)
+    except ColumnMappingProfileError as exc:
+        return (
+            DashboardProfileResolution(
+                status="missing",
+                status_label="Perfil de mapeamento de colunas ausente",
+                message=(
+                    "Perfil de mapeamento de colunas nao encontrado para a empresa "
+                    f"{company_code}. Cadastre o perfil por posicao antes de processar este layout."
+                ),
+                company_code=company_code,
+                competence=competence,
+                layout_id=MONTHLY_LAYOUT_ID,
+                source_path=exc.source or str(profile_path),
+            ),
+            None,
+        )
+    except (ValidationError, ValueError) as exc:
+        return (
+            DashboardProfileResolution(
+                status="invalid",
+                status_label="Perfil de mapeamento de colunas invalido",
+                message=f"Perfil de mapeamento de colunas invalido para a empresa {company_code}: {exc}",
+                company_code=company_code,
+                competence=competence,
+                layout_id=MONTHLY_LAYOUT_ID,
+                source_path=str(profile_path),
+            ),
+            None,
+        )
+
+    if profile.company_code != company_code:
+        return (
+            DashboardProfileResolution(
+                status="invalid",
+                status_label="Perfil de mapeamento de colunas invalido",
+                message=(
+                    "Perfil de mapeamento de colunas pertence a outra empresa. "
+                    f"Esperado={company_code}; recebido={profile.company_code}."
+                ),
+                company_code=company_code,
+                competence=competence,
+                layout_id=MONTHLY_LAYOUT_ID,
+                source_path=str(profile_path),
+            ),
+            None,
+        )
+
+    return (
+        DashboardProfileResolution(
+            status="found",
+            status_label="Perfil de mapeamento de colunas encontrado",
+            message=(
+                f"Perfil de mapeamento de colunas encontrado para a empresa {company_code} "
+                "com regras por posicao da planilha."
+            ),
+            company_code=company_code,
+            competence=competence,
+            layout_id=MONTHLY_LAYOUT_ID,
+            source_path=str(profile_path),
+        ),
+        profile,
+    )
+
+
+def _build_selected_context_inspection(
+    *,
+    source_workbook_path: Path,
+    selected_context: dict[str, str | None],
+    profile: CompanyColumnMappingProfile | None,
+) -> InputWorkbookInspection:
+    workbook = load_workbook(source_workbook_path, read_only=True)
+    selected_sheet_name = workbook.active.title if workbook.active is not None else workbook.sheetnames[0]
+    detection = InputLayoutDetection(
+        layout_id=MONTHLY_LAYOUT_ID,
+        active_sheet_name=workbook.active.title if workbook.active is not None else None,
+        selected_sheet_name=selected_sheet_name,
+        selected_sheet_reason="selected_company_context",
+        company_code=selected_context.get("company_code") or (profile.company_code if profile else ""),
+        company_name=selected_context.get("company_name") or (profile.company_name if profile else "") or "",
+        competence=selected_context.get("competence") or "",
+        source_company_name=selected_context.get("company_name") or "",
+        source_title_text=None,
+        source_sheet_names=tuple(workbook.sheetnames),
+        rules_applied=("selected_company_context",),
+        warnings=(),
+    )
+    workbook.close()
+    return InputWorkbookInspection(
+        layout_id=detection.layout_id,
+        company_code=detection.company_code,
+        company_name=detection.company_name,
+        competence=detection.competence,
+        selected_sheet_name=detection.selected_sheet_name,
+        source_sheet_names=detection.source_sheet_names,
+        columns=(),
+        warnings=detection.warnings,
+        detection=detection,
     )
 
 
@@ -1039,14 +1199,20 @@ def _profile_covers_column(
         _normalize_profile_token(str(column.column_index)),
     }
     for mapping in profile.mappings:
+        if not mapping.is_active:
+            continue
         mapping_tokens = {
             _normalize_profile_token(token)
-            for token in (mapping.column_key, mapping.column_name)
+            for token in (mapping.column_key, mapping.column_name, mapping.value_column)
             if token
         }
         if column_tokens.intersection(mapping_tokens):
             return True
     return False
+
+
+def _profile_has_position_rules(profile: CompanyColumnMappingProfile) -> bool:
+    return any(mapping.is_active and mapping.value_column for mapping in profile.mappings)
 
 
 def _normalize_profile_token(value: str) -> str:
@@ -1132,6 +1298,29 @@ def _build_recoverable_normalization_pending(
     error: InputLayoutNormalizationError,
 ) -> DashboardPendingItem:
     source_sheet, source_cell, source_row = _parse_normalization_error_source(error.source)
+    if error.code == "cabecalho_perfil_divergente":
+        return DashboardPendingItem(
+            uid=f"perfil_colunas:{error.code}",
+            stage="perfil_colunas",
+            pending_id=error.code,
+            code="column_mapping_profile_header_mismatch",
+            severity="bloqueante",
+            employee_name=None,
+            employee_key=None,
+            event_name=None,
+            field_label="cabecalho esperado",
+            found_value=str((error.details or {}).get("actual_header") or "[vazio]"),
+            problem=str(error),
+            recommended_action="Revise o perfil de colunas antes de repetir a analise.",
+            source_sheet=source_sheet or inspection.selected_sheet_name,
+            source_cell=source_cell,
+            source_row=source_row,
+            source_column_name=str((error.details or {}).get("value_column") or ""),
+            can_edit_workbook=False,
+            can_edit_employee_mapping=False,
+            can_edit_event_mapping=False,
+            can_ignore=False,
+        )
     return DashboardPendingItem(
         uid=f"ingestao:{error.code}",
         stage="ingestao",
@@ -1353,6 +1542,9 @@ def _normalize_optional_competence(value) -> str | None:
     text = _normalize_optional_text(value)
     if text is None:
         return None
+    compact = re.fullmatch(r"(\d{2})(\d{4})", text)
+    if compact:
+        return f"{compact.group(1)}/{compact.group(2)}"
     normalized = normalize_competence(text)
     return normalized or text
 

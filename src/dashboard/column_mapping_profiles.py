@@ -21,10 +21,22 @@ class ColumnValueKind(StrEnum):
     QUANTITY = "quantidade"
 
 
+class ColumnMappingNature(StrEnum):
+    PROVENTO = "provento"
+    DESCONTO = "desconto"
+    INFORMATIVO = "informativo"
+    UNKNOWN = "unknown"
+
+
 class ColumnGenerationMode(StrEnum):
     SINGLE_LINE = "single_line"
     MULTI_LINE = "multi_line"
     IGNORE = "ignore"
+
+
+class ColumnMappingStatus(StrEnum):
+    ACTIVE = "active"
+    INACTIVE = "inactive"
 
 
 class ColumnMappingProfileError(ValueError):
@@ -45,24 +57,50 @@ class ColumnMappingRule(_StrictProfileModel):
 
     column_key: str | None = Field(default=None, min_length=1)
     column_name: str | None = Field(default=None, min_length=1)
+    sheet_name: str | None = Field(default=None, min_length=1)
+    header_row: int | None = Field(default=None, ge=1)
+    data_start_row: int | None = Field(default=None, ge=1)
+    employee_code_column: str | None = Field(default=None, min_length=1)
+    employee_name_column: str | None = Field(default=None, min_length=1)
+    value_column: str | None = Field(default=None, min_length=1)
+    expected_header: str | None = Field(default=None, min_length=1)
     enabled: bool
     rubrica_target: str | None = Field(default=None, min_length=1)
     rubricas_target: list[str] = Field(default_factory=list)
     value_kind: ColumnValueKind
+    nature: ColumnMappingNature = ColumnMappingNature.UNKNOWN
     generation_mode: ColumnGenerationMode
     ignore_zero: bool
     ignore_text: bool
+    status: ColumnMappingStatus = ColumnMappingStatus.ACTIVE
     notes: str | None = None
 
     @model_validator(mode="after")
     def _validate_rule_contract(self) -> "ColumnMappingRule":
-        if not self.column_key and not self.column_name:
-            raise ValueError("ColumnMappingRule requires column_key or column_name.")
+        self.employee_code_column = normalize_excel_column(self.employee_code_column) if self.employee_code_column else None
+        self.employee_name_column = normalize_excel_column(self.employee_name_column) if self.employee_name_column else None
+        self.value_column = normalize_excel_column(self.value_column) if self.value_column else None
+
+        if not self.column_key and not self.column_name and not self.value_column:
+            raise ValueError("ColumnMappingRule requires column_key, column_name or value_column.")
+
+        if self.value_column:
+            if self.header_row is None:
+                raise ValueError("position mappings require header_row.")
+            if self.data_start_row is None:
+                raise ValueError("position mappings require data_start_row.")
+            if not self.employee_code_column:
+                raise ValueError("position mappings require employee_code_column.")
+            if self.data_start_row <= self.header_row:
+                raise ValueError("data_start_row must be greater than header_row.")
 
         targets = [target for target in ([self.rubrica_target] if self.rubrica_target else []) + self.rubricas_target]
         duplicate_targets = _duplicates(targets)
         if duplicate_targets:
             raise ValueError(f"duplicate rubrica targets: {', '.join(duplicate_targets)}")
+
+        if self.status == ColumnMappingStatus.INACTIVE:
+            return self
 
         if self.generation_mode == ColumnGenerationMode.IGNORE:
             if self.enabled:
@@ -88,13 +126,17 @@ class ColumnMappingRule(_StrictProfileModel):
 
     @property
     def source_column_id(self) -> str:
-        return self.column_key or self.column_name or ""
+        return self.column_key or self.column_name or self.value_column or ""
 
     @property
     def target_rubrics(self) -> tuple[str, ...]:
         if self.rubrica_target is not None:
             return (self.rubrica_target,)
         return tuple(self.rubricas_target)
+
+    @property
+    def is_active(self) -> bool:
+        return self.status == ColumnMappingStatus.ACTIVE
 
 
 class CompanyColumnMappingProfile(_StrictProfileModel):
@@ -109,7 +151,7 @@ class CompanyColumnMappingProfile(_StrictProfileModel):
 
     @model_validator(mode="after")
     def _check_duplicate_columns(self) -> "CompanyColumnMappingProfile":
-        column_ids = [mapping.source_column_id for mapping in self.mappings]
+        column_ids = [_mapping_duplicate_key(mapping) for mapping in self.mappings if mapping.is_active]
         duplicates = _duplicates(column_ids)
         if duplicates:
             raise ValueError(f"duplicate column mappings: {', '.join(duplicates)}")
@@ -151,10 +193,10 @@ def upsert_column_mapping_rule(
     rule: ColumnMappingRule,
 ) -> CompanyColumnMappingProfile:
     mappings = list(profile.mappings)
-    target_id = rule.source_column_id
+    target_id = _mapping_upsert_key(rule)
     updated = False
     for index, existing in enumerate(mappings):
-        if existing.source_column_id == target_id:
+        if _mapping_upsert_key(existing) == target_id:
             mappings[index] = rule
             updated = True
             break
@@ -199,15 +241,48 @@ def _duplicates(values: list[str]) -> tuple[str, ...]:
     return tuple(sorted(duplicated))
 
 
+def normalize_excel_column(value: str | None) -> str:
+    text = str(value or "").strip().upper()
+    if not re.fullmatch(r"[A-Z]+", text):
+        raise ValueError(f"Invalid Excel column letter: {value}.")
+    return text
+
+
+def excel_column_to_index(value: str) -> int:
+    column = normalize_excel_column(value)
+    index = 0
+    for character in column:
+        index = index * 26 + (ord(character) - ord("A") + 1)
+    return index
+
+
+def _mapping_duplicate_key(mapping: ColumnMappingRule) -> str:
+    sheet = _normalize_scope_token(mapping.sheet_name or "*")
+    column = mapping.value_column or mapping.source_column_id
+    return f"{sheet}:{_normalize_scope_token(column)}"
+
+
+def _mapping_upsert_key(mapping: ColumnMappingRule) -> str:
+    return _mapping_duplicate_key(mapping)
+
+
+def _normalize_scope_token(value: str) -> str:
+    return str(value).strip().upper()
+
+
 __all__ = [
     "ColumnGenerationMode",
+    "ColumnMappingNature",
     "ColumnMappingProfileError",
     "ColumnMappingRule",
+    "ColumnMappingStatus",
     "ColumnValueKind",
     "CompanyColumnMappingProfile",
     "DEFAULT_COLUMN_MAPPING_PROFILES_ROOT",
     "column_mapping_profile_path",
+    "excel_column_to_index",
     "load_column_mapping_profile",
+    "normalize_excel_column",
     "save_column_mapping_profile",
     "upsert_column_mapping_rule",
 ]

@@ -11,7 +11,9 @@ import pytest
 from openpyxl import load_workbook
 
 from dashboard import (
+    ColumnMappingRule,
     CompanyAdminEntry,
+    CompanyColumnMappingProfile,
     CompanyRubricCatalog,
     CompanyRubricRecord,
     ConfigResolutionStatus,
@@ -1201,6 +1203,115 @@ def test_rubrics_tab_blocks_active_duplicate_code_on_edit() -> None:
         catalog,
         rubric_code="989",
         selected_rubric=catalog.rubrics[0],
+        target_status="inactive",
+    )
+
+
+def test_render_column_profile_tab_shows_edit_button_and_position_fields() -> None:
+    module = _load_dashboard_v1_module()
+    fake_st = _FakeStreamlit()
+    fake_st.session_state[module.PROFILE_RULE_EDIT_INDEX_KEY] = 0
+    module.st = fake_st
+    selected_company = CompanyAdminEntry(
+        company_code="755",
+        company_name="GUSTAVO LOPES LACERDA",
+        status="active",
+        is_active=True,
+        company_id="company:755",
+        default_process="11",
+    )
+    profile = CompanyColumnMappingProfile(
+        company_code="755",
+        company_name="GUSTAVO LOPES LACERDA",
+        default_process="11",
+        mappings=[
+            ColumnMappingRule(
+                sheet_name="abril",
+                header_row=2,
+                data_start_row=3,
+                employee_code_column="A",
+                employee_name_column="B",
+                value_column="T",
+                expected_header="HORA 50%",
+                enabled=True,
+                rubrica_target="201",
+                value_kind="horas",
+                nature="provento",
+                generation_mode="single_line",
+                ignore_zero=True,
+                ignore_text=True,
+                status="active",
+            )
+        ],
+    )
+    module._render_company_selector = lambda *args, **kwargs: selected_company
+    module.load_column_mapping_profile = lambda *args, **kwargs: profile
+
+    module._render_column_profile_tab()
+
+    text_labels = {call["label"] for call in fake_st.text_input_calls}
+    select_labels = {call["label"] for call in fake_st.selectbox_calls}
+    assert "Editar" in [call["args"][0] for call in fake_st.button_calls]
+    assert {
+        "Linha do cabecalho",
+        "Linha inicial dos dados",
+        "Coluna da matricula/codigo do funcionario",
+        "Coluna do valor/evento",
+        "Cabecalho esperado da coluna",
+        "Rubrica unica",
+    }.issubset(text_labels)
+    assert {"Tipo do valor da coluna", "Natureza", "Status"}.issubset(select_labels)
+
+
+def test_column_profile_tab_blocks_active_duplicate_position_column() -> None:
+    module = _load_dashboard_v1_module()
+    rules = [
+        ColumnMappingRule(
+            sheet_name="abril",
+            header_row=2,
+            data_start_row=3,
+            employee_code_column="A",
+            value_column="T",
+            expected_header="HORA 50%",
+            enabled=True,
+            rubrica_target="201",
+            value_kind="horas",
+            nature="provento",
+            generation_mode="single_line",
+            ignore_zero=True,
+            ignore_text=True,
+            status="active",
+        ),
+        ColumnMappingRule(
+            sheet_name="abril",
+            header_row=2,
+            data_start_row=3,
+            employee_code_column="A",
+            value_column="U",
+            expected_header="HORAS 100%",
+            enabled=True,
+            rubrica_target="200",
+            value_kind="horas",
+            nature="provento",
+            generation_mode="single_line",
+            ignore_zero=True,
+            ignore_text=True,
+            status="active",
+        ),
+    ]
+
+    assert module._has_active_column_rule_duplicate(
+        rules,
+        value_column="U",
+        sheet_name="abril",
+        selected_rule=rules[0],
+        target_status="active",
+    )
+    assert not module._has_active_column_rule_duplicate(
+        rules,
+        value_column="U",
+        sheet_name="abril",
+        selected_rule=rules[0],
         target_status="inactive",
     )
 

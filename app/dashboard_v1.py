@@ -33,6 +33,7 @@ RUN_ROOT_KEY = "dashboard_v1_run_root"
 ERROR_KEY = "dashboard_v1_last_error"
 ASSISTED_IMPORT_RESULT_KEY = "dashboard_v1_assisted_import_result"
 RUBRIC_EDIT_INDEX_KEY = "dashboard_v1_rubric_edit_index"
+PROFILE_RULE_EDIT_INDEX_KEY = "dashboard_v1_profile_rule_edit_index"
 COLUMN_MAPPING_PROFILE_CODES = {
     "column_mapping_profile_missing",
     "column_mapping_profile_incomplete",
@@ -783,39 +784,86 @@ def _render_column_profile_tab() -> None:
         st.table(
             [
                 {
-                    "Coluna": rule.column_name or rule.column_key or "-",
+                    "Aba": rule.sheet_name or "-",
+                    "Coluna": rule.value_column or rule.column_name or rule.column_key or "-",
+                    "Cabecalho esperado": rule.expected_header or "-",
+                    "Linha cabecalho": rule.header_row or "-",
+                    "Linha dados": rule.data_start_row or "-",
+                    "Coluna matricula": rule.employee_code_column or "-",
+                    "Coluna nome": rule.employee_name_column or "-",
                     "Modo": rule.generation_mode.value,
                     "Tipo": rule.value_kind.value,
+                    "Natureza": rule.nature.value,
                     "Rubrica unica": rule.rubrica_target or "-",
                     "Rubricas multiplas": ", ".join(rule.rubricas_target),
                     "Ignorar zero": "sim" if rule.ignore_zero else "nao",
                     "Ignorar texto": "sim" if rule.ignore_text else "nao",
                     "Ativa": "sim" if rule.enabled else "nao",
+                    "Status": rule.status.value,
                 }
                 for rule in mappings
             ]
         )
+        st.markdown("**Editar regra cadastrada**")
+        for index, rule in enumerate(mappings):
+            column_ref, target_ref, kind_ref, status_ref, action_ref = st.columns(5)
+            column_ref.write(_profile_rule_label(rule))
+            target_ref.write(rule.rubrica_target or ", ".join(rule.rubricas_target) or "-")
+            kind_ref.write(rule.value_kind.value)
+            status_ref.write(rule.status.value)
+            if action_ref.button("Editar", key=f"editar-perfil-coluna-{index}-{rule.source_column_id}"):
+                st.session_state[PROFILE_RULE_EDIT_INDEX_KEY] = index
+                st.rerun()
     else:
         st.info("Nenhuma regra de perfil de colunas cadastrada para esta empresa.")
 
-    rule_options = ["Nova regra"] + [rule.column_name or rule.column_key or "" for rule in mappings]
-    selected_label = st.selectbox("Regra de coluna", options=rule_options)
+    rule_options = ["Nova regra"] + [_profile_rule_label(rule) for rule in mappings]
+    edit_index = _session_profile_rule_edit_index(mappings)
+    selected_option_index = edit_index + 1 if edit_index is not None else 0
+    selected_label = st.selectbox("Regra de coluna", options=rule_options, index=selected_option_index)
     selected_rule = None
     if selected_label != "Nova regra":
         selected_index = rule_options.index(selected_label) - 1
         selected_rule = mappings[selected_index]
+        st.session_state[PROFILE_RULE_EDIT_INDEX_KEY] = selected_index
+    else:
+        st.session_state.pop(PROFILE_RULE_EDIT_INDEX_KEY, None)
+
+    if selected_rule is not None:
+        st.info(f"Editando regra {_profile_rule_label(selected_rule)}.")
 
     with st.form("form-perfil-colunas"):
         column_name = st.text_input("Nome da coluna", value=selected_rule.column_name if selected_rule else "")
+        sheet_name = st.text_input("Aba da planilha (opcional)", value=selected_rule.sheet_name or "" if selected_rule else "")
+        header_row = st.text_input("Linha do cabecalho", value=str(selected_rule.header_row or "") if selected_rule else "")
+        data_start_row = st.text_input("Linha inicial dos dados", value=str(selected_rule.data_start_row or "") if selected_rule else "")
+        employee_code_column = st.text_input(
+            "Coluna da matricula/codigo do funcionario",
+            value=selected_rule.employee_code_column or "" if selected_rule else "",
+        )
+        employee_name_column = st.text_input(
+            "Coluna do nome do funcionario (opcional)",
+            value=selected_rule.employee_name_column or "" if selected_rule else "",
+        )
+        value_column = st.text_input("Coluna do valor/evento", value=selected_rule.value_column or "" if selected_rule else "")
+        expected_header = st.text_input(
+            "Cabecalho esperado da coluna",
+            value=selected_rule.expected_header or "" if selected_rule else "",
+        )
         value_kind = st.selectbox(
             "Tipo do valor da coluna",
             options=VALUE_KIND_OPTIONS,
-            index=VALUE_KIND_OPTIONS.index(selected_rule.value_kind.value) if selected_rule else 0,
+            index=_option_index(VALUE_KIND_OPTIONS, selected_rule.value_kind.value if selected_rule else None),
+        )
+        nature = st.selectbox(
+            "Natureza",
+            options=RUBRIC_NATURE_OPTIONS,
+            index=_option_index(RUBRIC_NATURE_OPTIONS, selected_rule.nature.value if selected_rule else None),
         )
         generation_mode = st.selectbox(
             "Modo de geracao",
             options=GENERATION_MODE_OPTIONS,
-            index=GENERATION_MODE_OPTIONS.index(selected_rule.generation_mode.value) if selected_rule else 0,
+            index=_option_index(GENERATION_MODE_OPTIONS, selected_rule.generation_mode.value if selected_rule else None),
         )
         rubrica_target = ""
         rubricas_target = ""
@@ -830,29 +878,119 @@ def _render_column_profile_tab() -> None:
             st.info("Coluna ignorada nao envia rubrica.")
         ignore_zero = st.checkbox("Ignorar valores zerados", value=selected_rule.ignore_zero if selected_rule else True)
         ignore_text = st.checkbox("Ignorar textos sem valor numerico", value=selected_rule.ignore_text if selected_rule else True)
+        status = st.selectbox(
+            "Status",
+            options=("active", "inactive"),
+            index=_option_index(("active", "inactive"), selected_rule.status.value if selected_rule else None),
+        )
         enabled = False if generation_mode == "ignore" else st.checkbox("Regra habilitada", value=selected_rule.enabled if selected_rule else True)
         notes = st.text_input("Observacoes", value=selected_rule.notes or "" if selected_rule else "")
-        submitted = st.form_submit_button("Salvar regra de coluna")
-        if submitted:
+        save_submitted = st.form_submit_button("Salvar regra de coluna")
+        inactivate_submitted = st.form_submit_button(
+            "Inativar regra de coluna",
+            disabled=selected_rule is None,
+        )
+        if save_submitted or inactivate_submitted:
             try:
+                target_status = "inactive" if inactivate_submitted else status
+                if _has_active_column_rule_duplicate(
+                    mappings,
+                    value_column=value_column,
+                    sheet_name=sheet_name,
+                    selected_rule=selected_rule,
+                    target_status=target_status,
+                ):
+                    raise ValueError(
+                        "Ja existe uma regra ativa para esta coluna nesta aba/perfil. "
+                        "Inative a regra existente ou escolha outra coluna."
+                    )
                 save_column_mapping_profile_rule(
                     company_code=selected_company.company_code,
                     company_name=selected_company.company_name,
                     default_process=selected_company.default_process,
                     column_name=column_name,
+                    sheet_name=sheet_name,
+                    header_row=header_row,
+                    data_start_row=data_start_row,
+                    employee_code_column=employee_code_column,
+                    employee_name_column=employee_name_column,
+                    value_column=value_column,
+                    expected_header=expected_header,
                     value_kind=value_kind,
+                    nature=nature,
                     generation_mode=generation_mode,
                     rubrica_target=rubrica_target,
                     rubricas_target=rubricas_target,
                     ignore_zero=ignore_zero,
                     ignore_text=ignore_text,
                     enabled=enabled,
+                    status=target_status,
                     notes=notes,
                 )
-                st.success("Regra salva no perfil persistente da empresa.")
+                if inactivate_submitted:
+                    st.success("Regra inativada no perfil persistente da empresa.")
+                else:
+                    st.success("Regra salva no perfil persistente da empresa.")
+                st.session_state.pop(PROFILE_RULE_EDIT_INDEX_KEY, None)
                 st.rerun()
             except Exception as exc:  # pragma: no cover - visual feedback path
                 st.error(f"Nao foi possivel salvar a regra de coluna: {exc}")
+
+
+def _profile_rule_label(rule) -> str:
+    column = rule.value_column or rule.column_name or rule.column_key or "-"
+    target = rule.rubrica_target or ", ".join(rule.rubricas_target) or "ignore"
+    sheet = f"{rule.sheet_name}!" if rule.sheet_name else ""
+    return f"{sheet}{column} -> {target}"
+
+
+def _session_profile_rule_edit_index(mappings) -> int | None:
+    raw_index = st.session_state.get(PROFILE_RULE_EDIT_INDEX_KEY)
+    if raw_index is None:
+        return None
+    try:
+        index = int(raw_index)
+    except (TypeError, ValueError):
+        st.session_state.pop(PROFILE_RULE_EDIT_INDEX_KEY, None)
+        return None
+    if index < 0 or index >= len(mappings):
+        st.session_state.pop(PROFILE_RULE_EDIT_INDEX_KEY, None)
+        return None
+    return index
+
+
+def _has_active_column_rule_duplicate(
+    mappings,
+    *,
+    value_column: str,
+    sheet_name: str,
+    selected_rule,
+    target_status: str,
+) -> bool:
+    if str(target_status).strip() != "active":
+        return False
+    normalized_column = _normalize_profile_column(value_column)
+    if not normalized_column:
+        return False
+    normalized_sheet = _normalize_profile_sheet(sheet_name)
+    for rule in mappings:
+        if selected_rule is not None and rule is selected_rule:
+            continue
+        if getattr(rule.status, "value", rule.status) != "active":
+            continue
+        if _normalize_profile_column(rule.value_column or "") != normalized_column:
+            continue
+        if _normalize_profile_sheet(rule.sheet_name or "") == normalized_sheet:
+            return True
+    return False
+
+
+def _normalize_profile_column(value: object) -> str:
+    return str(value or "").strip().upper()
+
+
+def _normalize_profile_sheet(value: object) -> str:
+    return str(value or "").strip().upper()
 
 
 def _render_txt_audit_tab(result) -> None:
