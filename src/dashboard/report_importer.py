@@ -298,6 +298,7 @@ def parse_report_file(*, file_name: str, file_bytes: bytes) -> ParsedPayrollRepo
     parsed_at = datetime.now(timezone.utc)
     extension = Path(file_name).suffix.lower()
     rows, lines = _extract_rows_and_lines(file_bytes, extension=extension)
+    dominio_lines = _reconstruct_dominio_monthly_lines(lines)
     detected_company_code, detected_company_name = _extract_company_metadata(rows, lines)
     competence = _extract_competence(rows, lines)
     base_origin = ReportSuggestionOrigin(
@@ -312,21 +313,21 @@ def parse_report_file(*, file_name: str, file_bytes: bytes) -> ParsedPayrollRepo
         (
             *_extract_employees_from_rows(rows, base_origin),
             *_extract_employees_from_text(lines, base_origin),
-            *_extract_dominio_monthly_employees_from_text(lines, base_origin),
+            *_extract_dominio_monthly_employees_from_text(dominio_lines, base_origin),
         )
     )
     rubrics = _dedupe_rubrics(
         (
             *_extract_rubrics_from_rows(rows, base_origin),
             *_extract_rubrics_from_text(lines, base_origin),
-            *_extract_dominio_monthly_rubrics_from_text(lines, base_origin),
+            *_extract_dominio_monthly_rubrics_from_text(dominio_lines, base_origin),
         )
     )
     rubric_totals = _dedupe_rubric_totals(
         (
             *_extract_rubric_totals_from_rows(rows, base_origin),
             *_extract_rubric_totals_from_text(lines, base_origin),
-            *_extract_dominio_monthly_rubric_totals_from_text(lines, base_origin),
+            *_extract_dominio_monthly_rubric_totals_from_text(dominio_lines, base_origin),
         )
     )
     column_profiles = _dedupe_column_profiles(
@@ -785,6 +786,16 @@ def _extract_dominio_monthly_company_metadata(
         match = company_pattern.match(line)
         if match:
             return _clean_text(match.group("code")), _clean_text(match.group("name"))
+
+    joined_text = _join_dominio_monthly_fragments(lines)
+    match = re.search(
+        r"(?:\bEmpresa\s*:?\s*)?(?P<code>\d{1,10})\s*-\s*(?P<name>.+?)"
+        r"(?=\s+(?:CNPJ\b|Compet[eê]ncia\b|Contr\s*:|Empr\.|\d{1,2}[/-]\d{4}\b)|$)",
+        joined_text,
+        flags=re.IGNORECASE,
+    )
+    if match:
+        return _clean_text(match.group("code")), _clean_text(match.group("name"))
     return None, None
 
 
@@ -807,6 +818,15 @@ def _extract_dominio_monthly_competence(lines: list[str]) -> str | None:
             normalized = normalize_competence(match.group("competence"))
             if normalized:
                 return normalized
+
+    joined_text = _join_dominio_monthly_fragments(lines)
+    match = re.search(
+        r"(?:\bCompet[eê]ncia\s*:?\s*)?(?P<competence>\d{1,2}[/-]\d{4})\b",
+        joined_text,
+        flags=re.IGNORECASE,
+    )
+    if match:
+        return normalize_competence(match.group("competence"))
     return None
 
 
@@ -1229,16 +1249,34 @@ def _looks_like_dominio_monthly_report(lines: list[str]) -> bool:
             return True
         if re.search(r"\bEmpr\.\s*:", line, flags=re.IGNORECASE):
             return True
+    joined_token = _normalize_lookup_token(_join_dominio_monthly_fragments(lines))
+    if "extrato mensal" in joined_token:
+        return True
+    if re.search(r"\bEmpr\.\s*:", _join_dominio_monthly_fragments(lines), flags=re.IGNORECASE):
+        return True
     return False
+
+
+def _reconstruct_dominio_monthly_lines(lines: list[str]) -> list[str]:
+    if not lines or not _looks_like_dominio_monthly_report(lines):
+        return lines
+    joined_text = _join_dominio_monthly_fragments(lines)
+    if not joined_text or joined_text in lines:
+        return lines
+    return [*lines, joined_text]
+
+
+def _join_dominio_monthly_fragments(lines: list[str]) -> str:
+    return " ".join(line for line in (_clean_text(line) for line in lines) if line)
 
 
 def _dominio_monthly_rubric_matches(line: str):
     pattern = re.compile(
         r"(?<!\S)(?P<code>\d{1,5})\s+"
-        r"(?P<description>.+?)\s+"
+        r"(?P<description>(?:(?!\s+\d{1,5}\s+).)+?)\s+"
         r"(?P<reference>\d{1,3}(?:\.\d{3})*,\d{2})\s+"
         r"(?P<value>\d{1,3}(?:\.\d{3})*,\d{2})\s+"
-        r"(?P<nature>[PD])(?=\s+\d{1,5}\s+|$)",
+        r"(?P<nature>[PD])(?=\s+\d{1,5}\s+|\s+Empr\.|\s+Contr\s*:|\s+Total\b|$)",
         flags=re.IGNORECASE,
     )
     return pattern.finditer(line)

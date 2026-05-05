@@ -63,6 +63,166 @@ def _dominio_monthly_text(*, company_code: str = "755") -> bytes:
     ).encode("utf-8")
 
 
+def _dominio_monthly_fragmented_text(*, company_code: str = "755") -> bytes:
+    return "\n".join(
+        [
+            "EXTRATO",
+            "MENSAL",
+            "Empresa:",
+            company_code,
+            "-",
+            "GUSTAVO",
+            "LOPES",
+            "LACERDA",
+            "Competencia:",
+            "03/2026",
+            "Contr:",
+            "1",
+            "GUSTAVO",
+            "LOPES",
+            "LACERDA",
+            "Empr.:",
+            "304",
+            "ADILSON",
+            "RAFAEL",
+            "DE",
+            "SOUSA",
+            "Situacao:",
+            "Trabalhando",
+            "200",
+            "HORAS",
+            "EXTRAS",
+            "100%",
+            "9,04",
+            "174,23",
+            "P",
+            "201",
+            "HORAS",
+            "EXTRAS",
+            "50%",
+            "17,18",
+            "248,33",
+            "P",
+            "204",
+            "ADIANTAMENTO",
+            "ESPORADICO",
+            "343,07",
+            "343,07",
+            "D",
+        ]
+    ).encode("utf-8")
+
+
+def test_report_importer_reconstructs_fragmented_dominio_metadata_and_employee() -> None:
+    parsed = parse_report_file(
+        file_name="extrato-fragmentado.txt",
+        file_bytes=_dominio_monthly_fragmented_text(),
+    )
+
+    employees = {employee.domain_registration: employee.employee_name for employee in parsed.employees}
+    assert parsed.detected_company_code == "755"
+    assert parsed.detected_company_name == "GUSTAVO LOPES LACERDA"
+    assert parsed.competence == "03/2026"
+    assert employees["304"] == "ADILSON RAFAEL DE SOUSA"
+
+
+def test_report_importer_reconstructs_fragmented_dominio_rubrics() -> None:
+    parsed = parse_report_file(
+        file_name="extrato-fragmentado.txt",
+        file_bytes="\n".join(
+            [
+                "EXTRATO",
+                "MENSAL",
+                "200",
+                "HORAS",
+                "EXTRAS",
+                "100%",
+                "9,04",
+                "174,23",
+                "P",
+                "201",
+                "HORAS",
+                "EXTRAS",
+                "50%",
+                "17,18",
+                "248,33",
+                "P",
+                "204",
+                "ADIANTAMENTO",
+                "ESPORADICO",
+                "343,07",
+                "343,07",
+                "D",
+            ]
+        ).encode("utf-8"),
+    )
+
+    rubrics = {rubric.rubric_code: rubric for rubric in parsed.rubrics}
+    assert rubrics["200"].description == "HORAS EXTRAS 100%"
+    assert rubrics["200"].nature == "provento"
+    assert rubrics["201"].description == "HORAS EXTRAS 50%"
+    assert rubrics["201"].nature == "provento"
+    assert rubrics["204"].description == "ADIANTAMENTO ESPORADICO"
+    assert rubrics["204"].nature == "desconto"
+
+
+def test_report_importer_reconstructs_two_fragmented_events_in_same_flow() -> None:
+    parsed = parse_report_file(
+        file_name="extrato-fragmentado.txt",
+        file_bytes="\n".join(
+            [
+                "EXTRATO",
+                "MENSAL",
+                "211",
+                "PREMIO",
+                "108,00",
+                "108,00",
+                "P",
+                "981",
+                "DESC.ADIANT.SALARIAL",
+                "500,00",
+                "500,00",
+                "D",
+            ]
+        ).encode("utf-8"),
+    )
+
+    rubrics = {rubric.rubric_code: rubric for rubric in parsed.rubrics}
+    assert rubrics["211"].description == "PREMIO"
+    assert rubrics["211"].nature == "provento"
+    assert rubrics["981"].description == "DESC.ADIANT.SALARIAL"
+    assert rubrics["981"].nature == "desconto"
+
+
+def test_report_importer_fragmented_dominio_selected_company_does_not_block(tmp_path: Path) -> None:
+    analysis = analyze_report_import(
+        file_name="extrato-fragmentado.txt",
+        file_bytes=_dominio_monthly_fragmented_text(),
+        selected_company_code="755",
+        selected_company_name="GUSTAVO LOPES LACERDA",
+        employee_registry_root=tmp_path / "employees",
+        rubric_catalog_root=tmp_path / "rubrics",
+    )
+
+    assert analysis.blocked_reason is None
+    assert analysis.report.employees
+    assert analysis.report.rubrics
+
+
+def test_report_importer_fragmented_dominio_divergent_company_blocks(tmp_path: Path) -> None:
+    analysis = analyze_report_import(
+        file_name="extrato-fragmentado.txt",
+        file_bytes=_dominio_monthly_fragmented_text(),
+        selected_company_code="900",
+        selected_company_name="Outra Empresa",
+        employee_registry_root=tmp_path / "employees",
+        rubric_catalog_root=tmp_path / "rubrics",
+    )
+
+    assert analysis.is_blocked is True
+    assert "diverge" in (analysis.blocked_reason or "")
+
+
 def test_report_importer_parses_dominio_monthly_metadata_and_employees() -> None:
     parsed = parse_report_file(
         file_name="extrato-mensal.txt",
