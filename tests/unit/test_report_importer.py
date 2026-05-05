@@ -16,6 +16,7 @@ from dashboard import (
     company_rubric_catalog_path,
     load_company_employee_registry,
     load_company_rubric_catalog,
+    parse_report_file,
     save_company_employee_registry,
     save_company_rubric_catalog,
 )
@@ -34,6 +35,125 @@ def _report_text(*, company_code: str = "900", rubric_line: str | None = None) -
             rubric,
         ]
     ).encode("utf-8")
+
+
+def _dominio_monthly_text(*, company_code: str = "755") -> bytes:
+    return "\n".join(
+        [
+            "EXTRATO MENSAL",
+            "Empresa:",
+            f"{company_code} - GUSTAVO LOPES LACERDA",
+            "CNPJ:",
+            "00.000.000/0001-00",
+            "Competencia:",
+            "03/2026",
+            "Contr: 1 GUSTAVO LOPES LACERDA",
+            "Empr.: 304 ADILSON RAFAEL DE SOUSA Situação: Trabalhando",
+            "200 HORAS EXTRAS 100% 9,04 174,23 P",
+            "201 HORAS EXTRAS 50% 17,18 248,33 P",
+            "25 ADICIONAL NOTURNO (INFOR) 68,14 154,86 P",
+            "8907 QUEBRA DE CAIXA 100,00 100,00 P",
+            "204 ADIANTAMENTO ESPORADICO 343,07 343,07 D",
+            "8792 DIAS FALTAS 5,00 353,33 D",
+            "8794 DIAS FALTAS DSR 2,00 141,33 D",
+            "Empr.: 399 ADRIANE MARTINS DE ALMEIDA Situação: Trabalhando",
+            "211 PREMIO 108,00 108,00 P 981 DESC.ADIANT.SALARIAL 500,00 500,00 D",
+            "Empr.: 412 ALBERT GUILHERME DOS SANTOS COUTINHOSituação: Trabalhando",
+        ]
+    ).encode("utf-8")
+
+
+def test_report_importer_parses_dominio_monthly_metadata_and_employees() -> None:
+    parsed = parse_report_file(
+        file_name="extrato-mensal.txt",
+        file_bytes=_dominio_monthly_text(),
+    )
+
+    employees = {employee.domain_registration: employee.employee_name for employee in parsed.employees}
+    assert parsed.detected_company_code == "755"
+    assert parsed.detected_company_name == "GUSTAVO LOPES LACERDA"
+    assert parsed.competence == "03/2026"
+    assert employees["304"] == "ADILSON RAFAEL DE SOUSA"
+    assert employees["399"] == "ADRIANE MARTINS DE ALMEIDA"
+    assert employees["412"] == "ALBERT GUILHERME DOS SANTOS COUTINHO"
+
+
+def test_report_importer_parses_dominio_monthly_rubrics_with_nature() -> None:
+    parsed = parse_report_file(
+        file_name="extrato-mensal.txt",
+        file_bytes=_dominio_monthly_text(),
+    )
+
+    rubrics = {rubric.rubric_code: rubric for rubric in parsed.rubrics}
+    assert rubrics["200"].description == "HORAS EXTRAS 100%"
+    assert rubrics["200"].nature == "provento"
+    assert rubrics["200"].value_kind == "horas"
+    assert rubrics["201"].description == "HORAS EXTRAS 50%"
+    assert rubrics["25"].description == "ADICIONAL NOTURNO (INFOR)"
+    assert rubrics["25"].nature == "provento"
+    assert rubrics["8907"].description == "QUEBRA DE CAIXA"
+    assert rubrics["8907"].nature == "provento"
+    assert rubrics["204"].description == "ADIANTAMENTO ESPORADICO"
+    assert rubrics["204"].nature == "desconto"
+    assert rubrics["8792"].description == "DIAS FALTAS"
+    assert rubrics["8792"].nature == "desconto"
+    assert rubrics["8792"].value_kind == "quantidade"
+    assert rubrics["8794"].description == "DIAS FALTAS DSR"
+    assert rubrics["8794"].nature == "desconto"
+
+
+def test_report_importer_parses_two_dominio_monthly_events_on_same_line() -> None:
+    parsed = parse_report_file(
+        file_name="extrato-mensal.txt",
+        file_bytes="\n".join(
+            [
+                "EXTRATO MENSAL",
+                "755 - GUSTAVO LOPES LACERDA",
+                "03/2026",
+                "211 PREMIO 108,00 108,00 P 981 DESC.ADIANT.SALARIAL 500,00 500,00 D",
+            ]
+        ).encode("utf-8"),
+    )
+
+    rubrics = {rubric.rubric_code: rubric for rubric in parsed.rubrics}
+    assert rubrics["211"].description == "PREMIO"
+    assert rubrics["211"].nature == "provento"
+    assert rubrics["981"].description == "DESC.ADIANT.SALARIAL"
+    assert rubrics["981"].nature == "desconto"
+
+
+def test_report_importer_does_not_treat_dominio_contractor_as_employee() -> None:
+    parsed = parse_report_file(
+        file_name="extrato-mensal.txt",
+        file_bytes=_dominio_monthly_text(),
+    )
+
+    registrations = {employee.domain_registration for employee in parsed.employees}
+    assert "1" not in registrations
+    assert {"304", "399", "412"} <= registrations
+
+
+def test_report_importer_dominio_monthly_company_selection_blocking(tmp_path: Path) -> None:
+    accepted = analyze_report_import(
+        file_name="extrato-mensal.txt",
+        file_bytes=_dominio_monthly_text(),
+        selected_company_code="755",
+        selected_company_name="GUSTAVO LOPES LACERDA",
+        employee_registry_root=tmp_path / "employees",
+        rubric_catalog_root=tmp_path / "rubrics",
+    )
+    blocked = analyze_report_import(
+        file_name="extrato-mensal.txt",
+        file_bytes=_dominio_monthly_text(),
+        selected_company_code="900",
+        selected_company_name="Outra Empresa",
+        employee_registry_root=tmp_path / "employees",
+        rubric_catalog_root=tmp_path / "rubrics",
+    )
+
+    assert accepted.blocked_reason is None
+    assert blocked.is_blocked is True
+    assert "diverge" in (blocked.blocked_reason or "")
 
 
 def test_report_importer_parses_txt_and_does_not_persist_without_apply(tmp_path: Path) -> None:
