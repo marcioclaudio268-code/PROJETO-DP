@@ -7,6 +7,9 @@ from dashboard import (
     DashboardActionType,
     apply_dashboard_action,
     apply_workbook_cell_correction,
+    analyze_report_import,
+    apply_report_employee_suggestions,
+    apply_report_rubric_suggestions,
     build_dashboard_paths,
     create_dashboard_run_from_uploads,
     get_company_admin_entry,
@@ -28,6 +31,7 @@ from dashboard.txt_audit import build_txt_audit
 
 RUN_ROOT_KEY = "dashboard_v1_run_root"
 ERROR_KEY = "dashboard_v1_last_error"
+ASSISTED_IMPORT_RESULT_KEY = "dashboard_v1_assisted_import_result"
 COLUMN_MAPPING_PROFILE_CODES = {
     "column_mapping_profile_missing",
     "column_mapping_profile_incomplete",
@@ -38,6 +42,7 @@ RUBRIC_NATURE_OPTIONS = ("unknown", "provento", "desconto", "informativo")
 RECORD_STATUS_OPTIONS = ("active", "inactive", "unknown")
 TAB_LABELS = (
     "Importar planilha",
+    "Importador assistido de relatorios",
     "Cadastro da empresa",
     "Funcionarios",
     "Rubricas",
@@ -62,14 +67,16 @@ def main() -> None:
     with tabs[0]:
         _render_import_tab(result)
     with tabs[1]:
-        _render_company_registration_tab()
+        _render_assisted_report_importer_tab()
     with tabs[2]:
-        _render_employees_tab()
+        _render_company_registration_tab()
     with tabs[3]:
-        _render_rubrics_tab()
+        _render_employees_tab()
     with tabs[4]:
-        _render_column_profile_tab()
+        _render_rubrics_tab()
     with tabs[5]:
+        _render_column_profile_tab()
+    with tabs[6]:
         _render_txt_audit_tab(result)
 
 
@@ -154,6 +161,259 @@ def _render_upload_area() -> None:
         except Exception as exc:  # pragma: no cover - visual feedback path
             st.session_state[ERROR_KEY] = f"A analise nao conseguiu ser concluida: {exc}"
             st.rerun()
+
+
+def _render_assisted_report_importer_tab() -> None:
+    st.subheader("Importador assistido de relatorios")
+    st.write(
+        "Use esta area para extrair sugestoes de relatorios de folha. Nada e aplicado sem revisao e botao explicito."
+    )
+
+    selected_company = _render_company_selector(
+        "Empresa do relatorio",
+        key="empresa-importador-relatorios",
+    )
+    if selected_company is None:
+        st.warning("Selecione a empresa antes de importar um relatorio.")
+        return
+
+    uploaded_report = st.file_uploader(
+        "Relatorio de folha/resumo (.pdf, .txt, .csv, .xlsx)",
+        type=["pdf", "txt", "csv", "xlsx"],
+        accept_multiple_files=False,
+        key="relatorio-importador-assistido",
+    )
+    if uploaded_report is not None:
+        st.write(f"Relatorio selecionado: `{uploaded_report.name}`")
+
+    if st.button(
+        "Analisar relatorio",
+        type="primary",
+        disabled=uploaded_report is None,
+    ):
+        try:
+            st.session_state[ASSISTED_IMPORT_RESULT_KEY] = analyze_report_import(
+                file_name=uploaded_report.name,
+                file_bytes=uploaded_report.getvalue(),
+                selected_company_code=selected_company.company_code,
+                selected_company_name=selected_company.company_name,
+            )
+        except Exception as exc:  # pragma: no cover - visual feedback path
+            st.error(f"Nao foi possivel analisar o relatorio: {exc}")
+
+    analysis = st.session_state.get(ASSISTED_IMPORT_RESULT_KEY)
+    if analysis is None:
+        return
+    if analysis.selected_company_code != selected_company.company_code:
+        st.info("A pre-analise carregada pertence a outra empresa selecionada. Analise o relatorio novamente.")
+        return
+
+    _render_assisted_import_analysis(analysis)
+
+
+def _render_assisted_import_analysis(analysis) -> None:
+    report = analysis.report
+    st.markdown("**Conferencia do relatorio**")
+    st.table(
+        [
+            {
+                "Arquivo": report.file_name,
+                "Empresa detectada": report.detected_company_code or "-",
+                "Nome detectado": report.detected_company_name or "-",
+                "Competencia": report.competence or "-",
+                "Linhas lidas": report.text_line_count,
+            }
+        ]
+    )
+
+    if analysis.employee_reviews:
+        st.markdown("**Funcionarios encontrados**")
+        st.table(_assisted_employee_rows(analysis.employee_reviews))
+    else:
+        st.info("Nenhum funcionario com matricula e nome explicitos foi encontrado.")
+
+    if analysis.rubric_reviews:
+        st.markdown("**Rubricas encontradas**")
+        st.table(_assisted_rubric_rows(analysis.rubric_reviews))
+    else:
+        st.info("Nenhuma rubrica com codigo e descricao explicitos foi encontrada.")
+
+    if report.rubric_totals:
+        st.markdown("**Totais por rubrica encontrados**")
+        st.table(
+            [
+                {
+                    "Rubrica": item.rubric_code,
+                    "Descricao": item.description or "-",
+                    "Total": item.total_value,
+                    "Origem": item.source_reference,
+                }
+                for item in report.rubric_totals
+            ]
+        )
+
+    if report.column_profiles:
+        st.markdown("**Sugestoes de perfil de colunas**")
+        st.table(
+            [
+                {
+                    "Coluna": item.column_name,
+                    "Modo": item.generation_mode,
+                    "Rubrica sugerida": item.rubrica_target or "-",
+                    "Tipo": item.value_kind or "exige revisao",
+                    "Origem": item.source_reference,
+                    "Observacoes": item.notes or "-",
+                }
+                for item in report.column_profiles
+            ]
+        )
+        st.info(
+            "As regras de perfil de colunas sao apenas sugeridas nesta aba. Revise e salve regras finais na aba Perfil de colunas."
+        )
+
+    if analysis.is_blocked:
+        st.error(analysis.blocked_reason)
+        _render_assisted_import_cancel_buttons()
+        return
+
+    _render_apply_employee_suggestions(analysis)
+    _render_apply_rubric_suggestions(analysis)
+    _render_assisted_import_cancel_buttons()
+
+
+def _assisted_employee_rows(employee_reviews) -> list[dict[str, str]]:
+    rows = []
+    for review in employee_reviews:
+        current = review.current_record
+        rows.append(
+            {
+                "Matricula": review.suggestion.domain_registration,
+                "Nome no relatorio": review.suggestion.employee_name,
+                "Status": review.status,
+                "Cadastro atual": current.employee_name if current else "-",
+                "Origem": review.suggestion.source_reference,
+                "Mensagem": review.message,
+            }
+        )
+    return rows
+
+
+def _assisted_rubric_rows(rubric_reviews) -> list[dict[str, str]]:
+    rows = []
+    for review in rubric_reviews:
+        current = review.current_record
+        rows.append(
+            {
+                "Rubrica": review.suggestion.rubric_code,
+                "Descricao no relatorio": review.suggestion.description,
+                "Status": review.status,
+                "Catalogo atual": current.description if current else "-",
+                "Evento canonico": review.resolved_canonical_event or "exige revisao",
+                "Tipo": review.resolved_value_kind or "exige revisao",
+                "Origem": review.suggestion.source_reference,
+                "Mensagem": review.message,
+            }
+        )
+    return rows
+
+
+def _render_apply_employee_suggestions(analysis) -> None:
+    candidates = [review for review in analysis.employee_reviews if review.can_apply]
+    if not candidates:
+        return
+
+    with st.form("form-aplicar-funcionarios-importador"):
+        selected_registrations = []
+        for review in candidates:
+            label = (
+                "Aplicar funcionario "
+                f"{review.suggestion.domain_registration} - {review.suggestion.employee_name}"
+            )
+            if st.checkbox(label, value=False, key=f"aplicar-func-{review.suggestion.domain_registration}"):
+                selected_registrations.append(review.suggestion.domain_registration)
+        submitted = st.form_submit_button("Aplicar funcionarios selecionados")
+        if submitted:
+            if not selected_registrations:
+                st.info("Nenhum funcionario foi selecionado para aplicar.")
+                return
+            result = apply_report_employee_suggestions(
+                analysis,
+                selected_domain_registrations=selected_registrations,
+            )
+            _render_apply_result("funcionarios", result)
+            if result.applied:
+                st.rerun()
+
+
+def _render_apply_rubric_suggestions(analysis) -> None:
+    candidates = [review for review in analysis.rubric_reviews if review.status != "existente"]
+    if not candidates:
+        return
+
+    with st.form("form-aplicar-rubricas-importador"):
+        selected_codes = []
+        overrides = {}
+        value_kind_options = ("Selecione o tipo", *VALUE_KIND_OPTIONS)
+        for review in candidates:
+            code = review.suggestion.rubric_code
+            label = f"Aplicar rubrica {code} - {review.suggestion.description}"
+            should_apply = st.checkbox(label, value=False, key=f"aplicar-rubrica-{code}")
+
+            canonical_event = st.text_input(
+                f"Evento canonico para rubrica {code}",
+                value=review.resolved_canonical_event or "",
+            )
+            resolved_kind = review.resolved_value_kind
+            kind_index = value_kind_options.index(resolved_kind) if resolved_kind in value_kind_options else 0
+            value_kind = st.selectbox(
+                f"Tipo do valor para rubrica {code}",
+                options=value_kind_options,
+                index=kind_index,
+            )
+            nature = st.selectbox(
+                f"Natureza para rubrica {code}",
+                options=RUBRIC_NATURE_OPTIONS,
+                index=RUBRIC_NATURE_OPTIONS.index(review.resolved_nature),
+            )
+            if should_apply:
+                selected_codes.append(code)
+                overrides[code] = {
+                    "canonical_event": canonical_event,
+                    "value_kind": value_kind if value_kind != "Selecione o tipo" else None,
+                    "nature": nature,
+                }
+
+        submitted = st.form_submit_button("Aplicar rubricas selecionadas")
+        if submitted:
+            if not selected_codes:
+                st.info("Nenhuma rubrica foi selecionada para aplicar.")
+                return
+            result = apply_report_rubric_suggestions(
+                analysis,
+                selected_rubric_codes=selected_codes,
+                review_overrides=overrides,
+            )
+            _render_apply_result("rubricas", result)
+            if result.applied:
+                st.rerun()
+
+
+def _render_apply_result(label: str, result) -> None:
+    if result.applied:
+        st.success(f"{result.applied} {label} aplicados ao cadastro persistente.")
+    if result.skipped:
+        st.warning(f"{result.skipped} {label} ignorados por falta de selecao aplicavel ou dados obrigatorios.")
+    for error in result.errors:
+        st.error(error)
+
+
+def _render_assisted_import_cancel_buttons() -> None:
+    if st.button("Ignorar sugestao"):
+        st.session_state.pop(ASSISTED_IMPORT_RESULT_KEY, None)
+        st.rerun()
+    if st.button("Cancelar importacao"):
+        st.session_state.pop(ASSISTED_IMPORT_RESULT_KEY, None)
+        st.rerun()
 
 
 def _render_company_registration_tab() -> None:

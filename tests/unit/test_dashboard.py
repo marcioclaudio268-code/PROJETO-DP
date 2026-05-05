@@ -1024,6 +1024,7 @@ def test_dashboard_main_shows_last_error_before_run_root_guard(tmp_path: Path) -
     fake_st.session_state[module.ERROR_KEY] = "A analise nao conseguiu ser concluida: boom"
     module.st = fake_st
     module._render_upload_area = lambda: None
+    module._render_assisted_report_importer_tab = lambda: None
     module._render_company_registration_tab = lambda: None
     module._render_employees_tab = lambda: None
     module._render_rubrics_tab = lambda: None
@@ -1049,6 +1050,7 @@ def test_dashboard_main_renders_registration_tabs() -> None:
     fake_st = _FakeStreamlit()
     module.st = fake_st
     module._render_import_tab = lambda result: None
+    module._render_assisted_report_importer_tab = lambda: None
     module._render_company_registration_tab = lambda: None
     module._render_employees_tab = lambda: None
     module._render_rubrics_tab = lambda: None
@@ -1058,6 +1060,38 @@ def test_dashboard_main_renders_registration_tabs() -> None:
     module.main()
 
     assert tuple(fake_st.tab_labels) == module.TAB_LABELS
+    assert "Importador assistido de relatorios" in module.TAB_LABELS
+
+
+def test_render_assisted_report_importer_requires_company_before_upload() -> None:
+    module = _load_dashboard_v1_module()
+    fake_st = _FakeStreamlit()
+    module.st = fake_st
+    module._render_company_selector = lambda *args, **kwargs: None
+
+    module._render_assisted_report_importer_tab()
+
+    assert fake_st.file_uploader_calls == []
+
+
+def test_render_assisted_report_importer_shows_report_upload_after_company_selection() -> None:
+    module = _load_dashboard_v1_module()
+    fake_st = _FakeStreamlit()
+    module.st = fake_st
+    selected_company = CompanyAdminEntry(
+        company_code="72",
+        company_name="Dela More",
+        status="active",
+        is_active=True,
+        company_id="company:72",
+        default_process="11",
+        competence="03/2024",
+    )
+    module._render_company_selector = lambda *args, **kwargs: selected_company
+
+    module._render_assisted_report_importer_tab()
+
+    assert fake_st.file_uploader_calls[0]["args"][0] == "Relatorio de folha/resumo (.pdf, .txt, .csv, .xlsx)"
 
 
 def test_render_upload_area_shows_company_selector_before_upload(tmp_path: Path) -> None:
@@ -1154,6 +1188,7 @@ def test_dashboard_main_continues_normal_flow_when_run_root_exists(tmp_path: Pat
     fake_st = _FakeStreamlit()
     module.st = fake_st
     module._render_upload_area = lambda: None
+    module._render_assisted_report_importer_tab = lambda: None
     module._render_company_registration_tab = lambda: None
     module._render_employees_tab = lambda: None
     module._render_rubrics_tab = lambda: None

@@ -17,10 +17,17 @@ from dashboard import (
     CompanyRubricRecord,
     ConfigResolutionStatus,
     ConfigResolver,
+    analyze_report_import,
     apply_dashboard_action,
     apply_workbook_cell_correction,
+    apply_report_employee_suggestions,
+    apply_report_rubric_suggestions,
+    company_employee_registry_path,
+    company_rubric_catalog_path,
     create_dashboard_run_from_paths,
     ignore_pending_for_import,
+    load_company_employee_registry,
+    load_company_rubric_catalog,
     load_dashboard_run,
     run_dashboard_analysis,
     save_column_mapping_profile,
@@ -540,6 +547,57 @@ def test_dashboard_does_not_apply_ambiguous_rubric_catalog_match(tmp_path: Path)
     config_payload = json.loads(paths.editable_config_path.read_text(encoding="utf-8"))
     assert config_payload["event_mappings"] == []
     assert any(item.code == "mapeamento_evento_ausente" for item in result.pendings)
+
+
+def test_assisted_report_importer_only_persists_after_explicit_apply(tmp_path: Path) -> None:
+    employee_root = tmp_path / "employee_registries"
+    rubric_root = tmp_path / "rubric_catalogs"
+    report_bytes = "\n".join(
+        [
+            "Empresa: 900 - Empresa Relatorio",
+            "Competencia: 04/2026",
+            "Funcionario: Matricula: 123 Nome: Ana Lima",
+            (
+                "Rubrica: 350 - HORAS EXTRAS 50 "
+                "Evento canonico: horas_extras_50 Tipo: horas Natureza: provento Total: 12,50"
+            ),
+        ]
+    ).encode("utf-8")
+
+    analysis = analyze_report_import(
+        file_name="resumo.txt",
+        file_bytes=report_bytes,
+        selected_company_code="900",
+        selected_company_name="Empresa Relatorio",
+        employee_registry_root=employee_root,
+        rubric_catalog_root=rubric_root,
+    )
+
+    assert analysis.blocked_reason is None
+    assert not company_employee_registry_path("900", root=employee_root).exists()
+    assert not company_rubric_catalog_path("900", root=rubric_root).exists()
+    assert not list(tmp_path.rglob("*.txt"))
+
+    employee_result = apply_report_employee_suggestions(
+        analysis,
+        selected_domain_registrations=("123",),
+        root=employee_root,
+    )
+
+    assert employee_result.applied == 1
+    assert load_company_employee_registry("900", root=employee_root).employees[0].employee_name == "Ana Lima"
+    assert not company_rubric_catalog_path("900", root=rubric_root).exists()
+    assert not list(tmp_path.rglob("*.txt"))
+
+    rubric_result = apply_report_rubric_suggestions(
+        analysis,
+        selected_rubric_codes=("350",),
+        root=rubric_root,
+    )
+
+    assert rubric_result.applied == 1
+    assert load_company_rubric_catalog("900", root=rubric_root).rubrics[0].canonical_event == "horas_extras_50"
+    assert not list(tmp_path.rglob("*.txt"))
 
 
 def test_dashboard_returns_internal_pending_when_config_is_missing(tmp_path: Path) -> None:
