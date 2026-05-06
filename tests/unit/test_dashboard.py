@@ -14,6 +14,8 @@ from dashboard import (
     ColumnMappingRule,
     CompanyAdminEntry,
     CompanyColumnMappingProfile,
+    CompanyEmployeeRecord,
+    CompanyEmployeeRegistry,
     CompanyRubricCatalog,
     CompanyRubricRecord,
     ConfigResolutionStatus,
@@ -33,6 +35,7 @@ from dashboard import (
     list_company_admin_entries,
     save_column_mapping_profile_rule,
     save_company_admin_entry,
+    save_company_employee_registry,
     upsert_employee_mapping_override,
     upsert_event_mapping_override,
     save_employee_registry_record,
@@ -59,6 +62,7 @@ class _FakeStreamlit:
     ) -> None:
         self.session_state: dict[str, object] = {}
         self.errors: list[str] = []
+        self.successes: list[str] = []
         self.infos: list[str] = []
         self.markdowns: list[str] = []
         self.subheaders: list[str] = []
@@ -100,6 +104,8 @@ class _FakeStreamlit:
         self.errors.append(message)
 
     def success(self, *args, **kwargs) -> None:
+        if args:
+            self.successes.append(args[0])
         return None
 
     def warning(self, message: str, *args, **kwargs) -> None:
@@ -398,6 +404,32 @@ def _column_profile_pending() -> DashboardPendingItem:
         can_edit_employee_mapping=False,
         can_edit_event_mapping=False,
         can_ignore=False,
+    )
+
+
+def _employee_alias_pending() -> DashboardPendingItem:
+    return DashboardPendingItem(
+        uid="perfil_colunas:funcionario_nome_nao_encontrado",
+        stage="perfil_colunas",
+        pending_id="funcionario_nome_nao_encontrado",
+        code="funcionario_nome_nao_encontrado",
+        severity="bloqueante",
+        employee_name=None,
+        employee_key=None,
+        event_name=None,
+        field_label="resolucao do funcionario",
+        found_value="DANIELA BOTURA",
+        problem="Funcionario 'DANIELA BOTURA' nao encontrado no cadastro ativo da empresa.",
+        recommended_action="Associe o nome da planilha a um funcionario ativo do cadastro.",
+        source_sheet="ABRIL 26",
+        source_cell="A10",
+        source_row=10,
+        source_column_name="FUNCIONARIO",
+        can_edit_workbook=False,
+        can_edit_employee_mapping=False,
+        can_edit_event_mapping=False,
+        can_ignore=False,
+        input_name="DANIELA BOTURA",
     )
 
 
@@ -1664,6 +1696,102 @@ def test_render_pendings_column_profile_ignore_does_not_send_rubric(tmp_path: Pa
     assert "rubrica_target" not in calls["action"]["payload"]
     assert "rubricas_target" not in calls["action"]["payload"]
     assert calls["run"] == paths
+
+
+def test_render_pendings_employee_alias_association_shows_guided_form_and_saves(tmp_path: Path) -> None:
+    module = _load_dashboard_v1_module()
+    workbook_path, config_path = _prepare_workbook_and_config(tmp_path)
+    paths = create_dashboard_run_from_paths(workbook_path, config_path, runs_root=tmp_path / "runs")
+    pending = _employee_alias_pending()
+    registry = CompanyEmployeeRegistry(
+        company_code="72",
+        company_name="Dela More",
+        employees=[
+            CompanyEmployeeRecord(
+                employee_name="DANIELA PRISCILLA BOTURA MONTEIRO",
+                domain_registration="384",
+                source="test",
+            )
+        ],
+    )
+    module.load_company_employee_registry = lambda *args, **kwargs: registry
+    fake_st = _FakeStreamlit(
+        selected_label=pending.selection_label(),
+        form_submit_result=True,
+        selectboxes={"Selecionar funcionario existente da empresa": "384 - DANIELA PRISCILLA BOTURA MONTEIRO"},
+    )
+    module.st = fake_st
+    calls: dict[str, object] = {}
+    def _apply_dashboard_action(*args, **kwargs):
+        calls["action"] = kwargs
+        return SimpleNamespace(
+            description="Associacao salva: DANIELA BOTURA -> 384 - DANIELA PRISCILLA BOTURA MONTEIRO."
+        )
+
+    module.apply_dashboard_action = _apply_dashboard_action
+    result = _fake_dashboard_result(
+        paths=paths,
+        pendings=[pending],
+    )
+    result.summary = SimpleNamespace(company_code="72", company_name="Dela More")
+
+    module._render_pendings(result)
+
+    assert any("Associar funcionario da planilha ao cadastro" in message for message in fake_st.markdowns)
+    assert calls["action"]["action_type"] == DashboardActionType.EMPLOYEE_ALIAS_ASSOCIATION
+    assert calls["action"]["payload"] == {"domain_registration": "384"}
+    assert any("Associacao salva: DANIELA BOTURA -> 384 - DANIELA PRISCILLA BOTURA MONTEIRO." in message for message in fake_st.successes)
+
+
+def test_render_pendings_employee_alias_association_requires_selection(tmp_path: Path) -> None:
+    module = _load_dashboard_v1_module()
+    workbook_path, config_path = _prepare_workbook_and_config(tmp_path)
+    paths = create_dashboard_run_from_paths(workbook_path, config_path, runs_root=tmp_path / "runs")
+    pending = _employee_alias_pending()
+    registry = CompanyEmployeeRegistry(
+        company_code="72",
+        company_name="Dela More",
+        employees=[
+            CompanyEmployeeRecord(
+                employee_name="DANIELA PRISCILLA BOTURA MONTEIRO",
+                domain_registration="384",
+                source="test",
+            )
+        ],
+    )
+    module.load_company_employee_registry = lambda *args, **kwargs: registry
+    fake_st = _FakeStreamlit(
+        selected_label=pending.selection_label(),
+        form_submit_result=True,
+        selectboxes={"Selecionar funcionario existente da empresa": "Selecione um funcionario existente"},
+    )
+    module.st = fake_st
+    result = _fake_dashboard_result(paths=paths, pendings=[pending])
+    result.summary = SimpleNamespace(company_code="72", company_name="Dela More")
+
+    module._render_pendings(result)
+
+    assert fake_st.session_state[module.ERROR_KEY] == "Falha ao salvar a associacao: Selecione um funcionario existente para salvar a associacao."
+
+
+def test_render_pendings_employee_alias_association_warns_without_active_employees(tmp_path: Path) -> None:
+    module = _load_dashboard_v1_module()
+    workbook_path, config_path = _prepare_workbook_and_config(tmp_path)
+    paths = create_dashboard_run_from_paths(workbook_path, config_path, runs_root=tmp_path / "runs")
+    pending = _employee_alias_pending()
+    module.load_company_employee_registry = lambda *args, **kwargs: CompanyEmployeeRegistry(
+        company_code="72",
+        company_name="Dela More",
+        employees=[],
+    )
+    fake_st = _FakeStreamlit(selected_label=pending.selection_label())
+    module.st = fake_st
+    result = _fake_dashboard_result(paths=paths, pendings=[pending])
+    result.summary = SimpleNamespace(company_code="72", company_name="Dela More")
+
+    module._render_pendings(result)
+
+    assert any("Nenhum funcionario ativo encontrado para associar." in message for message in fake_st.warnings)
 
 
 def test_render_pendings_ignore_button_calls_manual_action_and_reprocesses(tmp_path: Path) -> None:

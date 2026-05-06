@@ -617,6 +617,58 @@ def test_position_profile_resolves_employee_by_name_when_registration_column_has
     assert normalized["FUNCIONARIOS"]["B2"].value == "ADILSON RAFAEL DE SOUSA"
 
 
+def test_position_profile_resolves_employee_by_alias_when_registration_is_invalid(tmp_path: Path) -> None:
+    workbook_path = tmp_path / "fechamento.xlsx"
+    _build_position_workbook(
+        employee_code_value="DANIELA BOTURA",
+        employee_name_value=" daniela  botura ",
+    ).save(workbook_path)
+    _write_active_registry(
+        tmp_path / "employees",
+        [
+            CompanyEmployeeRecord(
+                employee_name="DANIELA PRISCILLA BOTURA MONTEIRO",
+                domain_registration="384",
+                aliases=["DANIELA BOTURA"],
+                source="test",
+            )
+        ],
+    )
+    _write_active_rubric_catalog(
+        tmp_path / "rubrics",
+        [
+            CompanyRubricRecord(
+                rubric_code="201",
+                description="HORA 50%",
+                canonical_event="horas_extras_70",
+                value_kind="horas",
+                nature="provento",
+                source="test",
+            )
+        ],
+    )
+    profile = _build_position_profile()
+    inspection = inspect_workbook_with_position_profile(
+        workbook_path,
+        profile=profile,
+        selected_company_code="755",
+        selected_company_name="GUSTAVO LOPES LACERDA",
+        selected_competence="04/2026",
+    )
+
+    normalized, _manifest = build_canonical_workbook_from_column_profile(
+        load_workbook(workbook_path),
+        inspection=inspection,
+        profile=profile,
+        employee_registry_root=tmp_path / "employees",
+        rubric_catalog_root=tmp_path / "rubrics",
+    )
+
+    assert normalized["FUNCIONARIOS"]["E2"].value == "384"
+    assert normalized["FUNCIONARIOS"]["B2"].value == "DANIELA PRISCILLA BOTURA MONTEIRO"
+    assert normalized["MOVIMENTOS_CANONICOS"]["H2"].value == "384"
+
+
 def test_position_profile_blocks_when_employee_name_is_not_found(tmp_path: Path) -> None:
     workbook_path = tmp_path / "fechamento.xlsx"
     _build_position_workbook(employee_code_value="", employee_name_value="FUNCIONARIO INEXISTENTE").save(workbook_path)
@@ -717,6 +769,60 @@ def test_position_profile_blocks_when_employee_name_is_ambiguous(tmp_path: Path)
 
     assert exc_info.value.code == "funcionario_nome_ambiguo"
     assert "encontrou mais de um cadastro compativel" in str(exc_info.value)
+
+
+def test_position_profile_blocks_when_employee_alias_is_ambiguous(tmp_path: Path) -> None:
+    workbook_path = tmp_path / "fechamento.xlsx"
+    _build_position_workbook(employee_code_value="", employee_name_value="DANIELA BOTURA").save(workbook_path)
+    _write_active_registry(
+        tmp_path / "employees",
+        [
+            CompanyEmployeeRecord(
+                employee_name="DANIELA PRISCILLA BOTURA MONTEIRO",
+                domain_registration="384",
+                aliases=["DANIELA BOTURA"],
+                source="test",
+            ),
+            CompanyEmployeeRecord(
+                employee_name="DANIELA BOTURA SILVA",
+                domain_registration="999",
+                aliases=["daniela botura"],
+                source="test",
+            ),
+        ],
+    )
+    _write_active_rubric_catalog(
+        tmp_path / "rubrics",
+        [
+            CompanyRubricRecord(
+                rubric_code="201",
+                description="HORA 50%",
+                canonical_event="horas_extras_70",
+                value_kind="horas",
+                nature="provento",
+                source="test",
+            )
+        ],
+    )
+    profile = _build_position_profile()
+    inspection = inspect_workbook_with_position_profile(
+        workbook_path,
+        profile=profile,
+        selected_company_code="755",
+        selected_company_name="GUSTAVO LOPES LACERDA",
+        selected_competence="04/2026",
+    )
+
+    with pytest.raises(InputLayoutNormalizationError) as exc_info:
+        build_canonical_workbook_from_column_profile(
+            load_workbook(workbook_path),
+            inspection=inspection,
+            profile=profile,
+            employee_registry_root=tmp_path / "employees",
+            rubric_catalog_root=tmp_path / "rubrics",
+        )
+
+    assert exc_info.value.code == "funcionario_nome_ambiguo"
 
 
 def test_position_profile_blocks_without_valid_registration_and_without_name_column(tmp_path: Path) -> None:

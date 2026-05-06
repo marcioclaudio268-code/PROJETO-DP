@@ -163,6 +163,41 @@ def upsert_employee_record(
     )
 
 
+def associate_employee_alias(
+    registry: CompanyEmployeeRegistry,
+    *,
+    domain_registration: str,
+    alias: str,
+) -> CompanyEmployeeRegistry:
+    alias_text = str(alias).strip()
+    if not alias_text:
+        raise ValueError("alias is required")
+
+    employees = list(registry.employees)
+    matches = [
+        (index, employee)
+        for index, employee in enumerate(employees)
+        if employee.status == EmployeeRegistryStatus.ACTIVE
+        and normalize_employee_lookup_token(employee.domain_registration)
+        == normalize_employee_lookup_token(domain_registration)
+    ]
+    if not matches:
+        raise ValueError(f"active employee not found for domain_registration={domain_registration}")
+
+    index, employee = matches[0]
+    existing_tokens = {normalize_employee_lookup_token(item) for item in employee.aliases}
+    if normalize_employee_lookup_token(alias_text) in existing_tokens:
+        return registry
+
+    updated_aliases = [*employee.aliases, alias_text]
+    employees[index] = employee.model_copy(update={"aliases": updated_aliases, "updated_at": _utc_now()})
+    return CompanyEmployeeRegistry(
+        company_code=registry.company_code,
+        company_name=registry.company_name,
+        employees=employees,
+    )
+
+
 def list_active_employees(registry: CompanyEmployeeRegistry) -> tuple[CompanyEmployeeRecord, ...]:
     return tuple(
         employee for employee in registry.employees if employee.status == EmployeeRegistryStatus.ACTIVE

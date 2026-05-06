@@ -23,6 +23,9 @@ from .column_mapping_profiles import (
 )
 from .company_employee_registry import (
     CompanyEmployeeRecord,
+    associate_employee_alias,
+    find_employee_by_domain_registration,
+    list_active_employees,
     load_company_employee_registry,
     save_company_employee_registry,
     upsert_employee_record,
@@ -98,6 +101,14 @@ def apply_dashboard_action(
 
     if normalized_action_type == DashboardActionType.EMPLOYEE_MAPPING_UPDATE:
         return _apply_employee_mapping_action(
+            paths,
+            pending_item,
+            action_payload,
+            employee_registry_root=employee_registry_root,
+        )
+
+    if normalized_action_type == DashboardActionType.EMPLOYEE_ALIAS_ASSOCIATION:
+        return _apply_employee_alias_association_action(
             paths,
             pending_item,
             action_payload,
@@ -427,6 +438,80 @@ def _apply_employee_mapping_action(
         scope=scope,
         extra_payload=action_extra_payload,
     )
+
+
+def _apply_employee_alias_association_action(
+    paths: DashboardPaths,
+    pending_item: DashboardPendingItem,
+    payload: dict[str, Any],
+    *,
+    employee_registry_root: str | Path | None,
+) -> DashboardActionRecord:
+    if pending_item.code != "funcionario_nome_nao_encontrado":
+        raise DashboardOperationError(
+            "acao_incompativel_com_pendencia",
+            "Esta pendencia nao permite associacao guiada de alias.",
+            source=pending_item.uid,
+        )
+
+    plan_name = _required_text("input_name", pending_item.input_name)
+    domain_registration = _required_text_from_payload(
+        payload,
+        "domain_registration",
+        aliases=("selected_domain_registration", "employee_domain_registration"),
+    )
+    profile_context = _profile_context_from_state(paths)
+    company_code = _required_text("company_code", profile_context.get("company_code"))
+    company_name = _stringify(profile_context.get("company_name"))
+
+    try:
+        registry = load_company_employee_registry(company_code, company_name=company_name, root=employee_registry_root)
+        if not list_active_employees(registry):
+            raise DashboardOperationError(
+                "cadastro_funcionario_ativo_ausente",
+                "Nenhum funcionario ativo encontrado para associar. Cadastre funcionarios antes de resolver esta pendencia.",
+                source=company_code,
+            )
+        matches = find_employee_by_domain_registration(registry, domain_registration, active_only=True)
+        if not matches:
+            raise DashboardOperationError(
+                "funcionario_para_associacao_nao_encontrado",
+                "Selecione um funcionario existente para salvar a associacao.",
+                source=domain_registration,
+            )
+        target_employee = matches[0]
+        updated_registry = associate_employee_alias(
+            registry,
+            domain_registration=domain_registration,
+            alias=plan_name,
+        )
+        registry_path = save_company_employee_registry(updated_registry, root=employee_registry_root)
+    except DashboardOperationError:
+        raise
+    except Exception as exc:
+        raise DashboardOperationError(
+            "cadastro_funcionario_invalido",
+            f"Nao foi possivel salvar a associacao do funcionario: {exc}",
+            source=company_code,
+        ) from exc
+
+    action = DashboardActionRecord(
+        action_id=f"act-{uuid4().hex[:10]}",
+        action_type=DashboardActionType.EMPLOYEE_ALIAS_ASSOCIATION,
+        pending_uid=pending_item.uid,
+        description=f"Associacao salva: {plan_name} -> {target_employee.domain_registration} - {target_employee.employee_name}.",
+        payload={
+            "scope": "company_employee_registry",
+            "scopes": ["company_employee_registry"],
+            "company_code": company_code,
+            "input_name": plan_name,
+            "domain_registration": target_employee.domain_registration,
+            "employee_name": target_employee.employee_name,
+            "employee_registry_path": str(registry_path),
+        },
+    )
+    _append_action(paths, action)
+    return action
 
 
 def _apply_event_mapping_action(

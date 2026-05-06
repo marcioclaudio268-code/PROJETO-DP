@@ -18,6 +18,7 @@ def _utc_now() -> datetime:
 class DashboardActionType(StrEnum):
     WORKBOOK_CELL_UPDATE = "corrigir_celula_planilha"
     EMPLOYEE_MAPPING_UPDATE = "corrigir_mapeamento_matricula"
+    EMPLOYEE_ALIAS_ASSOCIATION = "associar_alias_funcionario"
     EVENT_MAPPING_UPDATE = "corrigir_rubrica_evento"
     COLUMN_MAPPING_PROFILE_UPDATE = "corrigir_perfil_coluna"
     IGNORE_PENDING = "ignorar_nesta_importacao"
@@ -87,6 +88,7 @@ class DashboardPendingItem:
     can_ignore: bool
     ignore_mode: str | None = None
     ignore_label: str | None = None
+    input_name: str | None = None
 
     def selection_label(self) -> str:
         employee = self.employee_name or self.employee_key or "Item sem colaborador"

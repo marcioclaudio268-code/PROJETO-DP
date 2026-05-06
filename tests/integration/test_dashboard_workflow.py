@@ -916,6 +916,98 @@ def test_dashboard_resolves_employee_by_name_in_position_profile_flow(tmp_path: 
     assert normalization_payload["manifest"]["counts"]["employee_rows_written"] == 1
 
 
+def test_dashboard_can_associate_missing_employee_name_as_alias_and_reprocess(tmp_path: Path) -> None:
+    workbook_path = _write_position_name_profile_workbook(tmp_path / "fechamento-gustavo-alias.xlsx")
+    workbook = load_workbook(workbook_path)
+    workbook.active["A3"] = "DANIELA BOTURA"
+    workbook.save(workbook_path)
+    profile_root = tmp_path / "profiles"
+    _write_position_name_resolution_profile(profile_root)
+    rubric_catalog_root = tmp_path / "rubrics"
+    _write_position_rubric_catalog(
+        rubric_catalog_root,
+        [
+            CompanyRubricRecord(
+                rubric_code="201",
+                description="HORA 50%",
+                canonical_event="201",
+                value_kind="horas",
+                nature="provento",
+                source="test",
+            )
+        ],
+    )
+    configs_root = tmp_path / "configs"
+    _write_internal_config(
+        configs_root,
+        company_code="755",
+        file_name="04-2026.json",
+        competence="04/2026",
+        payload_override={
+            "company_name": "GUSTAVO LOPES LACERDA",
+            "event_mappings": [],
+            "employee_mappings": [],
+        },
+    )
+    employee_registry_root = tmp_path / "employees"
+    save_company_employee_registry(
+        CompanyEmployeeRegistry(
+            company_code="755",
+            company_name="GUSTAVO LOPES LACERDA",
+            employees=[
+                CompanyEmployeeRecord(
+                    employee_name="DANIELA PRISCILLA BOTURA MONTEIRO",
+                    domain_registration="384",
+                    source="test",
+                )
+            ],
+        ),
+        root=employee_registry_root,
+    )
+    paths = create_dashboard_run_from_paths(workbook_path, runs_root=tmp_path / "runs")
+
+    initial = run_dashboard_analysis(
+        paths,
+        config_resolver=ConfigResolver(registry_root=tmp_path / "master", legacy_root=configs_root),
+        column_profile_root=profile_root,
+        employee_registry_root=employee_registry_root,
+        rubric_catalog_root=rubric_catalog_root,
+        selected_company_code="755",
+        selected_company_name="GUSTAVO LOPES LACERDA",
+        selected_competence="04/2026",
+    )
+
+    pending = next(item for item in initial.pendings if item.code == "funcionario_nome_nao_encontrado")
+    assert pending.input_name == "DANIELA BOTURA"
+    assert pending.found_value == "DANIELA BOTURA"
+
+    action = apply_dashboard_action(
+        paths,
+        action_type=DashboardActionType.EMPLOYEE_ALIAS_ASSOCIATION,
+        pending_uid=pending.uid,
+        payload={"domain_registration": "384"},
+        employee_registry_root=employee_registry_root,
+    )
+
+    registry = load_company_employee_registry("755", root=employee_registry_root)
+    assert registry.employees[0].aliases == ["DANIELA BOTURA"]
+    assert action.action_type == DashboardActionType.EMPLOYEE_ALIAS_ASSOCIATION
+
+    updated = run_dashboard_analysis(
+        paths,
+        config_resolver=ConfigResolver(registry_root=tmp_path / "master", legacy_root=configs_root),
+        column_profile_root=profile_root,
+        employee_registry_root=employee_registry_root,
+        rubric_catalog_root=rubric_catalog_root,
+        selected_company_code="755",
+        selected_company_name="GUSTAVO LOPES LACERDA",
+        selected_competence="04/2026",
+    )
+
+    assert updated.summary.serialized_line_count == 1
+    assert not any(item.code == "funcionario_nome_nao_encontrado" for item in updated.pendings)
+
+
 def test_dashboard_uses_direct_positional_rubric_without_canonical_column_map(tmp_path: Path) -> None:
     workbook_path = _write_position_profile_workbook(tmp_path / "fechamento-gustavo-rubrica.xlsx", header="QUEBRA DE CAIXA")
     workbook = load_workbook(workbook_path)

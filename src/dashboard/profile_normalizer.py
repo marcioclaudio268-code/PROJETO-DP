@@ -566,6 +566,7 @@ def _resolve_profile_employee_identity(
             "perfil_colunas_sem_nome_para_resolver_funcionario",
             "Linha sem matricula valida e sem coluna de nome configurada no perfil.",
             source=f"{selected_sheet.title}!A{source_row}",
+            details={"employee_name": None},
         )
 
     normalized_name = normalized_optional_text(employee_name)
@@ -574,6 +575,7 @@ def _resolve_profile_employee_identity(
             "funcionario_nome_nao_encontrado",
             "Funcionario '' nao encontrado no cadastro ativo da empresa. Cadastre ou revise o nome antes de gerar o TXT.",
             source=f"{selected_sheet.title}!{get_column_letter(employee_name_column_index)}{source_row}",
+            details={"employee_name": ""},
         )
 
     matches = find_employee_by_name_or_alias(employee_registry, normalized_name, active_only=True)
@@ -585,6 +587,7 @@ def _resolve_profile_employee_identity(
                 "Cadastre ou revise o nome antes de gerar o TXT."
             ),
             source=f"{selected_sheet.title}!{get_column_letter(employee_name_column_index)}{source_row}",
+            details={"employee_name": normalized_name},
         )
     if len(matches) > 1:
         raise InputLayoutNormalizationError(
@@ -594,6 +597,7 @@ def _resolve_profile_employee_identity(
                 "Revise o cadastro antes de gerar o TXT."
             ),
             source=f"{selected_sheet.title}!{get_column_letter(employee_name_column_index)}{source_row}",
+            details={"employee_name": normalized_name},
         )
 
     employee = matches[0]

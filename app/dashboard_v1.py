@@ -1155,6 +1155,9 @@ def _render_pendings(result) -> None:
     st.markdown(f"**Evento:** {pending.event_name or '-'}")
     st.markdown(f"**Coluna:** {pending.source_column_name or '-'}")
 
+    if _is_employee_alias_association_pending(pending):
+        _render_employee_alias_association_form(result, pending)
+
     if pending.can_edit_workbook:
         with st.form(f"corrigir-workbook-{pending.uid}"):
             corrected_value = st.text_input(
@@ -1324,6 +1327,7 @@ def _render_pendings(result) -> None:
             pending.can_edit_event_mapping,
             _can_edit_column_profile(pending),
             pending.can_ignore,
+            _is_employee_alias_association_pending(pending),
         ]
     ):
         st.info(
@@ -1331,8 +1335,62 @@ def _render_pendings(result) -> None:
         )
 
 
+def _render_employee_alias_association_form(result, pending) -> None:
+    plan_name = (pending.input_name or "").strip()
+    if not plan_name:
+        st.error("Nome lido da planilha nao encontrado na pendencia. Reprocesse a analise.")
+        return
+
+    registry = load_company_employee_registry(
+        result.summary.company_code,
+        company_name=result.summary.company_name,
+    )
+    active_employees = list_active_employees(registry)
+    if not active_employees:
+        st.warning(
+            "Nenhum funcionario ativo encontrado para associar. Cadastre funcionarios antes de resolver esta pendencia."
+        )
+        return
+
+    employee_options = ["Selecione um funcionario existente"] + [
+        f"{employee.domain_registration} - {employee.employee_name}"
+        for employee in active_employees
+    ]
+
+    with st.form(f"associar-alias-funcionario-{pending.uid}"):
+        st.markdown("**Associar funcionario da planilha ao cadastro**")
+        st.markdown(f"**Nome lido na planilha:** {plan_name}")
+        selected_employee = st.selectbox(
+            "Selecionar funcionario existente da empresa",
+            options=employee_options,
+        )
+        submitted = st.form_submit_button("Salvar associacao")
+        if submitted:
+            try:
+                if selected_employee == employee_options[0]:
+                    raise ValueError("Selecione um funcionario existente para salvar a associacao.")
+                domain_registration = selected_employee.split(" - ", 1)[0]
+                action = apply_dashboard_action(
+                    result.paths,
+                    action_type=DashboardActionType.EMPLOYEE_ALIAS_ASSOCIATION,
+                    pending_uid=pending.uid,
+                    payload={"domain_registration": domain_registration},
+                )
+                st.session_state[ERROR_KEY] = None
+                st.success(
+                    f"{action.description} Reprocesse a analise."
+                )
+            except Exception as exc:  # pragma: no cover - visual feedback path
+                st.session_state[ERROR_KEY] = f"Falha ao salvar a associacao: {exc}"
+                st.rerun()
+
+
 def _can_edit_column_profile(pending) -> bool:
     return pending.stage == "perfil_colunas" and pending.code in COLUMN_MAPPING_PROFILE_CODES
+
+
+def _is_employee_alias_association_pending(pending) -> bool:
+    return pending.stage == "perfil_colunas" and pending.code == "funcionario_nome_nao_encontrado"
 
 
 def _pending_table_row(pending) -> dict[str, str]:

@@ -9,6 +9,7 @@ from pydantic import ValidationError
 from dashboard import (
     CompanyEmployeeRecord,
     CompanyEmployeeRegistry,
+    associate_employee_alias,
     apply_employee_registry_to_config_payload,
     find_employee_by_domain_registration,
     find_employee_by_key,
@@ -93,6 +94,44 @@ def test_company_employee_registry_upserts_employee_by_key() -> None:
     assert len(updated.employees) == 1
     assert updated.employees[0].employee_name == "ANA CLEIA"
     assert updated.employees[0].domain_registration == "60006"
+
+
+def test_company_employee_registry_associates_alias_to_existing_employee() -> None:
+    registry = CompanyEmployeeRegistry(
+        company_code="72",
+        employees=[_employee(domain_registration="384", employee_name="DANIELA PRISCILLA BOTURA MONTEIRO")],
+    )
+
+    updated = associate_employee_alias(
+        registry,
+        domain_registration="384",
+        alias="DANIELA BOTURA",
+    )
+
+    assert updated.employees[0].domain_registration == "384"
+    assert updated.employees[0].employee_name == "DANIELA PRISCILLA BOTURA MONTEIRO"
+    assert updated.employees[0].aliases == ["DANIELA BOTURA"]
+
+
+def test_company_employee_registry_does_not_duplicate_existing_alias() -> None:
+    registry = CompanyEmployeeRegistry(
+        company_code="72",
+        employees=[
+            _employee(
+                domain_registration="384",
+                employee_name="DANIELA PRISCILLA BOTURA MONTEIRO",
+                aliases=["DANIELA BOTURA"],
+            )
+        ],
+    )
+
+    updated = associate_employee_alias(
+        registry,
+        domain_registration="384",
+        alias="  daniela botura ",
+    )
+
+    assert updated.employees[0].aliases == ["DANIELA BOTURA"]
 
 
 def test_company_employee_registry_lists_only_active_employees() -> None:

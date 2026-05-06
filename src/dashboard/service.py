@@ -1316,6 +1316,7 @@ def _build_recoverable_normalization_pending(
             employee_name=None,
             employee_key=None,
             event_name=None,
+            input_name=None,
             field_label="cabecalho esperado",
             found_value=str((error.details or {}).get("actual_header") or "[vazio]"),
             problem=str(error),
@@ -1348,8 +1349,9 @@ def _build_recoverable_normalization_pending(
             employee_name=None,
             employee_key=None,
             event_name=None,
+            input_name=_normalization_pending_employee_name(error),
             field_label="resolucao do funcionario",
-            found_value=found_value,
+            found_value=_normalization_pending_found_value(error, fallback=found_value),
             problem=str(error),
             recommended_action="Revise o cadastro ativo de funcionarios ou o perfil de colunas antes de repetir a analise.",
             source_sheet=source_sheet or inspection.selected_sheet_name,
@@ -1370,6 +1372,7 @@ def _build_recoverable_normalization_pending(
         employee_name=None,
         employee_key=None,
         event_name=None,
+        input_name=None,
         field_label="identificacao do colaborador",
         found_value="em branco",
         problem=str(error),
@@ -1467,6 +1470,7 @@ def _serialize_pending_item(item: DashboardPendingItem) -> dict:
         "employee_name": item.employee_name,
         "employee_key": item.employee_key,
         "event_name": item.event_name,
+        "input_name": item.input_name,
         "field_label": item.field_label,
         "found_value": item.found_value,
         "problem": item.problem,
@@ -1485,7 +1489,33 @@ def _serialize_pending_item(item: DashboardPendingItem) -> dict:
 
 
 def _deserialize_pending_item(payload: dict) -> DashboardPendingItem:
+    if "input_name" not in payload:
+        payload = {**payload, "input_name": None}
     return DashboardPendingItem(**payload)
+
+
+def _normalization_pending_employee_name(error: InputLayoutNormalizationError) -> str | None:
+    details = error.details or {}
+    employee_name = details.get("employee_name")
+    if employee_name is not None:
+        text = str(employee_name).strip()
+        return text or None
+    match = re.search(r"Funcionario '([^']*)'", str(error))
+    if match is None:
+        return None
+    candidate = match.group(1).strip()
+    return candidate or None
+
+
+def _normalization_pending_found_value(
+    error: InputLayoutNormalizationError,
+    *,
+    fallback: str,
+) -> str:
+    employee_name = _normalization_pending_employee_name(error)
+    if employee_name:
+        return employee_name
+    return fallback
 
 
 def _serialize_summary(summary: DashboardSummary) -> dict:
