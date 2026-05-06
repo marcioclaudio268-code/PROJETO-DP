@@ -98,7 +98,7 @@ def test_layout_43_line_is_generated_with_exact_width_and_padding():
     line = encode_mapped_movement_to_txt_line(artifact.movements[0])
 
     assert len(line) == 43
-    assert line == "1000000001230002010072110000000000000010000"
+    assert line == "1000000001232024030201110000100000000000072"
 
 
 def test_serializer_encodes_hour_reference_without_separator():
@@ -118,7 +118,7 @@ def test_serializer_encodes_hour_reference_without_separator():
     line = encode_mapped_movement_to_txt_line(artifact.movements[0])
 
     assert len(line) == 43
-    assert line == "1000000001230003500072110000002160000000000"
+    assert line == "1000000001232024030350110000002160000000072"
 
 
 def test_encoder_raises_when_numeric_field_exceeds_width():
@@ -181,7 +181,7 @@ def test_serializer_persists_txt_and_summary_json(tmp_path: Path):
     assert artifacts.summary_path == default_serialization_summary_path(mapped_path)
     assert artifacts.txt_path.exists()
     assert artifacts.summary_path.exists()
-    assert artifacts.txt_path.read_text(encoding="utf-8") == "1000000001230002010072110000000000000010000\n"
+    assert artifacts.txt_path.read_text(encoding="utf-8") == "1000000001232024030201110000100000000000072\n"
 
     payload = json.loads(artifacts.summary_path.read_text(encoding="utf-8"))
     assert payload["artifact_version"] == "serialization_summary_v1"
@@ -200,4 +200,3 @@ def test_render_serialized_txt_returns_empty_string_when_nothing_is_serialized()
     result = serialize_loaded_mapped_artifact(artifact)
 
     assert render_serialized_txt(result) == ""
-

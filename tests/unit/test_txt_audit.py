@@ -16,20 +16,20 @@ from dashboard.txt_audit import build_txt_audit
 def _txt_line(
     *,
     registration: str = "123",
+    competence: str = "202403",
     rubric: str = "201",
     company: str = "72",
     process: str = "11",
-    reference: str = "000000000",
-    value: str = "0000015000",
+    payload: str = "000015000",
 ) -> str:
     return (
         "1"
         + registration.zfill(11)
-        + rubric.zfill(6)
-        + company.zfill(4)
+        + competence
+        + rubric.zfill(4)
         + process.zfill(2)
-        + reference
-        + value
+        + payload
+        + company.zfill(10)
     )
 
 
@@ -178,8 +178,8 @@ def test_txt_audit_totals_hours_by_reference(tmp_path: Path) -> None:
     result = _result(
         tmp_path,
         lines=[
-            _txt_line(rubric="200", reference="000000800", value="0000000000"),
-            _txt_line(registration="124", rubric="200", reference="000001630", value="0000000000"),
+            _txt_line(rubric="200", payload="000000800"),
+            _txt_line(registration="124", rubric="200", payload="000001630"),
         ],
         movements=[
             _movement("mov-001", rubric="200", value_type="horas", hours_text="08:00", hours_total_minutes=480),
@@ -208,8 +208,8 @@ def test_txt_audit_totals_days_by_reference(tmp_path: Path) -> None:
     result = _result(
         tmp_path,
         lines=[
-            _txt_line(rubric="8792", reference="000000100", value="0000000000"),
-            _txt_line(registration="124", rubric="8792", reference="000000200", value="0000000000"),
+            _txt_line(rubric="8792", payload="000000100"),
+            _txt_line(registration="124", rubric="8792", payload="000000200"),
         ],
         movements=[
             _movement("mov-001", rubric="8792", value_type="dias", quantity="1"),
@@ -231,7 +231,7 @@ def test_txt_audit_flags_value_and_rubric_divergences(tmp_path: Path) -> None:
     result = _result(
         tmp_path,
         lines=[
-            _txt_line(value="0000014000"),
+            _txt_line(payload="000014000"),
             _txt_line(rubric="202"),
         ],
         movements=[_movement()],

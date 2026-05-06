@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from decimal import Decimal, InvalidOperation
+import re
 
 from .errors import SerializationEncodingError
 from .layout import LAYOUT_43_FIELDS
@@ -90,13 +91,13 @@ def encode_mapped_movement_to_txt_line(movement: SerializableMappedMovement) -> 
             width=LAYOUT_43_FIELDS[1].width,
             field_name=LAYOUT_43_FIELDS[1].name,
         ),
-        _encode_numeric_identifier(
-            movement.output_rubric,
+        _encode_competence(
+            movement.competence,
             width=LAYOUT_43_FIELDS[2].width,
             field_name=LAYOUT_43_FIELDS[2].name,
         ),
         _encode_numeric_identifier(
-            movement.company_code,
+            movement.output_rubric,
             width=LAYOUT_43_FIELDS[3].width,
             field_name=LAYOUT_43_FIELDS[3].name,
         ),
@@ -105,8 +106,12 @@ def encode_mapped_movement_to_txt_line(movement: SerializableMappedMovement) -> 
             width=LAYOUT_43_FIELDS[4].width,
             field_name=LAYOUT_43_FIELDS[4].name,
         ),
-        _encode_reference_field(movement),
-        _encode_amount_field(movement),
+        _encode_value_or_reference_field(movement),
+        _encode_numeric_identifier(
+            movement.company_code,
+            width=LAYOUT_43_FIELDS[6].width,
+            field_name=LAYOUT_43_FIELDS[6].name,
+        ),
     )
     line = "".join(field_values)
     from validation.layout import validate_layout_43_line
@@ -145,11 +150,56 @@ def _encode_numeric_identifier(value: str | None, *, width: int, field_name: str
     return text.zfill(width)
 
 
-def _encode_reference_field(movement: SerializableMappedMovement) -> str:
+def _encode_competence(value: str | None, *, width: int, field_name: str) -> str:
+    if value is None or value == "":
+        raise SerializationEncodingError(
+            "campo_numerico_invalido",
+            f"Campo '{field_name}' esta ausente para o serializer.",
+            field_name=field_name,
+        )
+
+    text = str(value).strip()
+    if re.fullmatch(r"\d{6}", text):
+        month = int(text[:2])
+        year = text[2:]
+        if 1 <= month <= 12:
+            normalized = f"{year}{text[:2]}"
+        else:
+            normalized = text
+    elif re.fullmatch(r"\d{2}/\d{4}", text):
+        month, year = text.split("/")
+        normalized = f"{year}{month}"
+    else:
+        raise SerializationEncodingError(
+            "campo_numerico_invalido",
+            f"Campo '{field_name}' possui formato invalido: '{text}'.",
+            field_name=field_name,
+        )
+
+    if len(normalized) != width or not normalized.isdigit():
+        raise SerializationEncodingError(
+            "campo_numerico_invalido",
+            f"Campo '{field_name}' possui formato invalido: '{text}'.",
+            field_name=field_name,
+        )
+    return normalized
+
+
+def _encode_value_or_reference_field(movement: SerializableMappedMovement) -> str:
     width = LAYOUT_43_FIELDS[5].width
 
     if movement.value_type.value == "monetario":
-        return "0" * width
+        if movement.amount is None:
+            raise SerializationEncodingError(
+                "valor_movimento_invalido",
+                "Movimento monetario sem valor nao pode ser serializado.",
+                field_name=LAYOUT_43_FIELDS[5].name,
+            )
+        return _encode_implied_decimal(
+            movement.amount,
+            width=width,
+            field_name=LAYOUT_43_FIELDS[5].name,
+        )
 
     if movement.value_type.value == "horas":
         if movement.hours_text is None:
@@ -158,9 +208,9 @@ def _encode_reference_field(movement: SerializableMappedMovement) -> str:
                 "Movimento de horas sem payload de horas nao pode ser serializado.",
                 field_name=LAYOUT_43_FIELDS[5].name,
             )
-        return _encode_hours_reference(movement.hours_text, width=width)
+        return _encode_hours_payload(movement.hours_text, width=width)
 
-    if movement.value_type.value == "dias":
+    if movement.value_type.value in {"dias", "quantidade"}:
         if movement.quantity is None:
             raise SerializationEncodingError(
                 "valor_movimento_invalido",
@@ -180,26 +230,7 @@ def _encode_reference_field(movement: SerializableMappedMovement) -> str:
     )
 
 
-def _encode_amount_field(movement: SerializableMappedMovement) -> str:
-    width = LAYOUT_43_FIELDS[6].width
-
-    if movement.value_type.value == "monetario":
-        if movement.amount is None:
-            raise SerializationEncodingError(
-                "valor_movimento_invalido",
-                "Movimento monetario sem valor nao pode ser serializado.",
-                field_name=LAYOUT_43_FIELDS[6].name,
-            )
-        return _encode_implied_decimal(
-            movement.amount,
-            width=width,
-            field_name=LAYOUT_43_FIELDS[6].name,
-        )
-
-    return "0" * width
-
-
-def _encode_hours_reference(value: str, *, width: int) -> str:
+def _encode_hours_payload(value: str, *, width: int) -> str:
     parts = value.split(":")
     if len(parts) != 2 or not all(part.isdigit() for part in parts):
         raise SerializationEncodingError(

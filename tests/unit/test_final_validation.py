@@ -203,18 +203,19 @@ def test_load_txt_lines_and_summary(tmp_path: Path):
     lines = load_txt_lines(txt_path)
     summary = load_serialization_summary(summary_path)
 
-    assert lines == ("1000000001230002010072110000000000000010000",)
+    assert lines == ("1000000001232024030201110000100000000000072",)
     assert summary.total_mapped_movements == 1
     assert summary.serialized == 1
     assert summary.mapped_artifact_path == str(mapped_path)
 
 
 def test_validate_layout_43_structural_fields_accepts_semantic_line():
-    fields = validate_layout_43_structural_fields("1000000001230002010072110000000000000010000")
+    fields = validate_layout_43_structural_fields("1000000001232024030201110000100000000000072")
 
     assert fields["tipo_registro"] == "1"
     assert fields["matricula_dominio"] == "00000000123"
-    assert split_layout_43_line("1000000001230002010072110000000000000010000")["valor"] == "0000010000"
+    assert split_layout_43_line("1000000001232024030201110000100000000000072")["competencia"] == "202403"
+    assert split_layout_43_line("1000000001232024030201110000100000000000072")["valor_ou_referencia"] == "000010000"
 
 
 def test_final_validation_reports_clean_success(tmp_path: Path):

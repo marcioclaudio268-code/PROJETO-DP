@@ -278,4 +278,4 @@ def _event_rubrics_from_mapped_payload(payload: dict) -> tuple[tuple[str, str], 
 
 def _rubrics_from_txt(path: Path) -> tuple[str, ...]:
     lines = [line for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
-    return tuple(line[12:18].lstrip("0") or "0" for line in lines)
+    return tuple(line[18:22].lstrip("0") or "0" for line in lines)

@@ -81,11 +81,10 @@ def test_full_pipeline_persists_txt_from_mapped_artifact(tmp_path: Path):
     assert serialization_artifacts.txt_path.exists()
     assert serialization_artifacts.summary_path.exists()
     assert serialization_artifacts.txt_path.read_text(encoding="utf-8") == (
-        "1000000001230002010072110000000000000010000\n"
+        "1000000001232024030201110000100000000000072\n"
     )
 
     summary_payload = json.loads(serialization_artifacts.summary_path.read_text(encoding="utf-8"))
     assert summary_payload["counts"]["serialized"] == 1
     assert summary_payload["counts"]["non_serialized"] == 0
     assert summary_payload["execution"]["status"] == "success"
-

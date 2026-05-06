@@ -16,11 +16,11 @@ def test_layout_43_spec_has_seven_fields_and_correct_widths():
     assert layout_43_field_names() == (
         "tipo_registro",
         "matricula_dominio",
+        "competencia",
         "rubrica_saida",
-        "codigo_empresa",
         "codigo_processo",
-        "referencia",
-        "valor",
+        "valor_ou_referencia",
+        "codigo_empresa",
     )
 
 

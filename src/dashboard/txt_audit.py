@@ -75,19 +75,21 @@ class _ParsedTxtLine:
     text: str
     tipo_registro: str
     domain_registration_raw: str
+    competence_raw: str
     rubric_raw: str
-    company_code_raw: str
     process_code_raw: str
-    reference_raw: str
-    value_raw: str
+    payload_raw: str
+    company_code_raw: str
 
     @property
-    def exact_key(self) -> tuple[str, str, str, str]:
+    def exact_key(self) -> tuple[str, str, str, str, str, str]:
         return (
             self.domain_registration_raw,
+            self.competence_raw,
             self.rubric_raw,
-            self.reference_raw,
-            self.value_raw,
+            self.process_code_raw,
+            self.payload_raw,
+            self.company_code_raw,
         )
 
     @property
@@ -95,11 +97,10 @@ class _ParsedTxtLine:
         return (self.domain_registration_raw, self.rubric_raw)
 
     @property
-    def employee_value_key(self) -> tuple[str, str, str]:
+    def employee_value_key(self) -> tuple[str, str]:
         return (
             self.domain_registration_raw,
-            self.reference_raw,
-            self.value_raw,
+            self.payload_raw,
         )
 
 
@@ -107,23 +108,25 @@ class _ParsedTxtLine:
 class _ExpectedMovement:
     canonical_movement_id: str
     domain_registration_raw: str
+    competence_raw: str
     rubric_raw: str
-    company_code_raw: str
     process_code_raw: str
-    reference_raw: str
-    value_raw: str
+    payload_raw: str
+    company_code_raw: str
     employee_name: str | None
     event_name: str
     value_type: str
     launched_value: str
 
     @property
-    def exact_key(self) -> tuple[str, str, str, str]:
+    def exact_key(self) -> tuple[str, str, str, str, str, str]:
         return (
             self.domain_registration_raw,
+            self.competence_raw,
             self.rubric_raw,
-            self.reference_raw,
-            self.value_raw,
+            self.process_code_raw,
+            self.payload_raw,
+            self.company_code_raw,
         )
 
     @property
@@ -131,11 +134,10 @@ class _ExpectedMovement:
         return (self.domain_registration_raw, self.rubric_raw)
 
     @property
-    def employee_value_key(self) -> tuple[str, str, str]:
+    def employee_value_key(self) -> tuple[str, str]:
         return (
             self.domain_registration_raw,
-            self.reference_raw,
-            self.value_raw,
+            self.payload_raw,
         )
 
 
@@ -197,11 +199,11 @@ def _parse_txt_line(line_number: int, text: str) -> _ParsedTxtLine:
         text=text,
         tipo_registro=text[0:1],
         domain_registration_raw=text[1:12],
-        rubric_raw=text[12:18],
-        company_code_raw=text[18:22],
+        competence_raw=text[12:18],
+        rubric_raw=text[18:22],
         process_code_raw=text[22:24],
-        reference_raw=text[24:33],
-        value_raw=text[33:43],
+        payload_raw=text[24:33],
+        company_code_raw=text[33:43],
     )
 
 
@@ -214,19 +216,19 @@ def _expected_movement(payload: dict[str, Any]) -> _ExpectedMovement | None:
         return None
 
     value_type = str(payload.get("value_type") or "")
-    reference_raw = _expected_reference_raw(payload, value_type)
-    value_raw = _expected_value_raw(payload, value_type)
-    if reference_raw is None or value_raw is None:
+    competence_raw = _encode_competence(payload.get("competence"))
+    payload_raw = _expected_payload_raw(payload, value_type)
+    if competence_raw is None or payload_raw is None:
         return None
 
     return _ExpectedMovement(
         canonical_movement_id=str(payload["canonical_movement_id"]),
         domain_registration_raw=_encode_numeric_identifier(domain_registration, width=11),
-        rubric_raw=_encode_numeric_identifier(output_rubric, width=6),
-        company_code_raw=_encode_numeric_identifier(payload.get("company_code"), width=4),
+        competence_raw=competence_raw,
+        rubric_raw=_encode_numeric_identifier(output_rubric, width=4),
         process_code_raw=_encode_numeric_identifier(payload.get("default_process"), width=2),
-        reference_raw=reference_raw,
-        value_raw=value_raw,
+        payload_raw=payload_raw,
+        company_code_raw=_encode_numeric_identifier(payload.get("company_code"), width=10),
         employee_name=_optional_text(payload.get("employee_name")),
         event_name=str(payload.get("event_name") or ""),
         value_type=value_type,
@@ -234,9 +236,9 @@ def _expected_movement(payload: dict[str, Any]) -> _ExpectedMovement | None:
     )
 
 
-def _expected_reference_raw(payload: dict[str, Any], value_type: str) -> str | None:
+def _expected_payload_raw(payload: dict[str, Any], value_type: str) -> str | None:
     if value_type == "monetario":
-        return "0" * 9
+        return _encode_implied_decimal(payload.get("amount"), width=9)
     if value_type == "horas":
         hours_payload = payload.get("hours") or {}
         hours_text = hours_payload.get("text")
@@ -246,16 +248,8 @@ def _expected_reference_raw(payload: dict[str, Any], value_type: str) -> str | N
         if len(parts) != 2:
             return None
         return f"{int(parts[0]):02d}{int(parts[1]):02d}".zfill(9)
-    if value_type == "dias":
+    if value_type in {"dias", "quantidade"}:
         return _encode_implied_decimal(payload.get("quantity"), width=9)
-    return None
-
-
-def _expected_value_raw(payload: dict[str, Any], value_type: str) -> str | None:
-    if value_type == "monetario":
-        return _encode_implied_decimal(payload.get("amount"), width=10)
-    if value_type in {"horas", "dias"}:
-        return "0" * 10
     return None
 
 
@@ -306,8 +300,8 @@ def _audit_txt_line(
                 description="Linha TXT invalida",
                 value_type=None,
                 launched_value=_line_launched_value(line),
-                reference_raw=line.reference_raw,
-                value_raw=line.value_raw,
+                reference_raw=line.payload_raw,
+                value_raw=line.payload_raw,
                 txt_line=line.text,
                 check_status=status,
             ),
@@ -374,8 +368,8 @@ def _audit_txt_line(
             description=(expected.event_name if expected is not None else "Nao reconciliado"),
             value_type=(expected.value_type if expected is not None else None),
             launched_value=(expected.launched_value if expected is not None else _line_launched_value(line)),
-            reference_raw=line.reference_raw,
-            value_raw=line.value_raw,
+            reference_raw=line.payload_raw,
+            value_raw=line.payload_raw,
             txt_line=line.text,
             check_status=status,
         ),
@@ -445,7 +439,7 @@ def _rubric_totals(rows: tuple[TxtAuditEmployeeRow, ...]) -> tuple[TxtAuditRubri
             total_minutes = sum(_decode_hours_reference(row.reference_raw) for row in rubric_rows)
             total_reference = _minutes_to_hhmm(total_minutes)
             display_total = total_reference
-        elif value_type == "dias":
+        elif value_type in {"dias", "quantidade"}:
             total = sum((_decode_implied_decimal(row.reference_raw) for row in rubric_rows), Decimal("0"))
             total_reference = _decimal_display(total)
             display_total = f"{total_reference} dia(s)"
@@ -493,9 +487,7 @@ def _message_for_status(status: str) -> str:
 
 
 def _line_launched_value(line: _ParsedTxtLine) -> str:
-    if line.value_raw != "0" * 10:
-        return _decimal_display(_decode_implied_decimal(line.value_raw))
-    return f"referencia={line.reference_raw}"
+    return f"payload={line.payload_raw}"
 
 
 def _encode_numeric_identifier(value: object, *, width: int) -> str:
@@ -524,6 +516,22 @@ def _decode_hours_reference(value: str) -> int:
     if not hour_minute.isdigit():
         return 0
     return int(hour_minute[:2]) * 60 + int(hour_minute[2:])
+
+
+def _encode_competence(value: object) -> str | None:
+    text = _optional_text(value)
+    if text is None:
+        return None
+    if len(text) == 6 and text.isdigit():
+        month = int(text[:2])
+        if 1 <= month <= 12:
+            return f"{text[2:]}{text[:2]}"
+        return text
+    if len(text) == 7 and text[2] == "/":
+        month, year = text.split("/")
+        if len(month) == 2 and len(year) == 4 and month.isdigit() and year.isdigit():
+            return f"{year}{month}"
+    return None
 
 
 def _minutes_to_hhmm(total_minutes: int) -> str:

@@ -44,11 +44,11 @@ def validate_layout_43_structural_fields(line: str) -> dict[str, str]:
 
     for field_name in (
         "matricula_dominio",
+        "competencia",
         "rubrica_saida",
-        "codigo_empresa",
         "codigo_processo",
-        "referencia",
-        "valor",
+        "valor_ou_referencia",
+        "codigo_empresa",
     ):
         if not fields[field_name].isdigit():
             raise ValueError(

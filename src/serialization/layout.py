@@ -32,18 +32,18 @@ LAYOUT_43_FIELDS: tuple[LayoutFieldSpec, ...] = (
         description="Matricula final resolvida do colaborador no Dominio.",
     ),
     LayoutFieldSpec(
-        name="rubrica_saida",
+        name="competencia",
         width=6,
         type_hint="numerico",
         padding="zeros a esquerda",
-        description="Rubrica de saida resolvida no mapping por empresa.",
+        description="Competencia final no formato AAAAMM.",
     ),
     LayoutFieldSpec(
-        name="codigo_empresa",
+        name="rubrica_saida",
         width=4,
         type_hint="numerico",
         padding="zeros a esquerda",
-        description="Codigo da empresa serializado por linha como assuncao operacional do V1.",
+        description="Rubrica de saida resolvida no mapping por empresa.",
     ),
     LayoutFieldSpec(
         name="codigo_processo",
@@ -53,20 +53,20 @@ LAYOUT_43_FIELDS: tuple[LayoutFieldSpec, ...] = (
         description="Processo padrao da execucao, restrito a 2 digitos no serializer V1.",
     ),
     LayoutFieldSpec(
-        name="referencia",
+        name="valor_ou_referencia",
         width=9,
         type_hint="numerico_dependente_do_tipo",
         padding="zeros a esquerda",
         description=(
-            "Referencia quantitativa. Monetario usa zeros; horas usam 00000HHMM; dias usam 2 casas decimais implicitas."
+            "Campo unificado do Dominio. Monetario usa valor com 2 casas implicitas; horas usam HHMM; dias/quantidades usam 2 casas implicitas."
         ),
     ),
     LayoutFieldSpec(
-        name="valor",
+        name="codigo_empresa",
         width=10,
-        type_hint="numerico_com_2_casas_implicitas",
+        type_hint="numerico",
         padding="zeros a esquerda",
-        description="Valor monetario do movimento. Horas e dias usam zeros por assuncao operacional do V1.",
+        description="Codigo da empresa serializado por linha no layout final do Dominio.",
     ),
 )
 
