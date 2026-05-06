@@ -10,6 +10,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from openpyxl import load_workbook
+from openpyxl.utils import get_column_letter
 from openpyxl.workbook import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
@@ -40,6 +41,10 @@ from .column_mapping_profiles import (
     ColumnValueKind,
     CompanyColumnMappingProfile,
     excel_column_to_index,
+)
+from .company_employee_registry import (
+    find_employee_by_name_or_alias,
+    load_company_employee_registry,
 )
 
 
@@ -107,6 +112,7 @@ def normalize_workbook_with_column_profile(
     *,
     inspection: InputWorkbookInspection,
     profile: CompanyColumnMappingProfile,
+    employee_registry_root: str | Path | None = None,
     output_path: str | Path | None = None,
     report_path: str | Path | None = None,
     max_data_rows: int = MAX_DATA_ROWS,
@@ -119,6 +125,7 @@ def normalize_workbook_with_column_profile(
         workbook,
         inspection=inspection,
         profile=profile,
+        employee_registry_root=employee_registry_root,
         max_data_rows=max_data_rows,
     )
 
@@ -155,6 +162,7 @@ def build_canonical_workbook_from_column_profile(
     *,
     inspection: InputWorkbookInspection,
     profile: CompanyColumnMappingProfile,
+    employee_registry_root: str | Path | None = None,
     max_data_rows: int = MAX_DATA_ROWS,
 ) -> tuple[Workbook, dict]:
     if inspection.layout_id == "template_v1_canonico":
@@ -185,6 +193,11 @@ def build_canonical_workbook_from_column_profile(
     funcionarios = normalized_workbook["FUNCIONARIOS"]
     lancamentos = normalized_workbook["LANCAMENTOS_FACEIS"]
     column_mappings = _match_profile_mappings_to_columns(profile, inspection.columns)
+    employee_registry = load_company_employee_registry(
+        profile.company_code,
+        company_name=profile.company_name,
+        root=employee_registry_root,
+    )
     employee_code_column_index = _profile_employee_code_column_index(profile)
     employee_name_column_index = _profile_employee_name_column_index(profile)
     identity_column = None if employee_code_column_index is not None else _find_domain_registration_column(inspection.columns)
@@ -209,9 +222,14 @@ def build_canonical_workbook_from_column_profile(
         if _row_is_empty(row_values):
             continue
 
-        employee_key = normalized_optional_text(row_values.get(employee_code_index))
+        employee_key = _profile_employee_key(
+            row_values=row_values,
+            employee_code_index=employee_code_index,
+            employee_name_index=employee_name_index,
+            employee_code_column_index=employee_code_column_index,
+        )
         employee_name = normalized_optional_text(row_values.get(employee_name_index))
-        domain_registration = (
+        snapshot_registration = (
             normalized_optional_text(row_values.get(employee_code_column_index))
             if employee_code_column_index is not None
             else (
@@ -228,6 +246,21 @@ def build_canonical_workbook_from_column_profile(
                     source=f"{selected_sheet.title}!A{source_row}",
                 )
             continue
+
+        if employee_code_column_index is not None or employee_name_column_index is not None:
+            resolved_employee_name, domain_registration = _resolve_profile_employee_identity(
+                employee_registry=employee_registry,
+                employee_name=employee_name,
+                snapshot_registration=snapshot_registration,
+                selected_sheet=selected_sheet,
+                source_row=source_row,
+                employee_code_column_index=employee_code_column_index,
+                employee_name_column_index=employee_name_column_index,
+            )
+            if resolved_employee_name is not None:
+                employee_name = resolved_employee_name
+        else:
+            domain_registration = snapshot_registration
 
         employee_status, employee_note = _infer_employee_status(row_values)
         employee_rows_written += 1
@@ -454,6 +487,77 @@ def _profile_employee_name_column_index(profile: CompanyColumnMappingProfile) ->
         if rule.is_active and rule.employee_name_column:
             return excel_column_to_index(rule.employee_name_column)
     return None
+
+
+def _profile_employee_key(
+    *,
+    row_values: dict[int, object],
+    employee_code_index: int,
+    employee_name_index: int,
+    employee_code_column_index: int | None,
+) -> str | None:
+    value = normalized_optional_text(row_values.get(employee_code_index))
+    if value is not None:
+        return value
+    return normalized_optional_text(row_values.get(employee_name_index))
+
+
+def _resolve_profile_employee_identity(
+    *,
+    employee_registry,
+    employee_name: str | None,
+    snapshot_registration: str | None,
+    selected_sheet: Worksheet,
+    source_row: int,
+    employee_code_column_index: int | None,
+    employee_name_column_index: int | None,
+) -> tuple[str | None, str]:
+    if _is_valid_domain_registration(snapshot_registration):
+        return employee_name, str(snapshot_registration).strip()
+
+    if employee_name_column_index is None:
+        raise InputLayoutNormalizationError(
+            "perfil_colunas_sem_nome_para_resolver_funcionario",
+            "Linha sem matricula valida e sem coluna de nome configurada no perfil.",
+            source=f"{selected_sheet.title}!A{source_row}",
+        )
+
+    normalized_name = normalized_optional_text(employee_name)
+    if normalized_name is None:
+        raise InputLayoutNormalizationError(
+            "funcionario_nome_nao_encontrado",
+            "Funcionario '' nao encontrado no cadastro ativo da empresa. Cadastre ou revise o nome antes de gerar o TXT.",
+            source=f"{selected_sheet.title}!{get_column_letter(employee_name_column_index)}{source_row}",
+        )
+
+    matches = find_employee_by_name_or_alias(employee_registry, normalized_name, active_only=True)
+    if not matches:
+        raise InputLayoutNormalizationError(
+            "funcionario_nome_nao_encontrado",
+            (
+                f"Funcionario '{normalized_name}' nao encontrado no cadastro ativo da empresa. "
+                "Cadastre ou revise o nome antes de gerar o TXT."
+            ),
+            source=f"{selected_sheet.title}!{get_column_letter(employee_name_column_index)}{source_row}",
+        )
+    if len(matches) > 1:
+        raise InputLayoutNormalizationError(
+            "funcionario_nome_ambiguo",
+            (
+                f"Funcionario '{normalized_name}' encontrou mais de um cadastro compativel. "
+                "Revise o cadastro antes de gerar o TXT."
+            ),
+            source=f"{selected_sheet.title}!{get_column_letter(employee_name_column_index)}{source_row}",
+        )
+
+    employee = matches[0]
+    return employee.employee_name, employee.domain_registration
+
+
+def _is_valid_domain_registration(value: str | None) -> bool:
+    if value is None:
+        return False
+    return bool(re.fullmatch(r"\d+", str(value).strip()))
 
 
 def _select_position_profile_sheet(workbook: Workbook, profile: CompanyColumnMappingProfile) -> Worksheet:

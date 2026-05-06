@@ -139,6 +139,7 @@ def run_dashboard_analysis(
                 source_workbook_path,
                 inspection=inspection,
                 profile=column_profile,
+                employee_registry_root=employee_registry_root,
                 output_path=paths.editable_workbook_path,
                 report_path=paths.normalization_path,
             )
@@ -150,7 +151,13 @@ def run_dashboard_analysis(
                 registry_root=resolver.registry_root,
             )
     except InputLayoutNormalizationError as exc:
-        if exc.code not in {"linha_orfa_com_dado_critico", "cabecalho_perfil_divergente"}:
+        if exc.code not in {
+            "linha_orfa_com_dado_critico",
+            "cabecalho_perfil_divergente",
+            "funcionario_nome_nao_encontrado",
+            "funcionario_nome_ambiguo",
+            "perfil_colunas_sem_nome_para_resolver_funcionario",
+        }:
             raise
         return _build_blocked_run_for_recoverable_normalization_error(
             paths=paths,
@@ -1316,6 +1323,38 @@ def _build_recoverable_normalization_pending(
             source_cell=source_cell,
             source_row=source_row,
             source_column_name=str((error.details or {}).get("value_column") or ""),
+            can_edit_workbook=False,
+            can_edit_employee_mapping=False,
+            can_edit_event_mapping=False,
+            can_ignore=False,
+        )
+    if error.code in {
+        "funcionario_nome_nao_encontrado",
+        "funcionario_nome_ambiguo",
+        "perfil_colunas_sem_nome_para_resolver_funcionario",
+    }:
+        found_value = "em branco"
+        if error.code == "funcionario_nome_nao_encontrado":
+            found_value = "nome sem correspondencia no cadastro ativo"
+        elif error.code == "funcionario_nome_ambiguo":
+            found_value = "nome com mais de um cadastro compativel"
+        return DashboardPendingItem(
+            uid=f"perfil_colunas:{error.code}",
+            stage="perfil_colunas",
+            pending_id=error.code,
+            code=error.code,
+            severity="bloqueante",
+            employee_name=None,
+            employee_key=None,
+            event_name=None,
+            field_label="resolucao do funcionario",
+            found_value=found_value,
+            problem=str(error),
+            recommended_action="Revise o cadastro ativo de funcionarios ou o perfil de colunas antes de repetir a analise.",
+            source_sheet=source_sheet or inspection.selected_sheet_name,
+            source_cell=source_cell,
+            source_row=source_row,
+            source_column_name=None,
             can_edit_workbook=False,
             can_edit_employee_mapping=False,
             can_edit_event_mapping=False,

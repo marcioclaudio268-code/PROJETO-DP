@@ -89,8 +89,8 @@ class ColumnMappingRule(_StrictProfileModel):
                 raise ValueError("position mappings require header_row.")
             if self.data_start_row is None:
                 raise ValueError("position mappings require data_start_row.")
-            if not self.employee_code_column:
-                raise ValueError("position mappings require employee_code_column.")
+            if not self.employee_code_column and not self.employee_name_column:
+                raise ValueError("position mappings require employee_code_column or employee_name_column.")
             if self.data_start_row <= self.header_row:
                 raise ValueError("data_start_row must be greater than header_row.")
 

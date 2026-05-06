@@ -11,6 +11,11 @@ from dashboard.column_mapping_profiles import (
     ColumnValueKind,
     CompanyColumnMappingProfile,
 )
+from dashboard.company_employee_registry import (
+    CompanyEmployeeRecord,
+    CompanyEmployeeRegistry,
+    save_company_employee_registry,
+)
 from dashboard.profile_normalizer import (
     build_canonical_workbook_from_column_profile,
     inspect_workbook_with_position_profile,
@@ -402,17 +407,35 @@ def _build_position_profile(header: str = "HORA 50%") -> CompanyColumnMappingPro
     )
 
 
-def _build_position_workbook(header: str = "HORA 50%") -> Workbook:
+def _build_position_workbook(
+    header: str = "HORA 50%",
+    *,
+    employee_code_header: str = "CODIGO",
+    employee_name_header: str = "NOME",
+    employee_code_value: str = "304",
+    employee_name_value: str = "ADILSON RAFAEL DE SOUSA",
+) -> Workbook:
     workbook = Workbook()
     sheet = workbook.active
     sheet.title = "abril"
-    sheet["A2"] = "CODIGO"
-    sheet["B2"] = "NOME"
+    sheet["A2"] = employee_code_header
+    sheet["B2"] = employee_name_header
     sheet["T2"] = header
-    sheet["A3"] = "304"
-    sheet["B3"] = "ADILSON RAFAEL DE SOUSA"
+    sheet["A3"] = employee_code_value
+    sheet["B3"] = employee_name_value
     sheet["T3"] = "01:30"
     return workbook
+
+
+def _write_active_registry(root: Path, employees: list[CompanyEmployeeRecord]) -> None:
+    save_company_employee_registry(
+        CompanyEmployeeRegistry(
+            company_code="755",
+            company_name="GUSTAVO LOPES LACERDA",
+            employees=employees,
+        ),
+        root=root,
+    )
 
 
 def test_position_profile_validates_expected_header_and_generates_rubric_column(tmp_path: Path) -> None:
@@ -431,6 +454,7 @@ def test_position_profile_validates_expected_header_and_generates_rubric_column(
         load_workbook(workbook_path),
         inspection=inspection,
         profile=profile,
+        employee_registry_root=tmp_path / "employees",
     )
 
     assert inspection.columns[0].column_letter == "T"
@@ -456,7 +480,198 @@ def test_position_profile_blocks_when_expected_header_differs(tmp_path: Path) ->
             load_workbook(workbook_path),
             inspection=inspection,
             profile=profile,
+            employee_registry_root=tmp_path / "employees",
         )
 
     assert exc_info.value.code == "cabecalho_perfil_divergente"
     assert "A coluna T esperava HORA 50%" in str(exc_info.value)
+
+
+def test_position_profile_resolves_employee_by_name_when_registration_is_blank(tmp_path: Path) -> None:
+    workbook_path = tmp_path / "fechamento.xlsx"
+    _build_position_workbook(employee_code_value="", employee_name_value="ADILSON RAFAEL DE SOUSA").save(workbook_path)
+    _write_active_registry(
+        tmp_path / "employees",
+        [
+            CompanyEmployeeRecord(
+                employee_name="ADILSON RAFAEL DE SOUSA",
+                domain_registration="304",
+                source="test",
+            )
+        ],
+    )
+    profile = _build_position_profile()
+    inspection = inspect_workbook_with_position_profile(
+        workbook_path,
+        profile=profile,
+        selected_company_code="755",
+        selected_company_name="GUSTAVO LOPES LACERDA",
+        selected_competence="04/2026",
+    )
+
+    normalized, _manifest = build_canonical_workbook_from_column_profile(
+        load_workbook(workbook_path),
+        inspection=inspection,
+        profile=profile,
+        employee_registry_root=tmp_path / "employees",
+    )
+
+    assert normalized["FUNCIONARIOS"]["B2"].value == "ADILSON RAFAEL DE SOUSA"
+    assert normalized["FUNCIONARIOS"]["E2"].value == "304"
+    assert normalized["LANCAMENTOS_FACEIS"]["D2"].value == "304"
+
+
+def test_position_profile_resolves_employee_by_name_when_registration_column_has_text(tmp_path: Path) -> None:
+    workbook_path = tmp_path / "fechamento.xlsx"
+    _build_position_workbook(
+        employee_code_value="ADILSON RAFAEL DE SOUSA",
+        employee_name_value=" Adilson  Rafael de Sousa ",
+    ).save(workbook_path)
+    _write_active_registry(
+        tmp_path / "employees",
+        [
+            CompanyEmployeeRecord(
+                employee_name="ADILSON RAFAEL DE SOUSA",
+                domain_registration="304",
+                source="test",
+            )
+        ],
+    )
+    profile = _build_position_profile()
+    inspection = inspect_workbook_with_position_profile(
+        workbook_path,
+        profile=profile,
+        selected_company_code="755",
+        selected_company_name="GUSTAVO LOPES LACERDA",
+        selected_competence="04/2026",
+    )
+
+    normalized, _manifest = build_canonical_workbook_from_column_profile(
+        load_workbook(workbook_path),
+        inspection=inspection,
+        profile=profile,
+        employee_registry_root=tmp_path / "employees",
+    )
+
+    assert normalized["FUNCIONARIOS"]["E2"].value == "304"
+    assert normalized["FUNCIONARIOS"]["B2"].value == "ADILSON RAFAEL DE SOUSA"
+
+
+def test_position_profile_blocks_when_employee_name_is_not_found(tmp_path: Path) -> None:
+    workbook_path = tmp_path / "fechamento.xlsx"
+    _build_position_workbook(employee_code_value="", employee_name_value="FUNCIONARIO INEXISTENTE").save(workbook_path)
+    _write_active_registry(
+        tmp_path / "employees",
+        [
+            CompanyEmployeeRecord(
+                employee_name="ADILSON RAFAEL DE SOUSA",
+                domain_registration="304",
+                source="test",
+            )
+        ],
+    )
+    profile = _build_position_profile()
+    inspection = inspect_workbook_with_position_profile(
+        workbook_path,
+        profile=profile,
+        selected_company_code="755",
+        selected_company_name="GUSTAVO LOPES LACERDA",
+        selected_competence="04/2026",
+    )
+
+    with pytest.raises(InputLayoutNormalizationError) as exc_info:
+        build_canonical_workbook_from_column_profile(
+            load_workbook(workbook_path),
+            inspection=inspection,
+            profile=profile,
+            employee_registry_root=tmp_path / "employees",
+        )
+
+    assert exc_info.value.code == "funcionario_nome_nao_encontrado"
+    assert "Funcionario 'FUNCIONARIO INEXISTENTE' nao encontrado no cadastro ativo da empresa." in str(exc_info.value)
+
+
+def test_position_profile_blocks_when_employee_name_is_ambiguous(tmp_path: Path) -> None:
+    workbook_path = tmp_path / "fechamento.xlsx"
+    _build_position_workbook(employee_code_value="", employee_name_value="ADILSON RAFAEL DE SOUSA").save(workbook_path)
+    _write_active_registry(
+        tmp_path / "employees",
+        [
+            CompanyEmployeeRecord(
+                employee_name="ADILSON RAFAEL DE SOUSA",
+                domain_registration="304",
+                source="test",
+            ),
+            CompanyEmployeeRecord(
+                employee_name="ADILSON RAFAEL DE SOUSA",
+                domain_registration="999",
+                aliases=["ADILSON RAFAEL DE SOUSA"],
+                source="test",
+            ),
+        ],
+    )
+    profile = _build_position_profile()
+    inspection = inspect_workbook_with_position_profile(
+        workbook_path,
+        profile=profile,
+        selected_company_code="755",
+        selected_company_name="GUSTAVO LOPES LACERDA",
+        selected_competence="04/2026",
+    )
+
+    with pytest.raises(InputLayoutNormalizationError) as exc_info:
+        build_canonical_workbook_from_column_profile(
+            load_workbook(workbook_path),
+            inspection=inspection,
+            profile=profile,
+            employee_registry_root=tmp_path / "employees",
+        )
+
+    assert exc_info.value.code == "funcionario_nome_ambiguo"
+    assert "encontrou mais de um cadastro compativel" in str(exc_info.value)
+
+
+def test_position_profile_blocks_without_valid_registration_and_without_name_column(tmp_path: Path) -> None:
+    workbook_path = tmp_path / "fechamento.xlsx"
+    _build_position_workbook(employee_code_value="ADILSON RAFAEL DE SOUSA").save(workbook_path)
+    profile = CompanyColumnMappingProfile(
+        company_code="755",
+        company_name="GUSTAVO LOPES LACERDA",
+        default_process="11",
+        mappings=[
+            ColumnMappingRule(
+                sheet_name="abril",
+                header_row=2,
+                data_start_row=3,
+                employee_code_column="A",
+                value_column="T",
+                expected_header="HORA 50%",
+                enabled=True,
+                rubrica_target="201",
+                value_kind="horas",
+                nature="provento",
+                generation_mode="single_line",
+                ignore_zero=True,
+                ignore_text=True,
+                status="active",
+            )
+        ],
+    )
+    inspection = inspect_workbook_with_position_profile(
+        workbook_path,
+        profile=profile,
+        selected_company_code="755",
+        selected_company_name="GUSTAVO LOPES LACERDA",
+        selected_competence="04/2026",
+    )
+
+    with pytest.raises(InputLayoutNormalizationError) as exc_info:
+        build_canonical_workbook_from_column_profile(
+            load_workbook(workbook_path),
+            inspection=inspection,
+            profile=profile,
+            employee_registry_root=tmp_path / "employees",
+        )
+
+    assert exc_info.value.code == "perfil_colunas_sem_nome_para_resolver_funcionario"
+    assert "Linha sem matricula valida e sem coluna de nome configurada no perfil." in str(exc_info.value)

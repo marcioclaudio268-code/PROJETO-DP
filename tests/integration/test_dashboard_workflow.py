@@ -164,6 +164,33 @@ def _write_position_column_profile(root: Path) -> Path:
     return save_column_mapping_profile(profile, root=root)
 
 
+def _write_position_name_resolution_profile(root: Path) -> Path:
+    profile = CompanyColumnMappingProfile(
+        company_code="755",
+        company_name="GUSTAVO LOPES LACERDA",
+        default_process="11",
+        mappings=[
+            ColumnMappingRule(
+                sheet_name="ABRIL 26",
+                header_row=2,
+                data_start_row=3,
+                employee_name_column="A",
+                value_column="T",
+                expected_header="HORA 50%",
+                enabled=True,
+                rubrica_target="201",
+                value_kind=ColumnValueKind.HOURS,
+                nature="provento",
+                generation_mode=ColumnGenerationMode.SINGLE_LINE,
+                ignore_zero=True,
+                ignore_text=True,
+                status="active",
+            )
+        ],
+    )
+    return save_column_mapping_profile(profile, root=root)
+
+
 def _write_position_profile_workbook(path: Path, *, header: str = "HORA 50%") -> Path:
     workbook = Workbook()
     worksheet = workbook.active
@@ -173,6 +200,19 @@ def _write_position_profile_workbook(path: Path, *, header: str = "HORA 50%") ->
     worksheet["T2"] = header
     worksheet["A3"] = "304"
     worksheet["B3"] = "ADILSON RAFAEL DE SOUSA"
+    worksheet["T3"] = "01:30"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    workbook.save(path)
+    return path
+
+
+def _write_position_name_profile_workbook(path: Path) -> Path:
+    workbook = Workbook()
+    worksheet = workbook.active
+    worksheet.title = "ABRIL 26"
+    worksheet["A2"] = "FUNCIONARIO"
+    worksheet["T2"] = "HORA 50%"
+    worksheet["A3"] = "ADILSON RAFAEL DE SOUSA"
     worksheet["T3"] = "01:30"
     path.parent.mkdir(parents=True, exist_ok=True)
     workbook.save(path)
@@ -784,6 +824,65 @@ def test_dashboard_uses_position_profile_when_monthly_contract_is_invalid(tmp_pa
     assert normalization_payload["manifest"]["normalizer"] == "profile_column_mapping"
     assert normalization_payload["manifest"]["columns"][0]["source_column_letter"] == "T"
     assert mapped_payload["mapped_movements"][0]["output_rubric"] == "201"
+
+
+def test_dashboard_resolves_employee_by_name_in_position_profile_flow(tmp_path: Path) -> None:
+    workbook_path = _write_position_name_profile_workbook(tmp_path / "fechamento-gustavo-nome.xlsx")
+    profile_root = tmp_path / "profiles"
+    _write_position_name_resolution_profile(profile_root)
+    configs_root = tmp_path / "configs"
+    _write_internal_config(
+        configs_root,
+        company_code="755",
+        file_name="04-2026.json",
+        competence="04/2026",
+        payload_override={
+            "company_name": "GUSTAVO LOPES LACERDA",
+            "event_mappings": [
+                {
+                    "event_negocio": "horas_extras_70",
+                    "rubrica_saida": "201",
+                }
+            ],
+            "employee_mappings": [
+                {
+                    "source_employee_key": "ADILSON RAFAEL DE SOUSA",
+                    "source_employee_name": "ADILSON RAFAEL DE SOUSA",
+                    "domain_registration": "304",
+                }
+            ],
+        },
+    )
+    save_company_employee_registry(
+        CompanyEmployeeRegistry(
+            company_code="755",
+            company_name="GUSTAVO LOPES LACERDA",
+            employees=[
+                CompanyEmployeeRecord(
+                    employee_name="ADILSON RAFAEL DE SOUSA",
+                    domain_registration="304",
+                    source="test",
+                )
+            ],
+        ),
+        root=tmp_path / "employees",
+    )
+    paths = create_dashboard_run_from_paths(workbook_path, runs_root=tmp_path / "runs")
+
+    result = run_dashboard_analysis(
+        paths,
+        config_resolver=ConfigResolver(registry_root=tmp_path / "master", legacy_root=configs_root),
+        column_profile_root=profile_root,
+        employee_registry_root=tmp_path / "employees",
+        selected_company_code="755",
+        selected_company_name="GUSTAVO LOPES LACERDA",
+        selected_competence="04/2026",
+    )
+
+    normalization_payload = json.loads(paths.normalization_path.read_text(encoding="utf-8"))
+    assert result.summary.serialized_line_count == 1
+    assert result.validation_payload["execution"]["status"] == "success"
+    assert normalization_payload["manifest"]["counts"]["employee_rows_written"] == 1
 
 
 def test_dashboard_blocks_monthly_layout_when_column_profile_is_missing(tmp_path: Path) -> None:
