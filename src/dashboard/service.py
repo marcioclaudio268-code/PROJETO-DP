@@ -140,6 +140,7 @@ def run_dashboard_analysis(
                 inspection=inspection,
                 profile=column_profile,
                 employee_registry_root=employee_registry_root,
+                rubric_catalog_root=rubric_catalog_root,
                 output_path=paths.editable_workbook_path,
                 report_path=paths.normalization_path,
             )

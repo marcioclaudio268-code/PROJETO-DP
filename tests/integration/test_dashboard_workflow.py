@@ -191,6 +191,17 @@ def _write_position_name_resolution_profile(root: Path) -> Path:
     return save_column_mapping_profile(profile, root=root)
 
 
+def _write_position_rubric_catalog(root: Path, rubrics: list[CompanyRubricRecord]) -> Path:
+    return save_company_rubric_catalog(
+        CompanyRubricCatalog(
+            company_code="755",
+            company_name="GUSTAVO LOPES LACERDA",
+            rubrics=rubrics,
+        ),
+        root=root,
+    )
+
+
 def _write_position_profile_workbook(path: Path, *, header: str = "HORA 50%") -> Path:
     workbook = Workbook()
     worksheet = workbook.active
@@ -780,6 +791,20 @@ def test_dashboard_uses_position_profile_when_monthly_contract_is_invalid(tmp_pa
     workbook_path = _write_position_profile_workbook(tmp_path / "fechamento-gustavo.xlsx")
     profile_root = tmp_path / "profiles"
     _write_position_column_profile(profile_root)
+    rubric_catalog_root = tmp_path / "rubrics"
+    _write_position_rubric_catalog(
+        rubric_catalog_root,
+        [
+            CompanyRubricRecord(
+                rubric_code="201",
+                description="HORA 50%",
+                canonical_event="201",
+                value_kind="horas",
+                nature="provento",
+                source="test",
+            )
+        ],
+    )
     configs_root = tmp_path / "configs"
     _write_internal_config(
         configs_root,
@@ -788,12 +813,7 @@ def test_dashboard_uses_position_profile_when_monthly_contract_is_invalid(tmp_pa
         competence="04/2026",
         payload_override={
             "company_name": "GUSTAVO LOPES LACERDA",
-            "event_mappings": [
-                {
-                    "event_negocio": "horas_extras_70",
-                    "rubrica_saida": "201",
-                }
-            ],
+            "event_mappings": [],
             "employee_mappings": [
                 {
                     "source_employee_key": "304",
@@ -809,6 +829,7 @@ def test_dashboard_uses_position_profile_when_monthly_contract_is_invalid(tmp_pa
         paths,
         config_resolver=ConfigResolver(registry_root=tmp_path / "master", legacy_root=configs_root),
         column_profile_root=profile_root,
+        rubric_catalog_root=rubric_catalog_root,
         selected_company_code="755",
         selected_company_name="GUSTAVO LOPES LACERDA",
         selected_competence="042026",
@@ -830,6 +851,20 @@ def test_dashboard_resolves_employee_by_name_in_position_profile_flow(tmp_path: 
     workbook_path = _write_position_name_profile_workbook(tmp_path / "fechamento-gustavo-nome.xlsx")
     profile_root = tmp_path / "profiles"
     _write_position_name_resolution_profile(profile_root)
+    rubric_catalog_root = tmp_path / "rubrics"
+    _write_position_rubric_catalog(
+        rubric_catalog_root,
+        [
+            CompanyRubricRecord(
+                rubric_code="201",
+                description="HORA 50%",
+                canonical_event="201",
+                value_kind="horas",
+                nature="provento",
+                source="test",
+            )
+        ],
+    )
     configs_root = tmp_path / "configs"
     _write_internal_config(
         configs_root,
@@ -838,12 +873,7 @@ def test_dashboard_resolves_employee_by_name_in_position_profile_flow(tmp_path: 
         competence="04/2026",
         payload_override={
             "company_name": "GUSTAVO LOPES LACERDA",
-            "event_mappings": [
-                {
-                    "event_negocio": "horas_extras_70",
-                    "rubrica_saida": "201",
-                }
-            ],
+            "event_mappings": [],
             "employee_mappings": [
                 {
                     "source_employee_key": "ADILSON RAFAEL DE SOUSA",
@@ -874,6 +904,7 @@ def test_dashboard_resolves_employee_by_name_in_position_profile_flow(tmp_path: 
         config_resolver=ConfigResolver(registry_root=tmp_path / "master", legacy_root=configs_root),
         column_profile_root=profile_root,
         employee_registry_root=tmp_path / "employees",
+        rubric_catalog_root=rubric_catalog_root,
         selected_company_code="755",
         selected_company_name="GUSTAVO LOPES LACERDA",
         selected_competence="04/2026",
@@ -883,6 +914,89 @@ def test_dashboard_resolves_employee_by_name_in_position_profile_flow(tmp_path: 
     assert result.summary.serialized_line_count == 1
     assert result.validation_payload["execution"]["status"] == "success"
     assert normalization_payload["manifest"]["counts"]["employee_rows_written"] == 1
+
+
+def test_dashboard_uses_direct_positional_rubric_without_canonical_column_map(tmp_path: Path) -> None:
+    workbook_path = _write_position_profile_workbook(tmp_path / "fechamento-gustavo-rubrica.xlsx", header="QUEBRA DE CAIXA")
+    workbook = load_workbook(workbook_path)
+    workbook.active["T3"] = "100,00"
+    workbook.save(workbook_path)
+    profile_root = tmp_path / "profiles"
+    save_column_mapping_profile(
+        CompanyColumnMappingProfile(
+            company_code="755",
+            company_name="GUSTAVO LOPES LACERDA",
+            default_process="11",
+            mappings=[
+                ColumnMappingRule(
+                    sheet_name="abril",
+                    header_row=2,
+                    data_start_row=3,
+                    employee_code_column="A",
+                    employee_name_column="B",
+                    value_column="T",
+                    expected_header="QUEBRA DE CAIXA",
+                    enabled=True,
+                    rubrica_target="8907",
+                    value_kind=ColumnValueKind.MONETARY,
+                    nature="provento",
+                    generation_mode=ColumnGenerationMode.SINGLE_LINE,
+                    ignore_zero=True,
+                    ignore_text=True,
+                    status="active",
+                )
+            ],
+        ),
+        root=profile_root,
+    )
+    rubric_catalog_root = tmp_path / "rubrics"
+    _write_position_rubric_catalog(
+        rubric_catalog_root,
+        [
+            CompanyRubricRecord(
+                rubric_code="8907",
+                description="QUEBRA DE CAIXA",
+                canonical_event="8907",
+                value_kind="monetario",
+                nature="provento",
+                source="test",
+            )
+        ],
+    )
+    configs_root = tmp_path / "configs"
+    _write_internal_config(
+        configs_root,
+        company_code="755",
+        file_name="04-2026.json",
+        competence="04/2026",
+        payload_override={
+            "company_name": "GUSTAVO LOPES LACERDA",
+            "event_mappings": [],
+            "employee_mappings": [
+                {
+                    "source_employee_key": "304",
+                    "source_employee_name": "ADILSON RAFAEL DE SOUSA",
+                    "domain_registration": "304",
+                }
+            ],
+        },
+    )
+    paths = create_dashboard_run_from_paths(workbook_path, runs_root=tmp_path / "runs")
+
+    result = run_dashboard_analysis(
+        paths,
+        config_resolver=ConfigResolver(registry_root=tmp_path / "master", legacy_root=configs_root),
+        column_profile_root=profile_root,
+        rubric_catalog_root=rubric_catalog_root,
+        selected_company_code="755",
+        selected_company_name="GUSTAVO LOPES LACERDA",
+        selected_competence="042026",
+    )
+
+    mapped_payload = json.loads(paths.mapped_artifact_path.read_text(encoding="utf-8"))
+    assert result.summary.serialized_line_count == 1
+    assert mapped_payload["mapped_movements"][0]["event_name"] == "8907"
+    assert mapped_payload["mapped_movements"][0]["output_rubric"] == "8907"
 
 
 def test_dashboard_blocks_monthly_layout_when_column_profile_is_missing(tmp_path: Path) -> None:

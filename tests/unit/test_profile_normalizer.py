@@ -16,6 +16,11 @@ from dashboard.company_employee_registry import (
     CompanyEmployeeRegistry,
     save_company_employee_registry,
 )
+from dashboard.company_rubric_catalog import (
+    CompanyRubricCatalog,
+    CompanyRubricRecord,
+    save_company_rubric_catalog,
+)
 from dashboard.profile_normalizer import (
     build_canonical_workbook_from_column_profile,
     inspect_workbook_with_position_profile,
@@ -438,9 +443,33 @@ def _write_active_registry(root: Path, employees: list[CompanyEmployeeRecord]) -
     )
 
 
+def _write_active_rubric_catalog(root: Path, rubrics: list[CompanyRubricRecord]) -> None:
+    save_company_rubric_catalog(
+        CompanyRubricCatalog(
+            company_code="755",
+            company_name="GUSTAVO LOPES LACERDA",
+            rubrics=rubrics,
+        ),
+        root=root,
+    )
+
+
 def test_position_profile_validates_expected_header_and_generates_rubric_column(tmp_path: Path) -> None:
     workbook_path = tmp_path / "fechamento.xlsx"
     _build_position_workbook().save(workbook_path)
+    _write_active_rubric_catalog(
+        tmp_path / "rubrics",
+        [
+            CompanyRubricRecord(
+                rubric_code="201",
+                description="HORA 50%",
+                canonical_event="horas_extras_70",
+                value_kind="horas",
+                nature="provento",
+                source="test",
+            )
+        ],
+    )
     profile = _build_position_profile()
     inspection = inspect_workbook_with_position_profile(
         workbook_path,
@@ -455,12 +484,15 @@ def test_position_profile_validates_expected_header_and_generates_rubric_column(
         inspection=inspection,
         profile=profile,
         employee_registry_root=tmp_path / "employees",
+        rubric_catalog_root=tmp_path / "rubrics",
     )
 
     assert inspection.columns[0].column_letter == "T"
     assert manifest["counts"]["generated_movements"] == 1
     assert normalized["FUNCIONARIOS"]["E2"].value == "304"
-    assert normalized["LANCAMENTOS_FACEIS"]["V2"].value == "01:30"
+    assert normalized["MOVIMENTOS_CANONICOS"]["I2"].value == "201"
+    assert normalized["MOVIMENTOS_CANONICOS"]["J2"].value == "201"
+    assert normalized["MOVIMENTOS_CANONICOS"]["N2"].value == "01:30"
 
 
 def test_position_profile_blocks_when_expected_header_differs(tmp_path: Path) -> None:
@@ -500,39 +532,15 @@ def test_position_profile_resolves_employee_by_name_when_registration_is_blank(t
             )
         ],
     )
-    profile = _build_position_profile()
-    inspection = inspect_workbook_with_position_profile(
-        workbook_path,
-        profile=profile,
-        selected_company_code="755",
-        selected_company_name="GUSTAVO LOPES LACERDA",
-        selected_competence="04/2026",
-    )
-
-    normalized, _manifest = build_canonical_workbook_from_column_profile(
-        load_workbook(workbook_path),
-        inspection=inspection,
-        profile=profile,
-        employee_registry_root=tmp_path / "employees",
-    )
-
-    assert normalized["FUNCIONARIOS"]["B2"].value == "ADILSON RAFAEL DE SOUSA"
-    assert normalized["FUNCIONARIOS"]["E2"].value == "304"
-    assert normalized["LANCAMENTOS_FACEIS"]["D2"].value == "304"
-
-
-def test_position_profile_resolves_employee_by_name_when_registration_column_has_text(tmp_path: Path) -> None:
-    workbook_path = tmp_path / "fechamento.xlsx"
-    _build_position_workbook(
-        employee_code_value="ADILSON RAFAEL DE SOUSA",
-        employee_name_value=" Adilson  Rafael de Sousa ",
-    ).save(workbook_path)
-    _write_active_registry(
-        tmp_path / "employees",
+    _write_active_rubric_catalog(
+        tmp_path / "rubrics",
         [
-            CompanyEmployeeRecord(
-                employee_name="ADILSON RAFAEL DE SOUSA",
-                domain_registration="304",
+            CompanyRubricRecord(
+                rubric_code="201",
+                description="HORA 50%",
+                canonical_event="horas_extras_70",
+                value_kind="horas",
+                nature="provento",
                 source="test",
             )
         ],
@@ -551,6 +559,58 @@ def test_position_profile_resolves_employee_by_name_when_registration_column_has
         inspection=inspection,
         profile=profile,
         employee_registry_root=tmp_path / "employees",
+        rubric_catalog_root=tmp_path / "rubrics",
+    )
+
+    assert normalized["FUNCIONARIOS"]["B2"].value == "ADILSON RAFAEL DE SOUSA"
+    assert normalized["FUNCIONARIOS"]["E2"].value == "304"
+    assert normalized["MOVIMENTOS_CANONICOS"]["H2"].value == "304"
+
+
+def test_position_profile_resolves_employee_by_name_when_registration_column_has_text(tmp_path: Path) -> None:
+    workbook_path = tmp_path / "fechamento.xlsx"
+    _build_position_workbook(
+        employee_code_value="ADILSON RAFAEL DE SOUSA",
+        employee_name_value=" Adilson  Rafael de Sousa ",
+    ).save(workbook_path)
+    _write_active_registry(
+        tmp_path / "employees",
+        [
+            CompanyEmployeeRecord(
+                employee_name="ADILSON RAFAEL DE SOUSA",
+                domain_registration="304",
+                source="test",
+            )
+        ],
+    )
+    _write_active_rubric_catalog(
+        tmp_path / "rubrics",
+        [
+            CompanyRubricRecord(
+                rubric_code="201",
+                description="HORA 50%",
+                canonical_event="horas_extras_70",
+                value_kind="horas",
+                nature="provento",
+                source="test",
+            )
+        ],
+    )
+    profile = _build_position_profile()
+    inspection = inspect_workbook_with_position_profile(
+        workbook_path,
+        profile=profile,
+        selected_company_code="755",
+        selected_company_name="GUSTAVO LOPES LACERDA",
+        selected_competence="04/2026",
+    )
+
+    normalized, _manifest = build_canonical_workbook_from_column_profile(
+        load_workbook(workbook_path),
+        inspection=inspection,
+        profile=profile,
+        employee_registry_root=tmp_path / "employees",
+        rubric_catalog_root=tmp_path / "rubrics",
     )
 
     assert normalized["FUNCIONARIOS"]["E2"].value == "304"
@@ -570,6 +630,19 @@ def test_position_profile_blocks_when_employee_name_is_not_found(tmp_path: Path)
             )
         ],
     )
+    _write_active_rubric_catalog(
+        tmp_path / "rubrics",
+        [
+            CompanyRubricRecord(
+                rubric_code="201",
+                description="HORA 50%",
+                canonical_event="horas_extras_70",
+                value_kind="horas",
+                nature="provento",
+                source="test",
+            )
+        ],
+    )
     profile = _build_position_profile()
     inspection = inspect_workbook_with_position_profile(
         workbook_path,
@@ -585,6 +658,7 @@ def test_position_profile_blocks_when_employee_name_is_not_found(tmp_path: Path)
             inspection=inspection,
             profile=profile,
             employee_registry_root=tmp_path / "employees",
+            rubric_catalog_root=tmp_path / "rubrics",
         )
 
     assert exc_info.value.code == "funcionario_nome_nao_encontrado"
@@ -610,6 +684,19 @@ def test_position_profile_blocks_when_employee_name_is_ambiguous(tmp_path: Path)
             ),
         ],
     )
+    _write_active_rubric_catalog(
+        tmp_path / "rubrics",
+        [
+            CompanyRubricRecord(
+                rubric_code="201",
+                description="HORA 50%",
+                canonical_event="horas_extras_70",
+                value_kind="horas",
+                nature="provento",
+                source="test",
+            )
+        ],
+    )
     profile = _build_position_profile()
     inspection = inspect_workbook_with_position_profile(
         workbook_path,
@@ -625,6 +712,7 @@ def test_position_profile_blocks_when_employee_name_is_ambiguous(tmp_path: Path)
             inspection=inspection,
             profile=profile,
             employee_registry_root=tmp_path / "employees",
+            rubric_catalog_root=tmp_path / "rubrics",
         )
 
     assert exc_info.value.code == "funcionario_nome_ambiguo"
@@ -671,7 +759,273 @@ def test_position_profile_blocks_without_valid_registration_and_without_name_col
             inspection=inspection,
             profile=profile,
             employee_registry_root=tmp_path / "employees",
+            rubric_catalog_root=tmp_path / "rubrics",
         )
 
     assert exc_info.value.code == "perfil_colunas_sem_nome_para_resolver_funcionario"
     assert "Linha sem matricula valida e sem coluna de nome configurada no perfil." in str(exc_info.value)
+
+
+def test_position_profile_generates_direct_rubric_without_canonical_column_map(tmp_path: Path) -> None:
+    workbook_path = tmp_path / "fechamento.xlsx"
+    workbook = _build_position_workbook(header="QUEBRA DE CAIXA")
+    workbook.active["T3"] = "100,00"
+    workbook.save(workbook_path)
+    profile = CompanyColumnMappingProfile(
+        company_code="755",
+        company_name="GUSTAVO LOPES LACERDA",
+        default_process="11",
+        mappings=[
+            ColumnMappingRule(
+                sheet_name="abril",
+                header_row=2,
+                data_start_row=3,
+                employee_code_column="A",
+                employee_name_column="B",
+                value_column="T",
+                expected_header="QUEBRA DE CAIXA",
+                enabled=True,
+                rubrica_target="8907",
+                value_kind="monetario",
+                nature="provento",
+                generation_mode="single_line",
+                ignore_zero=True,
+                ignore_text=True,
+                status="active",
+            )
+        ],
+    )
+    _write_active_rubric_catalog(
+        tmp_path / "rubrics",
+        [
+            CompanyRubricRecord(
+                rubric_code="8907",
+                description="QUEBRA DE CAIXA",
+                canonical_event="8907",
+                value_kind="monetario",
+                nature="provento",
+                source="test",
+            )
+        ],
+    )
+    inspection = inspect_workbook_with_position_profile(
+        workbook_path,
+        profile=profile,
+        selected_company_code="755",
+        selected_company_name="GUSTAVO LOPES LACERDA",
+        selected_competence="04/2026",
+    )
+
+    normalized, _manifest = build_canonical_workbook_from_column_profile(
+        load_workbook(workbook_path),
+        inspection=inspection,
+        profile=profile,
+        employee_registry_root=tmp_path / "employees",
+        rubric_catalog_root=tmp_path / "rubrics",
+    )
+    result = ingest_template_v1_workbook(normalized)
+
+    assert len(result.movements) == 1
+    assert result.movements[0].event_name == "8907"
+    assert result.movements[0].informed_rubric == "8907"
+    assert result.movements[0].output_rubric == "8907"
+    assert result.movements[0].amount_for_sheet() == "100"
+
+
+def test_position_profile_blocks_when_direct_rubric_is_missing_from_active_catalog(tmp_path: Path) -> None:
+    workbook_path = tmp_path / "fechamento.xlsx"
+    workbook = _build_position_workbook(header="QUEBRA DE CAIXA")
+    workbook.active["T3"] = "100,00"
+    workbook.save(workbook_path)
+    profile = CompanyColumnMappingProfile(
+        company_code="755",
+        company_name="GUSTAVO LOPES LACERDA",
+        default_process="11",
+        mappings=[
+            ColumnMappingRule(
+                sheet_name="abril",
+                header_row=2,
+                data_start_row=3,
+                employee_code_column="A",
+                employee_name_column="B",
+                value_column="T",
+                expected_header="QUEBRA DE CAIXA",
+                enabled=True,
+                rubrica_target="8907",
+                value_kind="monetario",
+                nature="provento",
+                generation_mode="single_line",
+                ignore_zero=True,
+                ignore_text=True,
+                status="active",
+            )
+        ],
+    )
+    inspection = inspect_workbook_with_position_profile(
+        workbook_path,
+        profile=profile,
+        selected_company_code="755",
+        selected_company_name="GUSTAVO LOPES LACERDA",
+        selected_competence="04/2026",
+    )
+
+    with pytest.raises(InputLayoutNormalizationError) as exc_info:
+        build_canonical_workbook_from_column_profile(
+            load_workbook(workbook_path),
+            inspection=inspection,
+            profile=profile,
+            employee_registry_root=tmp_path / "employees",
+            rubric_catalog_root=tmp_path / "rubrics",
+        )
+
+    assert exc_info.value.code == "rubrica_perfil_inexistente_no_catalogo"
+    assert "Rubrica 8907 nao existe no catalogo ativo da empresa." in str(exc_info.value)
+
+
+def test_position_profile_multi_line_generates_direct_rubrics_without_canonical_column_map(tmp_path: Path) -> None:
+    workbook_path = tmp_path / "fechamento.xlsx"
+    workbook = _build_position_workbook(header="FALTAS INJUSTIFICADAS")
+    workbook.active["T3"] = "2"
+    workbook.save(workbook_path)
+    profile = CompanyColumnMappingProfile(
+        company_code="755",
+        company_name="GUSTAVO LOPES LACERDA",
+        default_process="11",
+        mappings=[
+            ColumnMappingRule(
+                sheet_name="abril",
+                header_row=2,
+                data_start_row=3,
+                employee_code_column="A",
+                employee_name_column="B",
+                value_column="T",
+                expected_header="FALTAS INJUSTIFICADAS",
+                enabled=True,
+                rubricas_target=["8792", "8794"],
+                value_kind="quantidade",
+                nature="desconto",
+                generation_mode="multi_line",
+                ignore_zero=True,
+                ignore_text=True,
+                status="active",
+            )
+        ],
+    )
+    _write_active_rubric_catalog(
+        tmp_path / "rubrics",
+        [
+            CompanyRubricRecord(
+                rubric_code="8792",
+                description="DIAS FALTAS",
+                canonical_event="8792",
+                value_kind="quantidade",
+                nature="desconto",
+                source="test",
+            ),
+            CompanyRubricRecord(
+                rubric_code="8794",
+                description="DIAS FALTAS DSR",
+                canonical_event="8794",
+                value_kind="quantidade",
+                nature="desconto",
+                source="test",
+            ),
+        ],
+    )
+    inspection = inspect_workbook_with_position_profile(
+        workbook_path,
+        profile=profile,
+        selected_company_code="755",
+        selected_company_name="GUSTAVO LOPES LACERDA",
+        selected_competence="04/2026",
+    )
+
+    normalized, _manifest = build_canonical_workbook_from_column_profile(
+        load_workbook(workbook_path),
+        inspection=inspection,
+        profile=profile,
+        employee_registry_root=tmp_path / "employees",
+        rubric_catalog_root=tmp_path / "rubrics",
+    )
+    result = ingest_template_v1_workbook(normalized)
+
+    assert [(movement.event_name, movement.output_rubric) for movement in result.movements] == [
+        ("8792", "8792"),
+        ("8794", "8794"),
+    ]
+
+
+def test_position_profile_blocks_when_single_line_rule_has_no_rubrica_target(tmp_path: Path) -> None:
+    workbook_path = tmp_path / "fechamento.xlsx"
+    _build_position_workbook().save(workbook_path)
+    invalid_rule = ColumnMappingRule.model_construct(
+        column_name=None,
+        column_key=None,
+        sheet_name="abril",
+        header_row=2,
+        data_start_row=3,
+        employee_code_column="A",
+        employee_name_column="B",
+        value_column="T",
+        expected_header="HORA 50%",
+        enabled=True,
+        rubrica_target=None,
+        rubricas_target=[],
+        value_kind=ColumnValueKind.HOURS,
+        nature="provento",
+        generation_mode=ColumnGenerationMode.SINGLE_LINE,
+        ignore_zero=True,
+        ignore_text=True,
+        status="active",
+        notes=None,
+    )
+    profile = CompanyColumnMappingProfile.model_construct(
+        company_code="755",
+        company_name="GUSTAVO LOPES LACERDA",
+        default_process="11",
+        mappings=[invalid_rule],
+        profile_version="column-mapping-v1",
+        notes=None,
+    )
+    inspection = inspect_workbook_with_position_profile(
+        workbook_path,
+        profile=CompanyColumnMappingProfile(
+            company_code="755",
+            company_name="GUSTAVO LOPES LACERDA",
+            default_process="11",
+            mappings=[
+                ColumnMappingRule(
+                    sheet_name="abril",
+                    header_row=2,
+                    data_start_row=3,
+                    employee_code_column="A",
+                    employee_name_column="B",
+                    value_column="T",
+                    expected_header="HORA 50%",
+                    enabled=True,
+                    rubrica_target="201",
+                    value_kind="horas",
+                    nature="provento",
+                    generation_mode="single_line",
+                    ignore_zero=True,
+                    ignore_text=True,
+                    status="active",
+                )
+            ],
+        ),
+        selected_company_code="755",
+        selected_company_name="GUSTAVO LOPES LACERDA",
+        selected_competence="04/2026",
+    )
+
+    with pytest.raises(InputLayoutNormalizationError) as exc_info:
+        build_canonical_workbook_from_column_profile(
+            load_workbook(workbook_path),
+            inspection=inspection,
+            profile=profile,
+            employee_registry_root=tmp_path / "employees",
+            rubric_catalog_root=tmp_path / "rubrics",
+        )
+
+    assert exc_info.value.code == "perfil_coluna_sem_rubrica_unica"
+    assert "Regra de perfil da coluna T nao possui rubrica unica configurada." in str(exc_info.value)

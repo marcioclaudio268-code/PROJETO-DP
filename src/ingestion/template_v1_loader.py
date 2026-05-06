@@ -121,7 +121,7 @@ def ingest_template_v1_workbook(workbook: Workbook) -> IngestionResult:
     parameters = _load_parameters(workbook["PARAMETROS"])
     employee_registry = _load_employee_registry(workbook[FUNCIONARIOS_SHEET_NAME])
     pendings: list[PendingItem] = []
-    movements: list[CanonicalMovement] = []
+    movements: list[CanonicalMovement] = _load_prefilled_movements(workbook["MOVIMENTOS_CANONICOS"])
     movement_counter = 1
     pending_counter = 1
 
@@ -670,6 +670,81 @@ def _build_movement(
     )
 
 
+def _load_prefilled_movements(worksheet: Worksheet) -> list[CanonicalMovement]:
+    headers = _read_header_map(worksheet, MOVIMENTOS_CANONICOS_HEADERS)
+    movements: list[CanonicalMovement] = []
+    for row_number in range(2, worksheet.max_row + 1):
+        row = {
+            header: worksheet.cell(row=row_number, column=column_index).value
+            for header, column_index in headers.items()
+        }
+        if _row_is_completely_empty(row):
+            continue
+
+        movement_id = normalized_optional_text(row["id_movimento"])
+        company_code = normalized_optional_text(row["empresa_codigo"])
+        competence = normalized_optional_text(row["competencia"])
+        payroll_type = normalized_optional_text(row["tipo_folha"])
+        default_process = normalized_optional_text(row["processo_padrao"])
+        event_name = normalized_optional_text(row["evento_negocio"])
+        raw_value_type = normalized_optional_text(row["tipo_valor"])
+        source_sheet = normalized_optional_text(row["origem_aba"])
+        source_cell = normalized_optional_text(row["origem_celula"])
+
+        if not all((movement_id, company_code, competence, payroll_type, default_process, event_name, raw_value_type, source_sheet, source_cell)):
+            continue
+
+        normalized_value_type = "dias" if raw_value_type == "quantidade" else raw_value_type
+        value_type = ValueType(normalized_value_type)
+        if value_type == ValueType.MONETARY:
+            quantity = None
+            hours = None
+            amount = normalize_money_brl(row["valor"])
+        elif value_type == ValueType.HOURS:
+            quantity = None
+            hours = normalize_hours_hhmm(row["quantidade"])
+            amount = None
+        else:
+            quantity = normalize_quantity(row["quantidade"])
+            hours = None
+            amount = None
+
+        pending_codes = _split_sheet_list(row["codigo_pendencia"])
+        pending_messages = _split_sheet_messages(row["mensagem_pendencia"])
+        movements.append(
+            CanonicalMovement(
+                movement_id=movement_id,
+                company_code=company_code,
+                competence=competence,
+                payroll_type=payroll_type,
+                default_process=default_process,
+                employee_key=normalized_optional_text(row["chave_colaborador"]),
+                employee_name=normalized_optional_text(row["nome_colaborador"]),
+                domain_registration=normalized_optional_text(row["matricula_dominio"]),
+                event_name=event_name,
+                value_type=value_type,
+                quantity=quantity,
+                hours=hours,
+                amount=amount,
+                source=SourceRef(
+                    source_sheet,
+                    row_number,
+                    source_cell,
+                    normalized_optional_text(row["origem_coluna"]),
+                ),
+                blocked=(normalized_optional_text(row["pendencia"]) or "").lower() == "sim",
+                pending_codes=pending_codes,
+                pending_messages=pending_messages,
+                observation=normalized_optional_text(row["observacao"]),
+                informed_rubric=normalized_optional_text(row["rubrica_informada"]),
+                output_rubric=normalized_optional_text(row["rubrica_saida"]),
+                event_nature=normalized_optional_text(row["natureza"]),
+                serialization_unit=normalized_optional_text(row["unidade_serializacao"]),
+            )
+        )
+    return movements
+
+
 def _compose_observation(row_values: dict[str, object]) -> str | None:
     parts: list[str] = []
     general = normalized_optional_text(row_values.get("observacao_geral"))
@@ -902,3 +977,17 @@ def _column_letter_from_header(header_map: dict[str, int], header_name: str) -> 
         quotient, remainder = divmod(quotient - 1, 26)
         letters = chr(65 + remainder) + letters
     return letters
+
+
+def _split_sheet_list(value: object) -> tuple[str, ...]:
+    text = normalized_optional_text(value)
+    if text is None:
+        return ()
+    return tuple(part.strip() for part in text.split(";") if part.strip())
+
+
+def _split_sheet_messages(value: object) -> tuple[str, ...]:
+    text = normalized_optional_text(value)
+    if text is None:
+        return ()
+    return tuple(part.strip() for part in text.split("|") if part.strip())

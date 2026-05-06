@@ -46,6 +46,7 @@ from .company_employee_registry import (
     find_employee_by_name_or_alias,
     load_company_employee_registry,
 )
+from .company_rubric_catalog import find_rubric_by_code, load_company_rubric_catalog
 
 
 RUBRIC_TO_CANONICAL_EVENT_COLUMN = {
@@ -107,12 +108,20 @@ class _ParsedProfileValue:
     is_zero: bool
 
 
+@dataclass(frozen=True, slots=True)
+class _ResolvedProfileRubric:
+    rubric_code: str
+    event_name: str
+    nature: str
+
+
 def normalize_workbook_with_column_profile(
     input_path: str | Path,
     *,
     inspection: InputWorkbookInspection,
     profile: CompanyColumnMappingProfile,
     employee_registry_root: str | Path | None = None,
+    rubric_catalog_root: str | Path | None = None,
     output_path: str | Path | None = None,
     report_path: str | Path | None = None,
     max_data_rows: int = MAX_DATA_ROWS,
@@ -126,6 +135,7 @@ def normalize_workbook_with_column_profile(
         inspection=inspection,
         profile=profile,
         employee_registry_root=employee_registry_root,
+        rubric_catalog_root=rubric_catalog_root,
         max_data_rows=max_data_rows,
     )
 
@@ -163,6 +173,7 @@ def build_canonical_workbook_from_column_profile(
     inspection: InputWorkbookInspection,
     profile: CompanyColumnMappingProfile,
     employee_registry_root: str | Path | None = None,
+    rubric_catalog_root: str | Path | None = None,
     max_data_rows: int = MAX_DATA_ROWS,
 ) -> tuple[Workbook, dict]:
     if inspection.layout_id == "template_v1_canonico":
@@ -192,11 +203,17 @@ def build_canonical_workbook_from_column_profile(
 
     funcionarios = normalized_workbook["FUNCIONARIOS"]
     lancamentos = normalized_workbook["LANCAMENTOS_FACEIS"]
+    movimentos = normalized_workbook["MOVIMENTOS_CANONICOS"]
     column_mappings = _match_profile_mappings_to_columns(profile, inspection.columns)
     employee_registry = load_company_employee_registry(
         profile.company_code,
         company_name=profile.company_name,
         root=employee_registry_root,
+    )
+    rubric_catalog = load_company_rubric_catalog(
+        profile.company_code,
+        company_name=profile.company_name,
+        root=rubric_catalog_root,
     )
     employee_code_column_index = _profile_employee_code_column_index(profile)
     employee_name_column_index = _profile_employee_name_column_index(profile)
@@ -297,29 +314,58 @@ def build_canonical_workbook_from_column_profile(
                 continue
 
             source_cells_converted += 1
-            for target_rubric in mapping.target_rubrics:
-                event_column = _canonical_event_column_for_rubric(
-                    target_rubric,
-                    source=f"{selected_sheet.title}!{column.column_letter}{source_row}",
-                )
+            target_rubrics = _resolve_profile_target_rubrics(
+                mapping,
+                source=f"{selected_sheet.title}!{column.column_letter}{source_row}",
+                rubric_catalog=rubric_catalog,
+            )
+            for resolved_rubric in target_rubrics:
                 canonical_rows_written += 1
                 generated_movements += 1
-                _write_launch_row(
-                    lancamentos,
-                    canonical_rows_written + 1,
-                    event_column=event_column,
-                    value=parsed_value.value_for_workbook,
-                    employee_key=employee_key,
-                    employee_name=employee_name,
-                    domain_registration=domain_registration,
-                    observation=_build_launch_observation(
-                        inspection=inspection,
-                        source_row=source_row,
-                        source_column=column,
-                        target_rubric=target_rubric,
-                        profile=profile,
-                    ),
+                observation = _build_launch_observation(
+                    inspection=inspection,
+                    source_row=source_row,
+                    source_column=column,
+                    target_rubric=resolved_rubric.rubric_code,
+                    profile=profile,
                 )
+                if mapping.value_column is not None:
+                    _write_direct_movement_row(
+                        movimentos,
+                        canonical_rows_written + 1,
+                        movement_id=f"profile-mov-{canonical_rows_written:05d}",
+                        company_code=inspection.company_code,
+                        competence=inspection.competence,
+                        default_process=profile.default_process or "11",
+                        employee_key=employee_key,
+                        employee_name=employee_name,
+                        domain_registration=domain_registration,
+                        event_name=resolved_rubric.event_name,
+                        informed_rubric=resolved_rubric.rubric_code,
+                        output_rubric=resolved_rubric.rubric_code,
+                        event_nature=resolved_rubric.nature,
+                        value_kind=mapping.value_kind,
+                        value=parsed_value.value_for_workbook,
+                        source_sheet=selected_sheet.title,
+                        source_cell=f"{column.column_letter}{source_row}",
+                        source_column_name=column.column_name,
+                        observation=observation,
+                    )
+                else:
+                    event_column = _canonical_event_column_for_rubric(
+                        resolved_rubric.rubric_code,
+                        source=f"{selected_sheet.title}!{column.column_letter}{source_row}",
+                    )
+                    _write_launch_row(
+                        lancamentos,
+                        canonical_rows_written + 1,
+                        event_column=event_column,
+                        value=parsed_value.value_for_workbook,
+                        employee_key=employee_key,
+                        employee_name=employee_name,
+                        domain_registration=domain_registration,
+                        observation=observation,
+                    )
 
     manifest = {
         "layout_id": inspection.layout_id,
@@ -704,6 +750,56 @@ def _normalize_profile_hours(value: object) -> NormalizedHours:
     return normalize_hours_hhmm(value)
 
 
+def _resolve_profile_target_rubrics(
+    mapping: ColumnMappingRule,
+    *,
+    source: str,
+    rubric_catalog,
+) -> tuple[_ResolvedProfileRubric, ...]:
+    if mapping.generation_mode == ColumnGenerationMode.SINGLE_LINE and not mapping.rubrica_target:
+        raise InputLayoutNormalizationError(
+            "perfil_coluna_sem_rubrica_unica",
+            f"Regra de perfil da coluna {mapping.value_column or mapping.source_column_id} nao possui rubrica unica configurada.",
+            source=source,
+        )
+    if mapping.generation_mode == ColumnGenerationMode.MULTI_LINE and len(mapping.rubricas_target) == 0:
+        raise InputLayoutNormalizationError(
+            "perfil_coluna_sem_rubricas_multiplas",
+            f"Regra de perfil da coluna {mapping.value_column or mapping.source_column_id} nao possui rubricas multiplas configuradas.",
+            source=source,
+        )
+
+    resolved: list[_ResolvedProfileRubric] = []
+    if mapping.value_column is None:
+        for target_rubric in mapping.target_rubrics:
+            resolved.append(
+                _ResolvedProfileRubric(
+                    rubric_code=target_rubric,
+                    event_name=target_rubric,
+                    nature=mapping.nature.value,
+                )
+            )
+        return tuple(resolved)
+
+    for target_rubric in mapping.target_rubrics:
+        matches = find_rubric_by_code(rubric_catalog, target_rubric, active_only=True)
+        if not matches:
+            raise InputLayoutNormalizationError(
+                "rubrica_perfil_inexistente_no_catalogo",
+                f"Rubrica {target_rubric} nao existe no catalogo ativo da empresa.",
+                source=source,
+            )
+        rubric = matches[0]
+        resolved.append(
+            _ResolvedProfileRubric(
+                rubric_code=rubric.rubric_code,
+                event_name=rubric.rubric_code,
+                nature=rubric.nature.value,
+            )
+        )
+    return tuple(resolved)
+
+
 def _canonical_event_column_for_rubric(target_rubric: str, *, source: str) -> str:
     normalized_rubric = str(target_rubric).strip()
     event_name = RUBRIC_TO_CANONICAL_EVENT_COLUMN.get(normalized_rubric)
@@ -785,6 +881,57 @@ def _write_launch_row(
     worksheet[f"D{row_number}"] = domain_registration
     worksheet[f"F{row_number}"] = observation
     worksheet[f"{event_column}{row_number}"] = value
+
+
+def _write_direct_movement_row(
+    worksheet: Worksheet,
+    row_number: int,
+    *,
+    movement_id: str,
+    company_code: str,
+    competence: str,
+    default_process: str,
+    employee_key: str | None,
+    employee_name: str | None,
+    domain_registration: str | None,
+    event_name: str,
+    informed_rubric: str,
+    output_rubric: str,
+    event_nature: str,
+    value_kind: ColumnValueKind,
+    value: str,
+    source_sheet: str,
+    source_cell: str,
+    source_column_name: str,
+    observation: str,
+) -> None:
+    worksheet[f"A{row_number}"] = movement_id
+    worksheet[f"B{row_number}"] = company_code
+    worksheet[f"C{row_number}"] = competence
+    worksheet[f"D{row_number}"] = DEFAULT_CANONICAL_PAYROLL_TYPE
+    worksheet[f"E{row_number}"] = default_process
+    worksheet[f"F{row_number}"] = employee_key
+    worksheet[f"G{row_number}"] = employee_name
+    worksheet[f"H{row_number}"] = domain_registration
+    worksheet[f"I{row_number}"] = event_name
+    worksheet[f"J{row_number}"] = informed_rubric
+    worksheet[f"K{row_number}"] = output_rubric
+    worksheet[f"L{row_number}"] = event_nature
+    worksheet[f"M{row_number}"] = "dias" if value_kind == ColumnValueKind.QUANTITY else value_kind.value
+    if value_kind == ColumnValueKind.MONETARY:
+        worksheet[f"O{row_number}"] = value
+        worksheet[f"P{row_number}"] = "BRL"
+    elif value_kind == ColumnValueKind.HOURS:
+        worksheet[f"N{row_number}"] = value
+        worksheet[f"P{row_number}"] = "HH:MM"
+    else:
+        worksheet[f"N{row_number}"] = value
+        worksheet[f"P{row_number}"] = "DIAS"
+    worksheet[f"Q{row_number}"] = source_sheet
+    worksheet[f"R{row_number}"] = source_cell
+    worksheet[f"S{row_number}"] = source_column_name
+    worksheet[f"T{row_number}"] = "nao"
+    worksheet[f"W{row_number}"] = observation
 
 
 def _build_launch_observation(
