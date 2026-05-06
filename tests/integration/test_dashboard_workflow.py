@@ -164,7 +164,13 @@ def _write_position_column_profile(root: Path) -> Path:
     return save_column_mapping_profile(profile, root=root)
 
 
-def _write_position_name_resolution_profile(root: Path) -> Path:
+def _write_position_name_resolution_profile(
+    root: Path,
+    *,
+    row_control_column: str | None = None,
+    stop_row_tokens: list[str] | None = None,
+    ignore_row_tokens: list[str] | None = None,
+) -> Path:
     profile = CompanyColumnMappingProfile(
         company_code="755",
         company_name="GUSTAVO LOPES LACERDA",
@@ -175,6 +181,9 @@ def _write_position_name_resolution_profile(root: Path) -> Path:
                 header_row=2,
                 data_start_row=3,
                 employee_name_column="A",
+                row_control_column=row_control_column,
+                stop_row_tokens=stop_row_tokens or [],
+                ignore_row_tokens=ignore_row_tokens or [],
                 value_column="T",
                 expected_header="HORA 50%",
                 enabled=True,
@@ -217,14 +226,20 @@ def _write_position_profile_workbook(path: Path, *, header: str = "HORA 50%") ->
     return path
 
 
-def _write_position_name_profile_workbook(path: Path) -> Path:
+def _write_position_name_profile_workbook(
+    path: Path,
+    *,
+    rows: list[tuple[object, object]] | None = None,
+) -> Path:
     workbook = Workbook()
     worksheet = workbook.active
     worksheet.title = "ABRIL 26"
     worksheet["A2"] = "FUNCIONARIO"
     worksheet["T2"] = "HORA 50%"
-    worksheet["A3"] = "ADILSON RAFAEL DE SOUSA"
-    worksheet["T3"] = "01:30"
+    source_rows = rows or [("ADILSON RAFAEL DE SOUSA", "01:30")]
+    for row_index, (employee_name, value) in enumerate(source_rows, start=3):
+        worksheet.cell(row=row_index, column=1, value=employee_name)
+        worksheet.cell(row=row_index, column=20, value=value)
     path.parent.mkdir(parents=True, exist_ok=True)
     workbook.save(path)
     return path
@@ -1006,6 +1021,85 @@ def test_dashboard_can_associate_missing_employee_name_as_alias_and_reprocess(tm
 
     assert updated.summary.serialized_line_count == 1
     assert not any(item.code == "funcionario_nome_nao_encontrado" for item in updated.pendings)
+
+
+def test_dashboard_stops_position_profile_reading_before_total_control_row(tmp_path: Path) -> None:
+    workbook_path = _write_position_name_profile_workbook(
+        tmp_path / "fechamento-gustavo-total.xlsx",
+        rows=[
+            ("ADILSON RAFAEL DE SOUSA", "01:30"),
+            ("TOTAL", None),
+            ("DANIELA BOTURA", "02:00"),
+        ],
+    )
+    profile_root = tmp_path / "profiles"
+    _write_position_name_resolution_profile(
+        profile_root,
+        row_control_column="A",
+        stop_row_tokens=["TOTAL"],
+    )
+    rubric_catalog_root = tmp_path / "rubrics"
+    _write_position_rubric_catalog(
+        rubric_catalog_root,
+        [
+            CompanyRubricRecord(
+                rubric_code="201",
+                description="HORA 50%",
+                canonical_event="201",
+                value_kind="horas",
+                nature="provento",
+                source="test",
+            )
+        ],
+    )
+    configs_root = tmp_path / "configs"
+    _write_internal_config(
+        configs_root,
+        company_code="755",
+        file_name="04-2026.json",
+        competence="04/2026",
+        payload_override={
+            "company_name": "GUSTAVO LOPES LACERDA",
+            "event_mappings": [],
+            "employee_mappings": [
+                {
+                    "source_employee_key": "ADILSON RAFAEL DE SOUSA",
+                    "source_employee_name": "ADILSON RAFAEL DE SOUSA",
+                    "domain_registration": "304",
+                }
+            ],
+        },
+    )
+    employee_registry_root = tmp_path / "employees"
+    save_company_employee_registry(
+        CompanyEmployeeRegistry(
+            company_code="755",
+            company_name="GUSTAVO LOPES LACERDA",
+            employees=[
+                CompanyEmployeeRecord(
+                    employee_name="ADILSON RAFAEL DE SOUSA",
+                    domain_registration="304",
+                    source="test",
+                )
+            ],
+        ),
+        root=employee_registry_root,
+    )
+    paths = create_dashboard_run_from_paths(workbook_path, runs_root=tmp_path / "runs")
+
+    result = run_dashboard_analysis(
+        paths,
+        config_resolver=ConfigResolver(registry_root=tmp_path / "master", legacy_root=configs_root),
+        column_profile_root=profile_root,
+        employee_registry_root=employee_registry_root,
+        rubric_catalog_root=rubric_catalog_root,
+        selected_company_code="755",
+        selected_company_name="GUSTAVO LOPES LACERDA",
+        selected_competence="04/2026",
+    )
+
+    assert result.summary.serialized_line_count == 1
+    assert not any(item.code == "funcionario_nome_nao_encontrado" and item.found_value == "TOTAL" for item in result.pendings)
 
 
 def test_dashboard_uses_direct_positional_rubric_without_canonical_column_map(tmp_path: Path) -> None:

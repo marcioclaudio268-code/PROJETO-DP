@@ -115,6 +115,13 @@ class _ResolvedProfileRubric:
     nature: str
 
 
+@dataclass(frozen=True, slots=True)
+class _ProfileRowControl:
+    column_index: int
+    ignore_tokens: tuple[str, ...]
+    stop_tokens: tuple[str, ...]
+
+
 def normalize_workbook_with_column_profile(
     input_path: str | Path,
     *,
@@ -217,6 +224,7 @@ def build_canonical_workbook_from_column_profile(
     )
     employee_code_column_index = _profile_employee_code_column_index(profile)
     employee_name_column_index = _profile_employee_name_column_index(profile)
+    row_control = _profile_row_control(profile)
     identity_column = None if employee_code_column_index is not None else _find_domain_registration_column(inspection.columns)
 
     employee_rows_written = 0
@@ -237,6 +245,10 @@ def build_canonical_workbook_from_column_profile(
             for column_index in range(1, selected_sheet.max_column + 1)
         }
         if _row_is_empty(row_values):
+            continue
+        if _should_stop_profile_reading(row_values, row_control):
+            break
+        if _should_ignore_profile_row(row_values, row_control):
             continue
 
         employee_key = _profile_employee_key(
@@ -533,6 +545,33 @@ def _profile_employee_name_column_index(profile: CompanyColumnMappingProfile) ->
         if rule.is_active and rule.employee_name_column:
             return excel_column_to_index(rule.employee_name_column)
     return None
+
+
+def _profile_row_control(profile: CompanyColumnMappingProfile) -> _ProfileRowControl | None:
+    control_column: str | None = None
+    ignore_tokens: list[str] = []
+    stop_tokens: list[str] = []
+    for rule in profile.mappings:
+        if not rule.is_active:
+            continue
+        if rule.row_control_column:
+            if control_column is None:
+                control_column = rule.row_control_column
+            elif control_column != rule.row_control_column:
+                raise InputLayoutNormalizationError(
+                    "perfil_colunas_controle_inconsistente",
+                    "As regras ativas do perfil usam colunas de controle diferentes. Revise o perfil de colunas.",
+                    source=profile.company_code,
+                )
+        ignore_tokens.extend(rule.ignore_row_tokens)
+        stop_tokens.extend(rule.stop_row_tokens)
+    if control_column is None:
+        return None
+    return _ProfileRowControl(
+        column_index=excel_column_to_index(control_column),
+        ignore_tokens=tuple(_unique_tokens(ignore_tokens)),
+        stop_tokens=tuple(_unique_tokens(stop_tokens)),
+    )
 
 
 def _profile_employee_key(
@@ -981,11 +1020,43 @@ def _row_is_empty(row_values: dict[int, object]) -> bool:
     return all(is_empty_value(value) for value in row_values.values())
 
 
+def _should_ignore_profile_row(
+    row_values: dict[int, object],
+    row_control: _ProfileRowControl | None,
+) -> bool:
+    if row_control is None or not row_control.ignore_tokens:
+        return False
+    control_value = _normalize_token(row_values.get(row_control.column_index))
+    return bool(control_value) and control_value in row_control.ignore_tokens
+
+
+def _should_stop_profile_reading(
+    row_values: dict[int, object],
+    row_control: _ProfileRowControl | None,
+) -> bool:
+    if row_control is None or not row_control.stop_tokens:
+        return False
+    control_value = _normalize_token(row_values.get(row_control.column_index))
+    return bool(control_value) and control_value in row_control.stop_tokens
+
+
 def _normalize_token(value: object) -> str:
     text = unicodedata.normalize("NFKD", str(value)).strip().lower()
     text = "".join(character for character in text if not unicodedata.combining(character))
     cleaned = re.sub(r"[^a-z0-9]+", " ", text)
     return " ".join(cleaned.split())
+
+
+def _unique_tokens(values: list[str]) -> list[str]:
+    unique: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        token = _normalize_token(value)
+        if not token or token in seen:
+            continue
+        seen.add(token)
+        unique.append(token)
+    return unique
 
 
 __all__ = [

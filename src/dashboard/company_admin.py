@@ -243,6 +243,9 @@ def save_column_mapping_profile_rule(
     data_start_row: int | str | None = None,
     employee_code_column: str | None = None,
     employee_name_column: str | None = None,
+    row_control_column: str | None = None,
+    ignore_row_when_contains: str | list[str] | tuple[str, ...] | None = None,
+    stop_reading_when_contains: str | list[str] | tuple[str, ...] | None = None,
     value_column: str | None = None,
     expected_header: str | None = None,
     nature: str | None = None,
@@ -288,6 +291,9 @@ def save_column_mapping_profile_rule(
         data_start_row=_optional_int(data_start_row),
         employee_code_column=_optional_text(employee_code_column),
         employee_name_column=_optional_text(employee_name_column),
+        row_control_column=_optional_text(row_control_column),
+        ignore_row_tokens=_control_tokens(ignore_row_when_contains),
+        stop_row_tokens=_control_tokens(stop_reading_when_contains),
         value_column=event_column,
         expected_header=_optional_text(expected_header),
         enabled=rule_enabled,
@@ -324,6 +330,25 @@ def save_column_mapping_profile_rule(
         updated_profile = updated_profile.model_copy(update=metadata_updates)
 
     return save_column_mapping_profile(updated_profile, root=root)
+
+
+def _control_tokens(values: str | list[str] | tuple[str, ...] | None) -> list[str]:
+    if values is None:
+        return []
+    if isinstance(values, str):
+        raw_values = re.split(r"[;,]", values)
+    else:
+        raw_values = [str(value) for value in values]
+    tokens = [value.strip() for value in raw_values if value and value.strip()]
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for token in tokens:
+        normalized = token.casefold()
+        if normalized in seen:
+            continue
+        seen.add(normalized)
+        ordered.append(token)
+    return ordered
 
 
 def _upsert_minimal_company_config(

@@ -62,6 +62,7 @@ class ColumnMappingRule(_StrictProfileModel):
     data_start_row: int | None = Field(default=None, ge=1)
     employee_code_column: str | None = Field(default=None, min_length=1)
     employee_name_column: str | None = Field(default=None, min_length=1)
+    row_control_column: str | None = Field(default=None, min_length=1)
     value_column: str | None = Field(default=None, min_length=1)
     expected_header: str | None = Field(default=None, min_length=1)
     enabled: bool
@@ -72,6 +73,8 @@ class ColumnMappingRule(_StrictProfileModel):
     generation_mode: ColumnGenerationMode
     ignore_zero: bool
     ignore_text: bool
+    ignore_row_tokens: list[str] = Field(default_factory=list)
+    stop_row_tokens: list[str] = Field(default_factory=list)
     status: ColumnMappingStatus = ColumnMappingStatus.ACTIVE
     notes: str | None = None
 
@@ -79,7 +82,10 @@ class ColumnMappingRule(_StrictProfileModel):
     def _validate_rule_contract(self) -> "ColumnMappingRule":
         self.employee_code_column = normalize_excel_column(self.employee_code_column) if self.employee_code_column else None
         self.employee_name_column = normalize_excel_column(self.employee_name_column) if self.employee_name_column else None
+        self.row_control_column = normalize_excel_column(self.row_control_column) if self.row_control_column else None
         self.value_column = normalize_excel_column(self.value_column) if self.value_column else None
+        self.ignore_row_tokens = [token for token in (_clean_control_token(value) for value in self.ignore_row_tokens) if token]
+        self.stop_row_tokens = [token for token in (_clean_control_token(value) for value in self.stop_row_tokens) if token]
 
         if not self.column_key and not self.column_name and not self.value_column:
             raise ValueError("ColumnMappingRule requires column_key, column_name or value_column.")
@@ -155,6 +161,13 @@ class CompanyColumnMappingProfile(_StrictProfileModel):
         duplicates = _duplicates(column_ids)
         if duplicates:
             raise ValueError(f"duplicate column mappings: {', '.join(duplicates)}")
+        control_columns = {
+            mapping.row_control_column
+            for mapping in self.mappings
+            if mapping.is_active and mapping.row_control_column
+        }
+        if len(control_columns) > 1:
+            raise ValueError("active position mappings must share the same row_control_column.")
         return self
 
 
@@ -239,6 +252,11 @@ def _duplicates(values: list[str]) -> tuple[str, ...]:
             duplicated.add(value)
         seen.add(value)
     return tuple(sorted(duplicated))
+
+
+def _clean_control_token(value: object) -> str | None:
+    text = str(value or "").strip()
+    return text or None
 
 
 def normalize_excel_column(value: str | None) -> str:

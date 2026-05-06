@@ -385,7 +385,13 @@ def test_profile_normalizer_routes_critical_rubrics_to_distinct_canonical_column
     assert lancamentos["H2"].value is None
 
 
-def _build_position_profile(header: str = "HORA 50%") -> CompanyColumnMappingProfile:
+def _build_position_profile(
+    header: str = "HORA 50%",
+    *,
+    row_control_column: str | None = None,
+    ignore_row_tokens: tuple[str, ...] = (),
+    stop_row_tokens: tuple[str, ...] = (),
+) -> CompanyColumnMappingProfile:
     return CompanyColumnMappingProfile(
         company_code="755",
         company_name="GUSTAVO LOPES LACERDA",
@@ -397,6 +403,9 @@ def _build_position_profile(header: str = "HORA 50%") -> CompanyColumnMappingPro
                 data_start_row=3,
                 employee_code_column="A",
                 employee_name_column="B",
+                row_control_column=row_control_column,
+                ignore_row_tokens=list(ignore_row_tokens),
+                stop_row_tokens=list(stop_row_tokens),
                 value_column="T",
                 expected_header=header,
                 enabled=True,
@@ -419,6 +428,7 @@ def _build_position_workbook(
     employee_name_header: str = "NOME",
     employee_code_value: str = "304",
     employee_name_value: str = "ADILSON RAFAEL DE SOUSA",
+    rows: list[tuple[object, object, object]] | None = None,
 ) -> Workbook:
     workbook = Workbook()
     sheet = workbook.active
@@ -426,9 +436,11 @@ def _build_position_workbook(
     sheet["A2"] = employee_code_header
     sheet["B2"] = employee_name_header
     sheet["T2"] = header
-    sheet["A3"] = employee_code_value
-    sheet["B3"] = employee_name_value
-    sheet["T3"] = "01:30"
+    source_rows = rows or [(employee_code_value, employee_name_value, "01:30")]
+    for row_offset, (row_employee_code, row_employee_name, row_value) in enumerate(source_rows, start=3):
+        sheet.cell(row=row_offset, column=1, value=row_employee_code)
+        sheet.cell(row=row_offset, column=2, value=row_employee_name)
+        sheet.cell(row=row_offset, column=20, value=row_value)
     return workbook
 
 
@@ -1135,3 +1147,167 @@ def test_position_profile_blocks_when_single_line_rule_has_no_rubrica_target(tmp
 
     assert exc_info.value.code == "perfil_coluna_sem_rubrica_unica"
     assert "Regra de perfil da coluna T nao possui rubrica unica configurada." in str(exc_info.value)
+
+
+def test_position_profile_stops_before_resolving_control_row(tmp_path: Path) -> None:
+    workbook_path = tmp_path / "fechamento-stop.xlsx"
+    _build_position_workbook(
+        rows=[
+            ("304", "ADILSON RAFAEL DE SOUSA", "01:30"),
+            (" total ", None, None),
+            ("399", "ADRIANE MARTINS DE ALMEIDA", "02:00"),
+        ]
+    ).save(workbook_path)
+    _write_active_rubric_catalog(
+        tmp_path / "rubrics",
+        [
+            CompanyRubricRecord(
+                rubric_code="201",
+                description="HORA 50%",
+                canonical_event="201",
+                value_kind="horas",
+                nature="provento",
+                source="test",
+            )
+        ],
+    )
+    profile = _build_position_profile(row_control_column="A", stop_row_tokens=("TOTAL",))
+    inspection = inspect_workbook_with_position_profile(
+        workbook_path,
+        profile=profile,
+        selected_company_code="755",
+        selected_company_name="GUSTAVO LOPES LACERDA",
+        selected_competence="04/2026",
+    )
+
+    normalized, manifest = build_canonical_workbook_from_column_profile(
+        load_workbook(workbook_path),
+        inspection=inspection,
+        profile=profile,
+        employee_registry_root=tmp_path / "employees",
+        rubric_catalog_root=tmp_path / "rubrics",
+    )
+
+    assert manifest["counts"]["employee_rows_written"] == 1
+    assert normalized["FUNCIONARIOS"]["B2"].value == "ADILSON RAFAEL DE SOUSA"
+    assert normalized["FUNCIONARIOS"]["B3"].value is None
+    assert normalized["MOVIMENTOS_CANONICOS"]["H2"].value == "304"
+    assert normalized["MOVIMENTOS_CANONICOS"]["H3"].value is None
+
+
+def test_position_profile_ignores_control_row_and_continues_processing(tmp_path: Path) -> None:
+    workbook_path = tmp_path / "fechamento-ignore.xlsx"
+    _build_position_workbook(
+        rows=[
+            (" Tótal ", None, None),
+            ("399", "ADRIANE MARTINS DE ALMEIDA", "02:00"),
+        ]
+    ).save(workbook_path)
+    _write_active_rubric_catalog(
+        tmp_path / "rubrics",
+        [
+            CompanyRubricRecord(
+                rubric_code="201",
+                description="HORA 50%",
+                canonical_event="201",
+                value_kind="horas",
+                nature="provento",
+                source="test",
+            )
+        ],
+    )
+    profile = _build_position_profile(row_control_column="A", ignore_row_tokens=("TOTAL",))
+    inspection = inspect_workbook_with_position_profile(
+        workbook_path,
+        profile=profile,
+        selected_company_code="755",
+        selected_company_name="GUSTAVO LOPES LACERDA",
+        selected_competence="04/2026",
+    )
+
+    normalized, manifest = build_canonical_workbook_from_column_profile(
+        load_workbook(workbook_path),
+        inspection=inspection,
+        profile=profile,
+        employee_registry_root=tmp_path / "employees",
+        rubric_catalog_root=tmp_path / "rubrics",
+    )
+
+    assert manifest["counts"]["employee_rows_written"] == 1
+    assert normalized["FUNCIONARIOS"]["B2"].value == "ADRIANE MARTINS DE ALMEIDA"
+    assert normalized["FUNCIONARIOS"]["E2"].value == "399"
+    assert normalized["MOVIMENTOS_CANONICOS"]["N2"].value == "02:00"
+
+
+def test_position_profile_without_control_rule_keeps_previous_employee_resolution_behavior(tmp_path: Path) -> None:
+    workbook_path = tmp_path / "fechamento-sem-controle.xlsx"
+    _build_position_workbook(rows=[("TOTAL", None, None)]).save(workbook_path)
+    _write_active_rubric_catalog(
+        tmp_path / "rubrics",
+        [
+            CompanyRubricRecord(
+                rubric_code="201",
+                description="HORA 50%",
+                canonical_event="201",
+                value_kind="horas",
+                nature="provento",
+                source="test",
+            )
+        ],
+    )
+    profile = _build_position_profile()
+    inspection = inspect_workbook_with_position_profile(
+        workbook_path,
+        profile=profile,
+        selected_company_code="755",
+        selected_company_name="GUSTAVO LOPES LACERDA",
+        selected_competence="04/2026",
+    )
+
+    with pytest.raises(InputLayoutNormalizationError) as exc_info:
+        build_canonical_workbook_from_column_profile(
+            load_workbook(workbook_path),
+            inspection=inspection,
+            profile=profile,
+            employee_registry_root=tmp_path / "employees",
+            rubric_catalog_root=tmp_path / "rubrics",
+        )
+
+    assert exc_info.value.code == "funcionario_nome_nao_encontrado"
+
+
+def test_position_profile_total_control_row_does_not_generate_employee_pending(tmp_path: Path) -> None:
+    workbook_path = tmp_path / "fechamento-total.xlsx"
+    _build_position_workbook(rows=[("TOTAL", None, None)]).save(workbook_path)
+    _write_active_rubric_catalog(
+        tmp_path / "rubrics",
+        [
+            CompanyRubricRecord(
+                rubric_code="201",
+                description="HORA 50%",
+                canonical_event="201",
+                value_kind="horas",
+                nature="provento",
+                source="test",
+            )
+        ],
+    )
+    profile = _build_position_profile(row_control_column="A", stop_row_tokens=("TOTAL",))
+    inspection = inspect_workbook_with_position_profile(
+        workbook_path,
+        profile=profile,
+        selected_company_code="755",
+        selected_company_name="GUSTAVO LOPES LACERDA",
+        selected_competence="04/2026",
+    )
+
+    normalized, manifest = build_canonical_workbook_from_column_profile(
+        load_workbook(workbook_path),
+        inspection=inspection,
+        profile=profile,
+        employee_registry_root=tmp_path / "employees",
+        rubric_catalog_root=tmp_path / "rubrics",
+    )
+
+    assert manifest["counts"]["employee_rows_written"] == 0
+    assert normalized["FUNCIONARIOS"]["B2"].value is None

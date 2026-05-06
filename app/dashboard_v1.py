@@ -791,6 +791,9 @@ def _render_column_profile_tab() -> None:
                     "Linha dados": rule.data_start_row or "-",
                     "Coluna matricula": rule.employee_code_column or "-",
                     "Coluna nome": rule.employee_name_column or "-",
+                    "Coluna controle": rule.row_control_column or "-",
+                    "Ignorar linha": "; ".join(rule.ignore_row_tokens) or "-",
+                    "Parar leitura": "; ".join(rule.stop_row_tokens) or "-",
                     "Modo": rule.generation_mode.value,
                     "Tipo": rule.value_kind.value,
                     "Natureza": rule.nature.value,
@@ -844,6 +847,18 @@ def _render_column_profile_tab() -> None:
         employee_name_column = st.text_input(
             "Coluna do nome do funcionario (opcional)",
             value=selected_rule.employee_name_column or "" if selected_rule else "",
+        )
+        row_control_column = st.text_input(
+            "Coluna de controle da linha",
+            value=selected_rule.row_control_column or "" if selected_rule else "",
+        )
+        ignore_row_when_contains = st.text_input(
+            "Ignorar linha quando contiver",
+            value="; ".join(selected_rule.ignore_row_tokens) if selected_rule else "",
+        )
+        stop_reading_when_contains = st.text_input(
+            "Parar leitura quando contiver",
+            value="; ".join(selected_rule.stop_row_tokens) if selected_rule else "",
         )
         value_column = st.text_input("Coluna do valor/evento", value=selected_rule.value_column or "" if selected_rule else "")
         expected_header = st.text_input(
@@ -914,6 +929,9 @@ def _render_column_profile_tab() -> None:
                     data_start_row=data_start_row,
                     employee_code_column=employee_code_column,
                     employee_name_column=employee_name_column,
+                    row_control_column=row_control_column,
+                    ignore_row_when_contains=ignore_row_when_contains,
+                    stop_reading_when_contains=stop_reading_when_contains,
                     value_column=value_column,
                     expected_header=expected_header,
                     value_kind=value_kind,
