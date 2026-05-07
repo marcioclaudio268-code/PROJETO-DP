@@ -34,6 +34,7 @@ from ingestion import (
     MONTHLY_LAYOUT_ID,
     ingest_template_v1_workbook,
 )
+from serialization import deserialize_mapped_artifact, encode_mapped_movement_to_txt_line
 
 
 def _build_profile_source_workbook() -> Workbook:
@@ -444,6 +445,27 @@ def _build_position_workbook(
     return workbook
 
 
+def _build_position_workbook_for_column(
+    *,
+    sheet_title: str = "ABRIL 26",
+    value_column_index: int,
+    header: str,
+    value: object,
+    employee_code: object = "304",
+    employee_name: object = "ADILSON RAFAEL DE SOUSA",
+) -> Workbook:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = sheet_title
+    sheet["A2"] = "FUNCIONARIO"
+    sheet.cell(row=2, column=value_column_index, value=header)
+    sheet.cell(row=3, column=1, value=employee_code)
+    sheet.cell(row=3, column=value_column_index, value=value)
+    if employee_name is not None:
+        sheet.cell(row=3, column=2, value=employee_name)
+    return workbook
+
+
 def _write_active_registry(root: Path, employees: list[CompanyEmployeeRecord]) -> None:
     save_company_employee_registry(
         CompanyEmployeeRegistry(
@@ -464,6 +486,83 @@ def _write_active_rubric_catalog(root: Path, rubrics: list[CompanyRubricRecord])
         ),
         root=root,
     )
+
+
+def _txt_line_from_direct_movement(movement) -> str:
+    hours = None
+    if movement.hours is not None:
+        hours = {
+            "text": movement.hours.text,
+            "total_minutes": movement.hours.total_minutes,
+        }
+    payload = {
+        "artifact_version": "mapping_result_v1",
+        "execution": {"engine_version": "0.1.0", "status": "success"},
+        "snapshot": {
+            "snapshot_version": "ingestion_snapshot_v1",
+            "company_code": "755",
+            "company_name": "GUSTAVO LOPES LACERDA",
+            "competence": "04/2026",
+            "layout_version": "v1",
+            "movement_count": 1,
+            "pending_count": 0,
+            "execution_status": "success",
+        },
+        "config": {
+            "company_code": "755",
+            "company_name": "GUSTAVO LOPES LACERDA",
+            "competence": "04/2026",
+            "config_version": "test",
+            "default_process": "11",
+            "active_event_mappings": 1,
+            "active_employee_mappings": 1,
+        },
+        "mapped_movements": [
+            {
+                "canonical_movement_id": movement.movement_id,
+                "company_code": movement.company_code,
+                "competence": movement.competence,
+                "payroll_type": movement.payroll_type,
+                "default_process": movement.default_process,
+                "employee_key": movement.employee_key,
+                "employee_name": movement.employee_name,
+                "event_name": movement.event_name,
+                "value_type": movement.value_type.value,
+                "quantity": movement.quantity_for_sheet(),
+                "hours": hours,
+                "amount": movement.amount_for_sheet(),
+                "source": {
+                    "sheet_name": movement.source.sheet_name,
+                    "row_number": movement.source.row_number,
+                    "cell": movement.source.cell,
+                    "column_name": movement.source.column_name,
+                },
+                "canonical_domain_registration": movement.domain_registration,
+                "resolved_domain_registration": movement.domain_registration,
+                "output_rubric": movement.output_rubric,
+                "status": "pronto_para_serializer",
+                "canonical_blocked": False,
+                "inherited_pending_codes": [],
+                "inherited_pending_messages": [],
+                "mapping_pending_codes": [],
+                "mapping_pending_messages": [],
+                "observation": None,
+                "informed_rubric": movement.informed_rubric,
+                "event_nature": movement.event_nature,
+                "serialization_unit": movement.serialization_unit,
+            }
+        ],
+        "mapping_pendings": [],
+        "counts": {
+            "mapped_movements": 1,
+            "ready_movements": 1,
+            "blocked_movements": 0,
+            "mapping_pendings": 0,
+            "blocking_mapping_pendings": 0,
+        },
+    }
+    artifact = deserialize_mapped_artifact(payload)
+    return encode_mapped_movement_to_txt_line(artifact.movements[0])
 
 
 def test_position_profile_validates_expected_header_and_generates_rubric_column(tmp_path: Path) -> None:
@@ -1070,6 +1169,232 @@ def test_position_profile_multi_line_generates_direct_rubrics_without_canonical_
     assert [(movement.event_name, movement.output_rubric) for movement in result.movements] == [
         ("8792", "8792"),
         ("8794", "8794"),
+    ]
+
+
+def test_position_profile_fixed_value_when_positive_generates_configured_quantity_and_txt(tmp_path: Path) -> None:
+    workbook_path = tmp_path / "fechamento-vt.xlsx"
+    _build_position_workbook_for_column(
+        value_column_index=7,
+        header="TOTAL VT",
+        value="325,00",
+    ).save(workbook_path)
+    profile = CompanyColumnMappingProfile(
+        company_code="755",
+        company_name="GUSTAVO LOPES LACERDA",
+        default_process="11",
+        mappings=[
+            ColumnMappingRule(
+                sheet_name="abril 26",
+                header_row=2,
+                data_start_row=3,
+                employee_code_column="A",
+                employee_name_column="B",
+                value_column="G",
+                expected_header="TOTAL VT",
+                enabled=True,
+                rubrica_target="48",
+                value_kind="quantidade",
+                nature="desconto",
+                generation_mode="single_line",
+                ignore_zero=True,
+                ignore_text=True,
+                fixed_value="6,00",
+                fixed_value_trigger="when_positive",
+                status="active",
+            )
+        ],
+    )
+    _write_active_rubric_catalog(
+        tmp_path / "rubrics",
+        [
+            CompanyRubricRecord(
+                rubric_code="48",
+                description="VALE TRANSPORTE",
+                canonical_event="48",
+                value_kind="quantidade",
+                nature="desconto",
+                source="test",
+            )
+        ],
+    )
+    inspection = inspect_workbook_with_position_profile(
+        workbook_path,
+        profile=profile,
+        selected_company_code="755",
+        selected_company_name="GUSTAVO LOPES LACERDA",
+        selected_competence="04/2026",
+    )
+
+    normalized, manifest = build_canonical_workbook_from_column_profile(
+        load_workbook(workbook_path),
+        inspection=inspection,
+        profile=profile,
+        employee_registry_root=tmp_path / "employees",
+        rubric_catalog_root=tmp_path / "rubrics",
+    )
+    result = ingest_template_v1_workbook(normalized)
+
+    assert manifest["counts"]["generated_movements"] == 1
+    assert result.movements[0].output_rubric == "48"
+    assert result.movements[0].quantity_for_sheet() == "6"
+    assert _txt_line_from_direct_movement(result.movements[0]) == "1000000003042026040048110000006000000000755"
+
+
+@pytest.mark.parametrize("source_value", (0, None))
+def test_position_profile_fixed_value_when_positive_does_not_generate_for_zero_or_blank(
+    tmp_path: Path,
+    source_value: object,
+) -> None:
+    workbook_path = tmp_path / "fechamento-vt-zero.xlsx"
+    _build_position_workbook_for_column(
+        value_column_index=7,
+        header="TOTAL VT",
+        value=source_value,
+    ).save(workbook_path)
+    profile = CompanyColumnMappingProfile(
+        company_code="755",
+        company_name="GUSTAVO LOPES LACERDA",
+        default_process="11",
+        mappings=[
+            ColumnMappingRule(
+                sheet_name="ABRIL 26",
+                header_row=2,
+                data_start_row=3,
+                employee_code_column="A",
+                employee_name_column="B",
+                value_column="G",
+                expected_header="TOTAL VT",
+                enabled=True,
+                rubrica_target="48",
+                value_kind="quantidade",
+                nature="desconto",
+                generation_mode="single_line",
+                ignore_zero=True,
+                ignore_text=True,
+                fixed_value="6,00",
+                fixed_value_trigger="when_positive",
+                status="active",
+            )
+        ],
+    )
+    _write_active_rubric_catalog(
+        tmp_path / "rubrics",
+        [
+            CompanyRubricRecord(
+                rubric_code="48",
+                description="VALE TRANSPORTE",
+                canonical_event="48",
+                value_kind="quantidade",
+                nature="desconto",
+                source="test",
+            )
+        ],
+    )
+    inspection = inspect_workbook_with_position_profile(
+        workbook_path,
+        profile=profile,
+        selected_company_code="755",
+        selected_company_name="GUSTAVO LOPES LACERDA",
+        selected_competence="04/2026",
+    )
+
+    normalized, manifest = build_canonical_workbook_from_column_profile(
+        load_workbook(workbook_path),
+        inspection=inspection,
+        profile=profile,
+        employee_registry_root=tmp_path / "employees",
+        rubric_catalog_root=tmp_path / "rubrics",
+    )
+    result = ingest_template_v1_workbook(normalized)
+
+    assert manifest["counts"]["generated_movements"] == 0
+    assert result.movements == ()
+
+
+@pytest.mark.parametrize(
+    ("absence_text", "expected_quantity"),
+    (("17/04", "1"), ("09,28,29 E 30/04", "4")),
+)
+def test_position_profile_absence_text_generates_two_quantity_rubrics(
+    tmp_path: Path,
+    absence_text: str,
+    expected_quantity: str,
+) -> None:
+    workbook_path = tmp_path / "fechamento-faltas.xlsx"
+    _build_position_workbook_for_column(
+        value_column_index=19,
+        header="FALTAS INJUSTIFICADAS",
+        value=absence_text,
+        employee_code="416",
+        employee_name="FUNCIONARIO TESTE",
+    ).save(workbook_path)
+    profile = CompanyColumnMappingProfile(
+        company_code="755",
+        company_name="GUSTAVO LOPES LACERDA",
+        default_process="11",
+        mappings=[
+            ColumnMappingRule(
+                sheet_name="ABRIL 26",
+                header_row=2,
+                data_start_row=3,
+                employee_code_column="A",
+                employee_name_column="B",
+                value_column="S",
+                expected_header="FALTAS INJUSTIFICADAS",
+                enabled=True,
+                rubricas_target=["8792", "8794"],
+                value_kind="quantidade",
+                nature="desconto",
+                generation_mode="multi_line",
+                ignore_zero=True,
+                ignore_text=True,
+                status="active",
+            )
+        ],
+    )
+    _write_active_rubric_catalog(
+        tmp_path / "rubrics",
+        [
+            CompanyRubricRecord(
+                rubric_code="8792",
+                description="DIAS FALTAS",
+                canonical_event="8792",
+                value_kind="quantidade",
+                nature="desconto",
+                source="test",
+            ),
+            CompanyRubricRecord(
+                rubric_code="8794",
+                description="DIAS FALTAS DSR",
+                canonical_event="8794",
+                value_kind="quantidade",
+                nature="desconto",
+                source="test",
+            ),
+        ],
+    )
+    inspection = inspect_workbook_with_position_profile(
+        workbook_path,
+        profile=profile,
+        selected_company_code="755",
+        selected_company_name="GUSTAVO LOPES LACERDA",
+        selected_competence="04/2026",
+    )
+
+    normalized, manifest = build_canonical_workbook_from_column_profile(
+        load_workbook(workbook_path),
+        inspection=inspection,
+        profile=profile,
+        employee_registry_root=tmp_path / "employees",
+        rubric_catalog_root=tmp_path / "rubrics",
+    )
+    result = ingest_template_v1_workbook(normalized)
+
+    assert manifest["counts"]["generated_movements"] == 2
+    assert [(movement.output_rubric, movement.quantity_for_sheet()) for movement in result.movements] == [
+        ("8792", expected_quantity),
+        ("8794", expected_quantity),
     ]
 
 

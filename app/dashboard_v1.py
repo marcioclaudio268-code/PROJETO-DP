@@ -42,6 +42,12 @@ VALUE_KIND_OPTIONS = ("monetario", "horas", "quantidade")
 GENERATION_MODE_OPTIONS = ("single_line", "multi_line", "ignore")
 RUBRIC_NATURE_OPTIONS = ("unknown", "provento", "desconto", "informativo")
 RECORD_STATUS_OPTIONS = ("active", "inactive", "unknown")
+FIXED_VALUE_TRIGGER_OPTIONS = {
+    "nao usar valor fixo": None,
+    "sempre": "always",
+    "quando coluna estiver preenchida": "when_present",
+    "quando coluna for maior que zero": "when_positive",
+}
 TAB_LABELS = (
     "Importar planilha",
     "Importador assistido de relatorios",
@@ -794,6 +800,8 @@ def _render_column_profile_tab() -> None:
                     "Coluna controle": rule.row_control_column or "-",
                     "Ignorar linha": "; ".join(rule.ignore_row_tokens) or "-",
                     "Parar leitura": "; ".join(rule.stop_row_tokens) or "-",
+                    "Valor fixo": rule.fixed_value or "-",
+                    "Usar valor fixo": _fixed_value_trigger_label(rule.fixed_value_trigger),
                     "Modo": rule.generation_mode.value,
                     "Tipo": rule.value_kind.value,
                     "Natureza": rule.nature.value,
@@ -860,6 +868,11 @@ def _render_column_profile_tab() -> None:
             "Parar leitura quando contiver",
             value="; ".join(selected_rule.stop_row_tokens) if selected_rule else "",
         )
+        if (
+            (ignore_row_when_contains.strip() or stop_reading_when_contains.strip())
+            and not row_control_column.strip()
+        ):
+            st.warning("Parar leitura configurado, mas coluna de controle da linha nao foi informada.")
         value_column = st.text_input("Coluna do valor/evento", value=selected_rule.value_column or "" if selected_rule else "")
         expected_header = st.text_input(
             "Cabecalho esperado da coluna",
@@ -891,6 +904,15 @@ def _render_column_profile_tab() -> None:
             )
         else:
             st.info("Coluna ignorada nao envia rubrica.")
+        fixed_value = st.text_input("Valor fixo", value=selected_rule.fixed_value or "" if selected_rule else "")
+        fixed_trigger_label = st.selectbox(
+            "Usar valor fixo quando",
+            options=tuple(FIXED_VALUE_TRIGGER_OPTIONS.keys()),
+            index=_option_index(
+                tuple(FIXED_VALUE_TRIGGER_OPTIONS.keys()),
+                _fixed_value_trigger_label(selected_rule.fixed_value_trigger) if selected_rule else None,
+            ),
+        )
         ignore_zero = st.checkbox("Ignorar valores zerados", value=selected_rule.ignore_zero if selected_rule else True)
         ignore_text = st.checkbox("Ignorar textos sem valor numerico", value=selected_rule.ignore_text if selected_rule else True)
         status = st.selectbox(
@@ -934,6 +956,8 @@ def _render_column_profile_tab() -> None:
                     stop_reading_when_contains=stop_reading_when_contains,
                     value_column=value_column,
                     expected_header=expected_header,
+                    fixed_value=fixed_value,
+                    fixed_value_trigger=FIXED_VALUE_TRIGGER_OPTIONS[fixed_trigger_label],
                     value_kind=value_kind,
                     nature=nature,
                     generation_mode=generation_mode,
@@ -960,6 +984,14 @@ def _profile_rule_label(rule) -> str:
     target = rule.rubrica_target or ", ".join(rule.rubricas_target) or "ignore"
     sheet = f"{rule.sheet_name}!" if rule.sheet_name else ""
     return f"{sheet}{column} -> {target}"
+
+
+def _fixed_value_trigger_label(value) -> str:
+    raw_value = getattr(value, "value", value)
+    for label, option_value in FIXED_VALUE_TRIGGER_OPTIONS.items():
+        if option_value == raw_value:
+            return label
+    return "nao usar valor fixo"
 
 
 def _session_profile_rule_edit_index(mappings) -> int | None:
@@ -1008,7 +1040,7 @@ def _normalize_profile_column(value: object) -> str:
 
 
 def _normalize_profile_sheet(value: object) -> str:
-    return str(value or "").strip().upper()
+    return " ".join(str(value or "").strip().upper().split())
 
 
 def _render_txt_audit_tab(result) -> None:

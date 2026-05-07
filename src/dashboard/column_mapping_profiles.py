@@ -34,6 +34,12 @@ class ColumnGenerationMode(StrEnum):
     IGNORE = "ignore"
 
 
+class FixedValueTrigger(StrEnum):
+    ALWAYS = "always"
+    WHEN_PRESENT = "when_present"
+    WHEN_POSITIVE = "when_positive"
+
+
 class ColumnMappingStatus(StrEnum):
     ACTIVE = "active"
     INACTIVE = "inactive"
@@ -75,6 +81,8 @@ class ColumnMappingRule(_StrictProfileModel):
     ignore_text: bool
     ignore_row_tokens: list[str] = Field(default_factory=list)
     stop_row_tokens: list[str] = Field(default_factory=list)
+    fixed_value: str | None = Field(default=None, min_length=1)
+    fixed_value_trigger: FixedValueTrigger | None = None
     status: ColumnMappingStatus = ColumnMappingStatus.ACTIVE
     notes: str | None = None
 
@@ -86,6 +94,11 @@ class ColumnMappingRule(_StrictProfileModel):
         self.value_column = normalize_excel_column(self.value_column) if self.value_column else None
         self.ignore_row_tokens = [token for token in (_clean_control_token(value) for value in self.ignore_row_tokens) if token]
         self.stop_row_tokens = [token for token in (_clean_control_token(value) for value in self.stop_row_tokens) if token]
+        self.fixed_value = _clean_control_token(self.fixed_value)
+        if self.fixed_value and self.fixed_value_trigger is None:
+            self.fixed_value_trigger = FixedValueTrigger.ALWAYS
+        if self.fixed_value is None and self.fixed_value_trigger is not None:
+            raise ValueError("fixed_value_trigger requires fixed_value.")
 
         if not self.column_key and not self.column_name and not self.value_column:
             raise ValueError("ColumnMappingRule requires column_key, column_name or value_column.")
@@ -297,6 +310,7 @@ __all__ = [
     "ColumnValueKind",
     "CompanyColumnMappingProfile",
     "DEFAULT_COLUMN_MAPPING_PROFILES_ROOT",
+    "FixedValueTrigger",
     "column_mapping_profile_path",
     "excel_column_to_index",
     "load_column_mapping_profile",

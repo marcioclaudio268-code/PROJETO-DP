@@ -29,6 +29,7 @@ from .column_mapping_profiles import (
     ColumnMappingProfileError,
     ColumnMappingRule,
     CompanyColumnMappingProfile,
+    FixedValueTrigger,
     load_column_mapping_profile,
     save_column_mapping_profile,
     upsert_column_mapping_rule,
@@ -248,6 +249,8 @@ def save_column_mapping_profile_rule(
     stop_reading_when_contains: str | list[str] | tuple[str, ...] | None = None,
     value_column: str | None = None,
     expected_header: str | None = None,
+    fixed_value: str | None = None,
+    fixed_value_trigger: str | None = None,
     nature: str | None = None,
     status: str = "active",
     ignore_zero: bool = True,
@@ -296,6 +299,12 @@ def save_column_mapping_profile_rule(
         stop_row_tokens=_control_tokens(stop_reading_when_contains),
         value_column=event_column,
         expected_header=_optional_text(expected_header),
+        fixed_value=_optional_text(fixed_value),
+        fixed_value_trigger=(
+            FixedValueTrigger(_required_text("fixed_value_trigger", fixed_value_trigger))
+            if _optional_text(fixed_value_trigger)
+            else None
+        ),
         enabled=rule_enabled,
         rubrica_target=single_target,
         rubricas_target=multiple_targets,

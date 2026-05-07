@@ -1275,6 +1275,8 @@ def test_render_column_profile_tab_shows_edit_button_and_position_fields() -> No
                 generation_mode="single_line",
                 ignore_zero=True,
                 ignore_text=True,
+                fixed_value="6,00",
+                fixed_value_trigger="when_positive",
                 status="active",
             )
         ],
@@ -1296,9 +1298,10 @@ def test_render_column_profile_tab_shows_edit_button_and_position_fields() -> No
         "Parar leitura quando contiver",
         "Coluna do valor/evento",
         "Cabecalho esperado da coluna",
+        "Valor fixo",
         "Rubrica unica",
     }.issubset(text_labels)
-    assert {"Tipo do valor da coluna", "Natureza", "Status"}.issubset(select_labels)
+    assert {"Tipo do valor da coluna", "Natureza", "Status", "Usar valor fixo quando"}.issubset(select_labels)
 
 
 def test_column_profile_tab_blocks_active_duplicate_position_column() -> None:

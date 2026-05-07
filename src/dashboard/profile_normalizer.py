@@ -40,6 +40,7 @@ from .column_mapping_profiles import (
     ColumnMappingRule,
     ColumnValueKind,
     CompanyColumnMappingProfile,
+    FixedValueTrigger,
     excel_column_to_index,
 )
 from .company_employee_registry import (
@@ -234,6 +235,9 @@ def build_canonical_workbook_from_column_profile(
     skipped_zero_cells = 0
     skipped_text_cells = 0
     generated_movements = 0
+    ignored_control_rows = 0
+    stopped_control_rows = 0
+    skipped_empty_cells = 0
 
     header_row = min((column.header_row for column in inspection.columns), default=4)
     data_start_row = _profile_data_start_row(profile) or header_row + 1
@@ -247,8 +251,10 @@ def build_canonical_workbook_from_column_profile(
         if _row_is_empty(row_values):
             continue
         if _should_stop_profile_reading(row_values, row_control):
+            stopped_control_rows += 1
             break
         if _should_ignore_profile_row(row_values, row_control):
+            ignored_control_rows += 1
             continue
 
         employee_key = _profile_employee_key(
@@ -307,19 +313,21 @@ def build_canonical_workbook_from_column_profile(
 
         for column, mapping in column_mappings:
             raw_value = row_values.get(column.column_index)
-            if is_empty_value(raw_value):
-                continue
             if mapping.generation_mode == ColumnGenerationMode.IGNORE:
-                ignored_cells += 1
+                if not is_empty_value(raw_value):
+                    ignored_cells += 1
                 continue
 
-            parsed_value = _parse_profile_value(
+            parsed_value = _parse_profile_mapping_value(
                 raw_value,
                 mapping=mapping,
                 source=f"{selected_sheet.title}!{column.column_letter}{source_row}",
             )
             if parsed_value is None:
-                skipped_text_cells += 1
+                if is_empty_value(raw_value):
+                    skipped_empty_cells += 1
+                else:
+                    skipped_text_cells += 1
                 continue
             if parsed_value.is_zero and mapping.ignore_zero:
                 skipped_zero_cells += 1
@@ -416,8 +424,11 @@ def build_canonical_workbook_from_column_profile(
             "ignored_cells": ignored_cells,
             "skipped_zero_cells": skipped_zero_cells,
             "skipped_text_cells": skipped_text_cells,
+            "skipped_empty_cells": skipped_empty_cells,
+            "ignored_control_rows": ignored_control_rows,
+            "stopped_control_rows": stopped_control_rows,
         },
-        "row_warnings": [],
+        "row_warnings": _profile_row_control_warnings(profile),
     }
     return normalized_workbook, manifest
 
@@ -572,6 +583,17 @@ def _profile_row_control(profile: CompanyColumnMappingProfile) -> _ProfileRowCon
         ignore_tokens=tuple(_unique_tokens(ignore_tokens)),
         stop_tokens=tuple(_unique_tokens(stop_tokens)),
     )
+
+
+def _profile_row_control_warnings(profile: CompanyColumnMappingProfile) -> list[str]:
+    has_control_tokens = any(
+        rule.is_active and (rule.ignore_row_tokens or rule.stop_row_tokens)
+        for rule in profile.mappings
+    )
+    has_control_column = any(rule.is_active and rule.row_control_column for rule in profile.mappings)
+    if has_control_tokens and not has_control_column:
+        return ["Parar leitura configurado, mas coluna de controle da linha nao foi informada."]
+    return []
 
 
 def _profile_employee_key(
@@ -764,7 +786,7 @@ def _parse_profile_value(
             amount = normalize_money_brl(value)
             return _ParsedProfileValue(decimal_to_plain_string(amount), amount == Decimal("0"))
         if mapping.value_kind == ColumnValueKind.QUANTITY:
-            quantity = normalize_quantity(value)
+            quantity = _normalize_profile_quantity(value, mapping=mapping)
             return _ParsedProfileValue(decimal_to_plain_string(quantity), quantity == Decimal("0"))
         if mapping.value_kind == ColumnValueKind.HOURS:
             hours = _normalize_profile_hours(value)
@@ -783,6 +805,90 @@ def _parse_profile_value(
         f"Tipo de valor nao suportado no perfil: {mapping.value_kind}.",
         source=source,
     )
+
+
+def _parse_profile_mapping_value(
+    value: object,
+    *,
+    mapping: ColumnMappingRule,
+    source: str,
+) -> _ParsedProfileValue | None:
+    if mapping.fixed_value is None:
+        if is_empty_value(value):
+            return None
+        return _parse_profile_value(value, mapping=mapping, source=source)
+
+    if not _fixed_value_trigger_matches(value, mapping=mapping, source=source):
+        return None
+    return _parse_profile_value(mapping.fixed_value, mapping=mapping, source=source)
+
+
+def _fixed_value_trigger_matches(
+    value: object,
+    *,
+    mapping: ColumnMappingRule,
+    source: str,
+) -> bool:
+    trigger = mapping.fixed_value_trigger or FixedValueTrigger.ALWAYS
+    if trigger == FixedValueTrigger.ALWAYS:
+        return True
+    if trigger == FixedValueTrigger.WHEN_PRESENT:
+        return not is_empty_value(value)
+    if trigger == FixedValueTrigger.WHEN_POSITIVE:
+        if is_empty_value(value):
+            return False
+        positive = _raw_value_is_positive(value)
+        if positive is None and not mapping.ignore_text:
+            raise InputLayoutNormalizationError(
+                "valor_condicao_fixa_invalido",
+                f"Valor da condicao de valor fixo nao pode ser convertido pela regra da coluna '{mapping.source_column_id}'.",
+                source=source,
+            )
+        return positive is True
+    return False
+
+
+def _raw_value_is_positive(value: object) -> bool | None:
+    for normalizer in (normalize_money_brl, normalize_quantity):
+        try:
+            return normalizer(value) > Decimal("0")
+        except NormalizationError:
+            continue
+    try:
+        return _normalize_profile_hours(value).total_minutes > 0
+    except NormalizationError:
+        return None
+
+
+def _normalize_profile_quantity(value: object, *, mapping: ColumnMappingRule) -> Decimal:
+    try:
+        return normalize_quantity(value)
+    except NormalizationError:
+        absence_days = _parse_absence_text_day_count(value, mapping=mapping)
+        if absence_days is not None:
+            return Decimal(absence_days)
+        raise
+
+
+def _parse_absence_text_day_count(value: object, *, mapping: ColumnMappingRule) -> int | None:
+    if (
+        mapping.generation_mode != ColumnGenerationMode.MULTI_LINE
+        or mapping.value_kind != ColumnValueKind.QUANTITY
+        or set(mapping.rubricas_target) != {"8792", "8794"}
+    ):
+        return None
+
+    text = normalized_optional_text(value)
+    if text is None:
+        return None
+    matches = re.finditer(r"((?:\d{1,2}\s*(?:[,;]|\be\b)?\s*)+)\/\s*\d{1,2}", text, flags=re.IGNORECASE)
+    days: list[int] = []
+    for match in matches:
+        for raw_day in re.findall(r"\d{1,2}", match.group(1)):
+            day = int(raw_day)
+            if 1 <= day <= 31:
+                days.append(day)
+    return len(days) if days else None
 
 
 def _normalize_profile_hours(value: object) -> NormalizedHours:
@@ -1027,7 +1133,7 @@ def _should_ignore_profile_row(
     if row_control is None or not row_control.ignore_tokens:
         return False
     control_value = _normalize_token(row_values.get(row_control.column_index))
-    return bool(control_value) and control_value in row_control.ignore_tokens
+    return bool(control_value) and _control_value_matches(control_value, row_control.ignore_tokens)
 
 
 def _should_stop_profile_reading(
@@ -1037,7 +1143,11 @@ def _should_stop_profile_reading(
     if row_control is None or not row_control.stop_tokens:
         return False
     control_value = _normalize_token(row_values.get(row_control.column_index))
-    return bool(control_value) and control_value in row_control.stop_tokens
+    return bool(control_value) and _control_value_matches(control_value, row_control.stop_tokens)
+
+
+def _control_value_matches(control_value: str, tokens: tuple[str, ...]) -> bool:
+    return any(token == control_value or token in control_value for token in tokens)
 
 
 def _normalize_token(value: object) -> str:
